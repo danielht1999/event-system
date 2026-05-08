@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS usuarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    rol VARCHAR(20) DEFAULT 'asistente',
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,0 +1,1 @@
+Get-ChildItem -Recurse -Force | Where-Object { $_.FullName -notlike "*node_modules*" -and $_.FullName -notlike "*dist*" } | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace($PWD.Path, "").TrimStart("\") }

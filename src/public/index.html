@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestion de Eventos</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistema de Gestion de Eventos</h1>
+            <p>Administra tus eventos y reservas facilmente</p>
+        </header>
+
+        <!-- Panel de Autenticacion -->
+        <div class="auth-panel" id="authPanel">
+            <div class="card" id="loginForm">
+                <h2>Iniciar Sesion</h2>
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <input type="email" id="loginEmail" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Iniciar Sesion</button>
+                </form>
+                <p class="toggle-auth">No tienes cuenta? <a href="#" id="showRegister">Registrate aqui</a></p>
+            </div>
+
+            <div class="card" id="registerForm" style="display: none;">
+                <h2>Registro de Usuario</h2>
+                <form id="registerFormElement">
+                    <div class="form-group">
+                        <input type="text" id="regNombre" placeholder="Nombre completo" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="regEmail" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="regPassword" placeholder="Password" required>
+                    </div>
+                    <div class="form-group">
+                        <select id="regRol">
+                            <option value="asistente">Asistente</option>
+                            <option value="organizador">Organizador</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Registrarse</button>
+                </form>
+                <p class="toggle-auth">Ya tienes cuenta? <a href="#" id="showLogin">Inicia Sesion aqui</a></p>
+            </div>
+        </div>
+
+        <!-- Panel de Usuario Logeado -->
+        <div id="userPanel" style="display: none;">
+            <div class="user-info">
+                <p>Bienvenido, <strong id="userNombre"></strong> (<span id="userRol"></span>)</p>
+                <button id="logoutBtn" class="btn-logout">Cerrar Sesion</button>
+            </div>
+
+            <!-- Seccion de creacion de eventos (solo para organizadores) -->
+            <div id="crearEventoSection" class="card" style="display: none;">
+                <h2>Crear Nuevo Evento</h2>
+                <form id="eventoForm">
+                    <div class="form-group">
+                        <input type="text" id="titulo" placeholder="Titulo del evento" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="descripcion" placeholder="Descripcion" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="datetime-local" id="fecha" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="lugar" placeholder="Lugar" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="number" id="capacidad" placeholder="Capacidad" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="precio" placeholder="Precio" step="0.01" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Crear Evento</button>
+                </form>
+            </div>
+
+            <!-- Seccion de compra de tickets -->
+            <div class="card">
+                <h2>Comprar Tickets</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="text" id="eventoIdCompra" placeholder="ID del Evento" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" id="cantidadTickets" placeholder="Cantidad (1-4)" min="1" max="4" required>
+                    </div>
+                </div>
+                <button id="comprarTicketBtn" class="btn-primary">Comprar Ticket</button>
+            </div>
+        </div>
+
+        <!-- Seccion de listado de eventos -->
+        <section class="card">
+            <h2>Eventos Disponibles</h2>
+            <div id="eventosList" class="eventos-grid">
+                <p class="loading">Cargando eventos...</p>
+            </div>
+        </section>
+
+        <!-- Seccion de mis reservas -->
+        <div id="misReservasSection" class="card" style="display: none;">
+            <h2>Mis Reservas</h2>
+            <div id="reservasList" class="eventos-grid">
+                <p class="loading">Cargando reservas...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
