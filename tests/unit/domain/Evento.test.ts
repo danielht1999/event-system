@@ -9,16 +9,18 @@ describe('Evento', () => {
 
   beforeEach(() => {
     evento = new Evento(
-      '1',
-      'org-123',
-      'Conferencia DevOps',
-      'La mejor conferencia de DevOps',
-      'Centro de Convenciones',
-      new FechaEvento(fechaFutura),
-      new Capacidad(100),
-      50,
-      'PUBLICADO'
-    );
+    '1',                                          // id
+    'Conferencia DevOps',                         // titulo
+    'La mejor conferencia de DevOps',            // descripcion
+    FechaEvento.crear(fechaFutura),              // fecha 
+    'Centro de Convenciones',                    // lugar
+    new Capacidad(100),                           // capacidad
+    50,                                           // precio
+    'org-123',                                    // organizadorId
+    0,                                            // reservasConfirmadas
+    0,                                            // reservasPendientes
+    'BORRADOR'                                   // estado 
+  );
   });
 
   test('debería permitir reservar hasta 4 tickets', () => {
@@ -26,7 +28,7 @@ describe('Evento', () => {
     expect(resultado.exitosa).toBe(true);
   });
 
-  test('no debería permitir más de 4 tickets por persona', () => {
+  test('no deberia permitir mas de 4 tickets por persona', () => {
     const resultado = evento.reservar(5);
     expect(resultado.exitosa).toBe(false);
     expect(resultado.razon).toBe('Máximo 4 tickets por persona');

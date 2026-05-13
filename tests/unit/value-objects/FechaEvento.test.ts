@@ -1,64 +1,81 @@
-import { Evento } from '../../../src/domain/entities/Evento';
-import { Capacidad } from '../../../src/domain/value-objects/Capacidad';
 import { FechaEvento } from '../../../src/domain/value-objects/FechaEvento';
 
-describe('Evento', () => {
-  let evento: Evento;
+describe('FechaEvento', () => {
   const fechaFutura = new Date();
   fechaFutura.setDate(fechaFutura.getDate() + 30);
 
-  beforeEach(() => {
-    evento = new Evento(
-      '1',
-      'org-123',
-      'Conferencia DevOps',
-      'La mejor conferencia de DevOps',
-      'Centro de Convenciones',
-      new FechaEvento(fechaFutura),
-      new Capacidad(100),
-      50,
-      'PUBLICADO'
-    );
+  const fechaPasada = new Date();
+  fechaPasada.setDate(fechaPasada.getDate() - 30);
+
+  describe('crear()', () => {
+    test('fecha futura válida', () => {
+      const fecha = FechaEvento.crear(fechaFutura);
+
+      expect(fecha).toBeDefined();
+      expect(fecha.value).toEqual(fechaFutura);
+
+      expect(fecha.value.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    test('fecha pasada', () => {
+      expect(() => FechaEvento.crear(fechaPasada)).toThrow('No se puede crear un evento en el pasado');
+    });
+
+    test('fecha inválida', () => {
+      const fechaInvalida = new Date('2025-13-45');
+
+      expect(() => FechaEvento.crear(fechaInvalida)).toThrow('Fecha invalida');
+    });
   });
 
-  test('debería permitir reservar hasta 4 tickets', () => {
-    const resultado = evento.reservar(4);
-    expect(resultado.exitosa).toBe(true);
+  describe('reconstruir()', () => {
+    test('fecha pasada', () => {
+      const fecha = FechaEvento.reconstruir(fechaPasada);
+
+      expect(fecha).toBeDefined();
+      expect(fecha.value).toEqual(fechaPasada);
+    });
+
+    test('fecha futura', () => {
+      const fecha = FechaEvento.reconstruir(fechaFutura);
+
+      expect(fecha).toBeDefined();
+      expect(fecha.value.getTime()).toBeGreaterThan(Date.now());
+    });
   });
 
-  test('no debería permitir más de 4 tickets por persona', () => {
-    const resultado = evento.reservar(5);
-    expect(resultado.exitosa).toBe(false);
-    expect(resultado.razon).toBe('Máximo 4 tickets por persona');
+  describe('esHoy()', () => {
+    test('fecha de hoy', () => {
+      const fecha = FechaEvento.reconstruir(new Date());
+
+      expect(fecha).toBeDefined();
+      expect(fecha.esHoy()).toBe(true);
+    });
+
+    test('fecha futura', () => {
+      const fecha = FechaEvento.crear(fechaFutura);
+
+      expect(fecha).toBeDefined();
+      expect(fecha.esHoy()).toBe(false);
+    });
   });
 
-  test('debería actualizar cupos disponibles después de reserva', () => {
-    evento.reservar(2);
-    expect(evento.cuposDisponibles).toBe(98);
-  });
+  describe('faltaParaEvento()', () => {
+    test('evento en 30 días', () => {
+      const fecha = FechaEvento.crear(fechaFutura);
 
-  test('no debería permitir reserva cuando no hay cupo', () => {
-    // Llenar el evento con 25 reservas de 4 tickets
-    for (let i = 0; i < 25; i++) {
-      const result = evento.reservar(4);
-      expect(result.exitosa).toBe(true);
-    }
+      expect(fecha).toBeDefined();
+      expect(fecha.faltaParaEvento()).toEqual(30);
+    });
+
+    test('evento en 1 día ', () => {
+      const fechaManana = new Date();
+      fechaManana.setDate(fechaManana.getDate() + 1);
+      const fecha = FechaEvento.crear(fechaManana);
+
+      expect(fecha).toBeDefined();
+      expect(fecha.faltaParaEvento()).toEqual(1);
+    });
     
-    // Verificar que no quedan cupos
-    expect(evento.cuposDisponibles).toBe(0);
-    
-    // Intentar reservar 1 ticket más - DEBE FALLAR
-    const resultadoFinal = evento.reservar(1);
-    expect(resultadoFinal.exitosa).toBe(false);
-    expect(resultadoFinal.razon).toBe('No hay suficiente capacidad');
-  });
-
-  test('debería permitir reservas múltiples y confirmarlas', () => {
-    evento.reservar(2);
-    evento.reservar(3);
-    expect(evento.cuposDisponibles).toBe(95);
-    
-    evento.confirmarReserva(2);
-    expect(evento.cuposDisponibles).toBe(95);
   });
 });
