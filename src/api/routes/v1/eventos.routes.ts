@@ -1,21 +1,46 @@
+// src/api/routes/v1/eventos.routes.ts
 import { Router } from 'express';
-import { EventoController } from '../../controllers/EventoController';
-import { authMiddleware, organizadorMiddleware } from '../../middlewares/auth';
+import { authenticate, organizadorMiddleware } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validation';
 import { crearEventoSchema, actualizarEventoSchema } from '../../validators/evento.validator';
+import { eventoController } from '../../../infrastructure/di/container';  // ← importar desde container
 
 const router = Router();
-const eventoController = new EventoController();
 
-// Rutas públicas
-router.get('/', eventoController.listarEventos);
-router.get('/:id', eventoController.obtenerEvento);
+// Rutas públicas (no requieren autenticación)
+router.get('/', eventoController.listar);           
+router.get('/:id', eventoController.obtener);       
 router.get('/:id/disponibilidad', eventoController.verDisponibilidad);
 
-// Rutas protegidas (requieren autenticación)
-router.post('/', authMiddleware, validate(crearEventoSchema), eventoController.crearEvento);
-router.put('/:id', authMiddleware, validate(actualizarEventoSchema), eventoController.actualizarEvento);
-router.patch('/:id/publicar', authMiddleware, organizadorMiddleware, eventoController.publicarEvento);
-router.delete('/:id', authMiddleware, eventoController.cancelarEvento);
+// Rutas protegidas (requieren autenticación y rol ORGANIZADOR)
+router.post(
+  '/',
+  authenticate,
+  organizadorMiddleware,
+  validate(crearEventoSchema),
+  eventoController.crear                    
+);
+
+router.put(
+  '/:id',
+  authenticate,
+  organizadorMiddleware,
+  validate(actualizarEventoSchema),
+  eventoController.actualizar              
+);
+
+router.patch(
+  '/:id/publicar',
+  authenticate,
+  organizadorMiddleware,
+  eventoController.publicar                 
+);
+
+router.delete(
+  '/:id',
+  authenticate,
+  organizadorMiddleware,
+  eventoController.cancelar                 
+);
 
 export default router;

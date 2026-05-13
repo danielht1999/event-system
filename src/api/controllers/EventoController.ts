@@ -1,191 +1,247 @@
-﻿import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+// src/api/controllers/EventoController.ts
+import { Request, Response } from 'express';
+import { CreateEventCommand } from '../../application/commands/CreateEventCommand';
+import { CreateEventHandler } from '../../application/handlers/CreateEventHandler';
+import { IEventoRepository } from '../../domain/repositories/IEventoRepository';
+import { ListarEventosHandler } from '../../application/handlers/ListarEventosHandler';
 import { Evento } from '../../domain/entities/Evento';
-import { Capacidad } from '../../domain/value-objects/Capacidad';
-import { FechaEvento } from '../../domain/value-objects/FechaEvento';
-import { PostgresEventoRepository } from '../../infrastructure/database/repositories/PostgresEventoRepository';
-
-const eventoRepository = new PostgresEventoRepository();
+import { ListarEventosCommand } from '../../application/commands/ListarEventosCommand';
 
 export class EventoController {
-  async listarEventos(req: Request, res: Response) {
-    const eventos = await eventoRepository.findPublicados();
-    res.json({
-      success: true,
-      count: eventos.length,
-      data: eventos.map(e => ({
-        id: e.id,
-        titulo: e.titulo,
-        descripcion: e.descripcion,
-        fecha: e.fecha,
-        lugar: e.lugar,
-        precio: e.precio,
-        cuposDisponibles: e.cuposDisponibles,
-        estado: e.estado
-      }))
+  constructor(
+  private createEventHandler: CreateEventHandler,
+  private eventoRepository: IEventoRepository,
+  private listarEventosHandler: ListarEventosHandler
+  ){}
+
+  // Listar todos los eventos (público)
+  listar = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const command = new ListarEventosCommand();
+    const result = await this.listarEventosHandler.execute(command);
+    
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al listar eventos',
+      error: error.message
     });
   }
+  };
 
-  async obtenerEvento(req: Request, res: Response) {
-    const { id } = req.params;
-    const evento = await eventoRepository.findById(id);
-    
-    if (!evento) {
-      return res.status(404).json({ success: false, message: 'Evento no encontrado' });
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        id: evento.id,
-        titulo: evento.titulo,
-        descripcion: evento.descripcion,
-        fecha: evento.fecha,
-        lugar: evento.lugar,
-        capacidad: evento.capacidad,
-        precio: evento.precio,
-        cuposDisponibles: evento.cuposDisponibles,
-        estado: evento.estado
-      }
-    });
-  }
-
-  async verDisponibilidad(req: Request, res: Response) {
-    const { id } = req.params;
-    const evento = await eventoRepository.findById(id);
-    
-    if (!evento) {
-      return res.status(404).json({ success: false, message: 'Evento no encontrado' });
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        eventoId: evento.id,
-        titulo: evento.titulo,
-        cuposTotales: evento.capacidad,
-        cuposDisponibles: evento.cuposDisponibles,
-        estaLleno: evento.estaLleno
-      }
-    });
-  }
-
-  async crearEvento(req: Request, res: Response) {
-    const { titulo, descripcion, fecha, lugar, capacidad, precio } = req.body;
-    const organizadorId = (req as any).user?.id;
-
-    if (!organizadorId) {
-      return res.status(401).json({ success: false, message: 'Debes iniciar sesión para crear eventos' });
-    }
-    
+  // Obtener un evento por ID (público)
+  obtener = async (req: Request, res: Response): Promise<void> => {
     try {
-      const evento = new Evento(
-        uuidv4(),
-        organizadorId,
-        titulo,
-        descripcion,
-        lugar,
-        new FechaEvento(new Date(fecha)),
-        new Capacidad(capacidad),
-        precio,
-        'BORRADOR'
-      );
+      if (!this.eventoRepository) {
+        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
+        return;
+      }
       
-      await eventoRepository.save(evento);
+      const { id } = req.params;
+      const evento = await this.eventoRepository.findById(id);
       
-      res.status(201).json({
+      if (!evento) {
+        res.status(404).json({ success: false, message: 'Evento no encontrado' });
+        return;
+      }
+      
+      res.json({
         success: true,
-        message: 'Evento creado exitosamente',
-        data: { 
-          id: evento.id, 
-          titulo: evento.titulo, 
-          lugar: evento.lugar, 
-          fecha: evento.fecha, 
-          estado: evento.estado 
+        data: evento
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Error al obtener evento',
+        error: error.message
+      });
+    }
+  };
+
+  // Ver disponibilidad de cupos (público)
+  verDisponibilidad = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!this.eventoRepository) {
+        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
+        return;
+      }
+      
+      const { id } = req.params;
+      const evento = await this.eventoRepository.findById(id);
+      
+      if (!evento) {
+        res.status(404).json({ success: false, message: 'Evento no encontrado' });
+        return;
+      }
+      
+      // TODO: Obtener reservas actuales de otro repositorio      
+      res.json({
+        success: true,
+        data: {
+          capacidadTotal: evento.capacidadTotal,
+          cuposDisponibles: evento.cuposDisponibles(),
+          estaLleno: evento.estaLleno()
         }
       });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  async publicarEvento(req: Request, res: Response) {
-    const { id } = req.params;
-    const usuarioId = (req as any).user?.id;
-    
-    const evento = await eventoRepository.findById(id);
-    
-    if (!evento) {
-      return res.status(404).json({ success: false, message: 'Evento no encontrado' });
-    }
-    
-    // Verificar que el usuario es el organizador
-    if (evento.organizadorId !== usuarioId) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'No tienes permiso para publicar este evento' 
+      res.status(500).json({
+        success: false,
+        message: 'Error al ver disponibilidad',
+        error: error.message
       });
     }
-    
+  };
+
+  // Crear evento (solo ORGANIZADOR)
+  crear = async (req: Request, res: Response): Promise<void> => {
     try {
-      evento.publicar();
-      await eventoRepository.update(evento);
-      res.json({ 
-        success: true, 
-        message: 'Evento publicado exitosamente', 
-        data: { id: evento.id, estado: evento.estado } 
+      const organizadorId = (req as any).user?.id;
+      
+      if (!organizadorId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
+      }
+
+      const command = new CreateEventCommand({
+        ...req.body,
+        organizadorId
+      });
+
+      const evento = await this.createEventHandler.execute(command);
+
+      res.status(201).json({
+        success: true,
+        message: 'Evento creado exitosamente',
+        data: evento
       });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
-
-  async actualizarEvento(req: Request, res: Response) {
-    const { id } = req.params;
-    const updates = req.body;
-    const usuarioId = (req as any).user?.id;
-    
-    const evento = await eventoRepository.findById(id);
-    
-    if (!evento) {
-      return res.status(404).json({ success: false, message: 'Evento no encontrado' });
-    }
-    
-    if (evento.organizadorId !== usuarioId) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'No tienes permiso para actualizar este evento' 
+      const status = error.message.includes('requerido') || 
+                     error.message.includes('futura') ||
+                     error.message.includes('mayor a 0') ? 400 : 500;
+      
+      res.status(status).json({
+        success: false,
+        message: error.message
       });
     }
-    
-    if (updates.titulo) evento.titulo = updates.titulo;
-    if (updates.descripcion) evento.descripcion = updates.descripcion;
-    if (updates.lugar) evento.lugar = updates.lugar;
-    if (updates.precio !== undefined) evento.precio = updates.precio;
-    
-    await eventoRepository.update(evento);
-    res.json({ success: true, message: 'Evento actualizado exitosamente' });
-  }
+  };
 
-  async cancelarEvento(req: Request, res: Response) {
-    const { id } = req.params;
-    const usuarioId = (req as any).user?.id;
-    
-    const evento = await eventoRepository.findById(id);
-    
-    if (!evento) {
-      return res.status(404).json({ success: false, message: 'Evento no encontrado' });
-    }
-    
-    if (evento.organizadorId !== usuarioId) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'No tienes permiso para cancelar este evento' 
+  // Actualizar evento (solo ORGANIZADOR)
+  actualizar = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!this.eventoRepository) {
+        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
+        return;
+      }
+      
+      const { id } = req.params;
+      const organizadorId = (req as any).user?.id;
+      
+      // Verificar que el evento existe y pertenece al organizador
+      const evento = await this.eventoRepository.findById(id);
+      
+      if (!evento) {
+        res.status(404).json({ success: false, message: 'Evento no encontrado' });
+        return;
+      }
+      
+      if (evento.organizadorId !== organizadorId) {
+        res.status(403).json({ success: false, message: 'No tienes permiso para editar este evento' });
+        return;
+      }
+      
+      const eventoActualizado = await this.eventoRepository.update(id, req.body);
+      
+      res.json({
+        success: true,
+        message: 'Evento actualizado exitosamente',
+        data: eventoActualizado
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Error al actualizar evento',
+        error: error.message
       });
     }
-    
-    evento.cancelar();
-    await eventoRepository.update(evento);
-    res.json({ success: true, message: 'Evento cancelado exitosamente' });
-  }
+  };
+
+  // Publicar evento (cambiar estado a publicado)
+  publicar = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!this.eventoRepository) {
+        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
+        return;
+      }
+      
+      const { id } = req.params;
+      const organizadorId = (req as any).user?.id;
+      
+      const evento = await this.eventoRepository.findById(id);
+      
+      if (!evento) {
+        res.status(404).json({ success: false, message: 'Evento no encontrado' });
+        return;
+      }
+      
+      if (evento.organizadorId !== organizadorId) {
+        res.status(403).json({ success: false, message: 'No tienes permiso para publicar este evento' });
+        return;
+      }
+      
+      // TODO: Agregar campo 'publicado' a la entidad Evento
+      const eventoActualizado = await this.eventoRepository.update(id, { publicado: true } as any);
+      
+      res.json({
+        success: true,
+        message: 'Evento publicado exitosamente',
+        data: eventoActualizado
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Error al publicar evento',
+        error: error.message
+      });
+    }
+  };
+
+  // Cancelar evento (solo ORGANIZADOR)
+  cancelar = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!this.eventoRepository) {
+        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
+        return;
+      }
+      
+      const { id } = req.params;
+      const organizadorId = (req as any).user?.id;
+      
+      const evento = await this.eventoRepository.findById(id);
+      
+      if (!evento) {
+        res.status(404).json({ success: false, message: 'Evento no encontrado' });
+        return;
+      }
+      
+      if (evento.organizadorId !== organizadorId) {
+        res.status(403).json({ success: false, message: 'No tienes permiso para cancelar este evento' });
+        return;
+      }
+      
+      await this.eventoRepository.delete(id);
+      
+      res.json({
+        success: true,
+        message: 'Evento cancelado exitosamente'
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Error al cancelar evento',
+        error: error.message
+      });
+    }
+  };
 }

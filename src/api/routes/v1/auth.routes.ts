@@ -1,15 +1,12 @@
+// src/api/routes/v1/auth.routes.ts
 import { Router } from 'express';
-import { AuthController } from '../../controllers/AuthController';
-import { authMiddleware } from '../../middlewares/auth';
+import { authController } from '../../../infrastructure/di/container';
+import { authenticate } from '../../middlewares/auth'; 
 
 const router = Router();
-const authController = new AuthController();
 
-// Rutas públicas
 router.post('/register', authController.register);
 router.post('/login', authController.login);
-
-// Ruta protegida
-router.get('/profile', authMiddleware, authController.getProfile);
+router.get('/profile', authenticate, authController.getProfile);
 
 export default router;

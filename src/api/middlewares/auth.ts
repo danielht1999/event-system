@@ -1,81 +1,82 @@
+// src/api/middlewares/auth.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { JwtService } from '../../infrastructure/services/JwtService';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mi-secreto-super-seguro-2024';
+const jwtService = new JwtService();
 
-// Extender Request de Express
 export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
-    rol: string;
+    rol: string;  // 'ORGANIZADOR' | 'ASISTENTE'
   };
 }
 
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Token no proporcionado'
     });
+    return;
   }
 
   const parts = authHeader.split(' ');
   if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Formato de token inválido. Use: Bearer <token>'
     });
+    return;
   }
 
   const token = parts[1];
+  const decoded = jwtService.verify(token);
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      email: string;
-      rol: string;
-    };
-
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      rol: decoded.rol
-    };
-
-    next();
-  } catch (error: any) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expirado'
-      });
-    }
-    return res.status(401).json({
+  if (!decoded) {
+    res.status(401).json({
       success: false,
-      message: 'Token inválido'
+      message: 'Token inválido o expirado'
     });
+    return;
   }
+
+  req.user = decoded;
+  next();
 };
 
 export const organizadorMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user?.rol !== 'organizador') {
-    return res.status(403).json({
+  if (req.user?.rol !== 'ORGANIZADOR') {
+    res.status(403).json({
       success: false,
-      message: 'Acceso denegado. Se requiere rol de organizador.'
+      message: 'Acceso denegado. Se requiere rol de ORGANIZADOR.'
     });
+    return;
   }
   next();
 };
 
 export const asistenteMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user?.rol !== 'asistente' && req.user?.rol !== 'organizador') {
-    return res.status(403).json({
+  if (req.user?.rol !== 'ASISTENTE') {
+    res.status(403).json({
       success: false,
-      message: 'Acceso denegado. Se requiere rol de asistente.'
+      message: 'Acceso denegado. Se requiere rol de ASISTENTE.'
     });
+    return;
+  }
+  next();
+};
+
+// Middleware opcional: permite ASISTENTE o ORGANIZADOR
+export const allowAsistenteOrOrganizador = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user?.rol !== 'ASISTENTE' && req.user?.rol !== 'ORGANIZADOR') {
+    res.status(403).json({
+      success: false,
+      message: 'Acceso denegado. Se requiere rol de ASISTENTE u ORGANIZADOR.'
+    });
+    return;
   }
   next();
 };

@@ -1,110 +1,46 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { Reserva } from '../../domain/entities/Reserva';
 import pool from '../../infrastructure/database/connection';
+import { CrearReservaCommand } from '../../application/commands/CrearReservaCommand';
+import { CrearReservaHandler } from '../../application/handlers/CrearReservaHandler';
 
 export class ReservaController {
+  constructor(
+    private crearReservaHandler: CrearReservaHandler
+  ) {}
   // Comprar ticket (crear reserva)
-  async crearReserva(req: Request, res: Response) {
-    const { eventoId, cantidadTickets } = req.body;
-    const usuarioId = (req as any).user?.id;
-
-    if (!usuarioId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Debes iniciar sesión para comprar tickets'
-      });
-    }
-
-    if (cantidadTickets < 1 || cantidadTickets > 4) {
-      return res.status(400).json({
-        success: false,
-        message: 'Solo puedes comprar entre 1 y 4 tickets por vez'
-      });
-    }
-
-    const client = await pool.connect();
-
+  async crearReserva(req: Request, res: Response) {    
     try {
-      await client.query('BEGIN');
-
-      // Verificar que el evento existe y está publicado
-      const eventoResult = await client.query(
-        `SELECT id, titulo, capacidad_total, reservas_confirmadas, reservas_pendientes, estado 
-         FROM eventos WHERE id = $1 FOR UPDATE`,
-        [eventoId]
-      );
-
-      if (eventoResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({
-          success: false,
-          message: 'Evento no encontrado'
-        });
+      const usuarioId = (req as any).user?.id;
+      if (!usuarioId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
       }
-
-      const evento = eventoResult.rows[0];
-
-      if (evento.estado !== 'PUBLICADO') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
+      // Validación básica de existencia de campos
+      if (!req.body.eventoId || !req.body.cantidadTickets) {
+        res.status(400).json({
           success: false,
-          message: 'Este evento no está disponible para reservas'
+          message: 'Faltan campos requeridos: evontoId , catidadTickets'
         });
+        return;
       }
-
-      // Calcular cupos disponibles
-      const cuposOcupados = evento.reservas_confirmadas + evento.reservas_pendientes;
-      const cuposDisponibles = evento.capacidad_total - cuposOcupados;
-
-      if (cuposDisponibles < cantidadTickets) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          success: false,
-          message: `No hay suficientes cupos disponibles. Quedan ${cuposDisponibles} cupos.`
-        });
-      }
-
-      // Crear la reserva
-      const reservaId = uuidv4();
-      const codigoTicket = `TICKET-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-
-      await client.query(
-        `INSERT INTO reservas (id, evento_id, usuario_id, cantidad_tickets, estado, codigo_ticket)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [reservaId, eventoId, usuarioId, cantidadTickets, 'PENDIENTE_PAGO', codigoTicket]
-      );
-
-      // Actualizar reservas pendientes del evento
-      await client.query(
-        `UPDATE eventos SET reservas_pendientes = reservas_pendientes + $1 WHERE id = $2`,
-        [cantidadTickets, eventoId]
-      );
-
-      await client.query('COMMIT');
+      const command = new CrearReservaCommand({
+        eventoId: req.body.eventoId,
+        cantidadTickets: req.body.cantidadTickets,
+        usuarioId: usuarioId
+      });
+      const result = await this.crearReservaHandler.execute(command);
 
       res.status(201).json({
         success: true,
-        message: 'Reserva creada exitosamente. Tienes 15 minutos para completar el pago.',
-        data: {
-          id: reservaId,
-          codigoTicket,
-          estado: 'PENDIENTE_PAGO',
-          cantidadTickets,
-          expiraEn: '15 minutos'
-        }
+        message: 'Reserva creada exitosamente',
+        data: result
       });
-    } catch (error: any) {
-      await client.query('ROLLBACK');
-      console.error('Error al crear reserva:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error al procesar la reserva',
-        error: error.message
-      });
-    } finally {
-      client.release();
-    }
+      } catch (error: any) {
+        const isClientError = error.message.includes('evento') || 
+                        error.message.includes('tickets');
+        const status = isClientError ? 400 : 500;
+        res.status(status).json({ success: false, message: error.message });     
+      }
   }
 
   // Confirmar pago (simulado)

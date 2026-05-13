@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Servir archivos estáticos (corregido)
+// Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting
