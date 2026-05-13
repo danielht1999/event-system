@@ -1,4 +1,4 @@
-﻿// src/infrastructure/database/connection.ts
+// src/infrastructure/database/connection.ts
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
@@ -15,13 +15,13 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-// Probar conexión
+// Probar conexion
 pool.on('connect', () => {
-  console.log('✅ Conectado a PostgreSQL');
+  console.log('? Conectado a PostgreSQL');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Error en PostgreSQL:', err);
+  console.error('? Error en PostgreSQL:', err);
 });
 
 export default pool;
