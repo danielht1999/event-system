@@ -1,4 +1,4 @@
-﻿export type EstadoReserva = 
+export type EstadoReserva = 
   | 'PENDIENTE_PAGO'
   | 'CONFIRMADA'
   | 'CANCELADA'
@@ -10,9 +10,9 @@ export class Reserva {
     public readonly id: string,
     public readonly eventoId: string,
     public readonly usuarioId: string,
-    public cantidadTickets: number,
+    public readonly cantidadTickets: number,
     private _estado: EstadoReserva,
-    public codigoTicket: string,
+    public readonly codigoTicket: string,
     public reservadoEn: Date = new Date(),
     public pagadoEn?: Date,
     public checkedInEn?: Date
@@ -25,7 +25,7 @@ export class Reserva {
       throw new Error('La cantidad de tickets debe ser mayor a 0');
     }
     if (this.cantidadTickets > 4) {
-      throw new Error('No se pueden reservar más de 4 tickets por persona');
+      throw new Error('No se pueden reservar mas de 4 tickets por persona');
     }
   }
 

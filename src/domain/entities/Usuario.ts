@@ -1,4 +1,5 @@
-﻿export type RolUsuario = 'ORGANIZADOR' | 'ASISTENTE';
+// src/domain/entities/Usuario.ts
+export type RolUsuario = 'ORGANIZADOR' | 'ASISTENTE';
 
 export class Usuario {
   constructor(
@@ -11,5 +12,14 @@ export class Usuario {
 
   esOrganizador(): boolean {
     return this.rol === 'ORGANIZADOR';
+  }
+
+  esAsistente(): boolean {
+    return this.rol === 'ASISTENTE';
+  }
+
+  cambiarRol(nuevoRol: RolUsuario): void {
+    if (this.rol === nuevoRol) return;
+    this.rol = nuevoRol;
   }
 }

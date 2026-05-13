@@ -2,11 +2,12 @@
 import { Evento } from '../entities/Evento';
 
 export interface IEventoRepository {
-  save(evento: Evento): Promise<void>;
+  save(evento: Evento): Promise<Evento>;
   findById(id: string): Promise<Evento | null>;
+  findByIdForUpdate(id: string): Promise<Evento | null>;
   findAll(): Promise<Evento[]>;
-  findByOrganizador(organizadorId: string): Promise<Evento[]>;
-  findPublicados(): Promise<Evento[]>;
-  delete(id: string): Promise<void>;
-  update(evento: Evento): Promise<void>;
+  findByOrganizadorId(organizadorId: string): Promise<Evento[]>;
+  update(id: string, evento: Partial<Evento>): Promise<Evento | null>;
+  delete(id: string): Promise<boolean>;
+  exists(id: string): Promise<boolean>; 
 }
