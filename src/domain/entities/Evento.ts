@@ -31,7 +31,7 @@ export class Evento {
     return this.capacidadTotal.value - this.reservasConfirmadas - this.reservasPendientes;
   }
 
-  reservar(cantidad): { exitosa: boolean, razon?: string }{
+  reservar(cantidad: number): { exitosa: boolean, razon?: string }{
     if(cantidad > 4) {
       return { exitosa: false, razon: 'Máximo 4 tickets por persona' }
     }
@@ -42,7 +42,7 @@ export class Evento {
     return { exitosa: true };
   }
 
-  confirmarReserva(cantidad){
+  confirmarReserva(cantidad: number){
     this.reservasPendientes -= cantidad;
     this.reservasConfirmadas+= cantidad
   }  

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middlewares/auth';
 import pool from '../../infrastructure/database/connection';
 import { CrearReservaCommand } from '../../application/commands/CrearReservaCommand';
 import { CrearReservaHandler } from '../../application/handlers/CrearReservaHandler';
@@ -8,9 +9,9 @@ export class ReservaController {
     private crearReservaHandler: CrearReservaHandler
   ) {}
   // Comprar ticket (crear reserva)
-  async crearReserva(req: Request, res: Response) {    
+  async crearReserva(req: AuthRequest, res: Response) {    
     try {
-      const usuarioId = (req as any).user?.id;
+      const usuarioId = req.user?.id;
       if (!usuarioId) {
         res.status(401).json({ success: false, message: 'No autorizado' });
         return;
@@ -44,9 +45,9 @@ export class ReservaController {
   }
 
   // Confirmar pago (simulado)
-  async confirmarPago(req: Request, res: Response) {
+  async confirmarPago(req: AuthRequest, res: Response) {
     const { id } = req.params;
-    const usuarioId = (req as any).user?.id;
+    const usuarioId = req.user?.id;
 
     const client = await pool.connect();
 
@@ -123,8 +124,8 @@ export class ReservaController {
   }
 
   // Mis reservas (historial de compras)
-  async misReservas(req: Request, res: Response) {
-    const usuarioId = (req as any).user?.id;
+  async misReservas(req: AuthRequest, res: Response) {
+    const usuarioId = req.user?.id;
 
     try {
       const result = await pool.query(
@@ -161,9 +162,9 @@ export class ReservaController {
   }
 
   // Cancelar reserva
-  async cancelarReserva(req: Request, res: Response) {
+  async cancelarReserva(req: AuthRequest, res: Response) {
     const { id } = req.params;
-    const usuarioId = (req as any).user?.id;
+    const usuarioId = req.user?.id;
 
     const client = await pool.connect();
 
