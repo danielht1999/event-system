@@ -1,5 +1,6 @@
 // src/api/controllers/AuthController.ts
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middlewares/auth';
 import { RegisterUserCommand } from '../../application/commands/RegisterUserCommand';
 import { LoginCommand } from '../../application/commands/LoginCommand';
 import { RegisterUserHandler } from '../../application/handlers/RegisterUserHandler';
@@ -87,9 +88,9 @@ export class AuthController {
     }
   };
 
-  getProfile = async (req: Request, res: Response): Promise<void> => {
+  getProfile = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id;
       
       if (!userId) {
         res.status(401).json({

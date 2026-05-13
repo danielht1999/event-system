@@ -1,10 +1,10 @@
 // src/api/controllers/EventoController.ts
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middlewares/auth';
 import { CreateEventCommand } from '../../application/commands/CreateEventCommand';
 import { CreateEventHandler } from '../../application/handlers/CreateEventHandler';
 import { IEventoRepository } from '../../domain/repositories/IEventoRepository';
 import { ListarEventosHandler } from '../../application/handlers/ListarEventosHandler';
-import { Evento } from '../../domain/entities/Evento';
 import { ListarEventosCommand } from '../../application/commands/ListarEventosCommand';
 
 export class EventoController {
@@ -80,7 +80,7 @@ export class EventoController {
         success: true,
         data: {
           capacidadTotal: evento.capacidadTotal,
-          cuposDisponibles: evento.cuposDisponibles(),
+          cuposDisponibles: evento.cuposDisponibles,
           estaLleno: evento.estaLleno()
         }
       });
@@ -94,9 +94,9 @@ export class EventoController {
   };
 
   // Crear evento (solo ORGANIZADOR)
-  crear = async (req: Request, res: Response): Promise<void> => {
+  crear = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const organizadorId = (req as any).user?.id;
+      const organizadorId = req.user?.id
       
       if (!organizadorId) {
         res.status(401).json({ success: false, message: 'No autorizado' });
@@ -128,7 +128,7 @@ export class EventoController {
   };
 
   // Actualizar evento (solo ORGANIZADOR)
-  actualizar = async (req: Request, res: Response): Promise<void> => {
+  actualizar = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       if (!this.eventoRepository) {
         res.status(500).json({ success: false, message: 'Repositorio no disponible' });
@@ -136,7 +136,7 @@ export class EventoController {
       }
       
       const { id } = req.params;
-      const organizadorId = (req as any).user?.id;
+      const organizadorId = req.user?.id;
       
       // Verificar que el evento existe y pertenece al organizador
       const evento = await this.eventoRepository.findById(id);
@@ -168,7 +168,7 @@ export class EventoController {
   };
 
   // Publicar evento (cambiar estado a publicado)
-  publicar = async (req: Request, res: Response): Promise<void> => {
+  publicar = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       if (!this.eventoRepository) {
         res.status(500).json({ success: false, message: 'Repositorio no disponible' });
@@ -176,7 +176,7 @@ export class EventoController {
       }
       
       const { id } = req.params;
-      const organizadorId = (req as any).user?.id;
+      const organizadorId = req.user?.id;
       
       const evento = await this.eventoRepository.findById(id);
       
@@ -208,7 +208,7 @@ export class EventoController {
   };
 
   // Cancelar evento (solo ORGANIZADOR)
-  cancelar = async (req: Request, res: Response): Promise<void> => {
+  cancelar = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       if (!this.eventoRepository) {
         res.status(500).json({ success: false, message: 'Repositorio no disponible' });
@@ -216,7 +216,7 @@ export class EventoController {
       }
       
       const { id } = req.params;
-      const organizadorId = (req as any).user?.id;
+      const organizadorId = req.user?.id;
       
       const evento = await this.eventoRepository.findById(id);
       
