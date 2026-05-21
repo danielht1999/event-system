@@ -8,22 +8,25 @@ export class ReservaController {
   constructor(
     private crearReservaHandler: CrearReservaHandler
   ) {}
+
   // Comprar ticket (crear reserva)
-  async crearReserva(req: AuthRequest, res: Response) {    
+  crearReserva = async (req: AuthRequest, res: Response): Promise<void> => {    
     try {
       const usuarioId = req.user?.id;
       if (!usuarioId) {
         res.status(401).json({ success: false, message: 'No autorizado' });
         return;
       }
+      
       // Validación básica de existencia de campos
       if (!req.body.eventoId || !req.body.cantidadTickets) {
         res.status(400).json({
           success: false,
-          message: 'Faltan campos requeridos: evontoId , catidadTickets'
+          message: 'Faltan campos requeridos: eventoId, cantidadTickets'
         });
         return;
       }
+      
       const command = new CrearReservaCommand({
         eventoId: req.body.eventoId,
         cantidadTickets: req.body.cantidadTickets,
@@ -36,16 +39,16 @@ export class ReservaController {
         message: 'Reserva creada exitosamente',
         data: result
       });
-      } catch (error: any) {
-        const isClientError = error.message.includes('evento') || 
-                        error.message.includes('tickets');
-        const status = isClientError ? 400 : 500;
-        res.status(status).json({ success: false, message: error.message });     
-      }
+    } catch (error: any) {
+      const isClientError = error.message.includes('evento') || 
+                            error.message.includes('tickets');
+      const status = isClientError ? 400 : 500;
+      res.status(status).json({ success: false, message: error.message });     
+    }
   }
 
   // Confirmar pago (simulado)
-  async confirmarPago(req: AuthRequest, res: Response) {
+  confirmarPago = async (req: AuthRequest, res: Response): Promise<any> => {
     const { id } = req.params;
     const usuarioId = req.user?.id;
 
@@ -124,7 +127,7 @@ export class ReservaController {
   }
 
   // Mis reservas (historial de compras)
-  async misReservas(req: AuthRequest, res: Response) {
+  misReservas = async (req: AuthRequest, res: Response): Promise<void> => {
     const usuarioId = req.user?.id;
 
     try {
@@ -162,7 +165,7 @@ export class ReservaController {
   }
 
   // Cancelar reserva
-  async cancelarReserva(req: AuthRequest, res: Response) {
+  cancelarReserva = async (req: AuthRequest, res: Response): Promise<any> => {
     const { id } = req.params;
     const usuarioId = req.user?.id;
 
