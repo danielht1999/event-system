@@ -3,6 +3,7 @@ interface Evento {
   titulo: string
   lugar: string
   precio: number
+  cuposDisponibles: number
 }
 
 interface Props {
@@ -18,12 +19,14 @@ function EventoCard({ evento, onComprar }: Props) {
       <div className="precio">
         {evento.precio === 0 ? 'Gratis' : `$${evento.precio}`}
       </div>
-      <button 
+      <p>{evento.cuposDisponibles} cupos disponibles</p>
+      <button
         className="btn btn-primary"
         style={{ marginTop: '12px' }}
         onClick={() => onComprar(evento.id, evento.titulo)}
+        disabled={evento.cuposDisponibles === 0}
       >
-        Comprar Ticket
+        {evento.cuposDisponibles === 0 ? 'Sin cupos' : 'Comprar Ticket'}
       </button>
     </div>
   )
