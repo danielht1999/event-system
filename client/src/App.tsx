@@ -141,6 +141,40 @@ function App() {
       })
   }
 
+  const handleConfirmarPago = async (reservaId: string) => {
+  try {
+    const response = await fetch(`/api/v1/reservas/${reservaId}/pagar`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await response.json()
+    if (data.success) {
+      cargarReservas()
+    } else {
+      alert(data.message)
+    }
+  } catch {
+    alert('Error al confirmar pago')
+  }
+}
+
+const handleCancelar = async (reservaId: string) => {
+  try {
+    const response = await fetch(`/api/v1/reservas/${reservaId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await response.json()
+    if (data.success) {
+      cargarReservas()
+    } else {
+      alert(data.message)
+    }
+  } catch {
+    alert('Error al cancelar reserva')
+  }
+}
+
   return (
     <div className="app">
 
@@ -185,7 +219,10 @@ function App() {
           )}
           
           {/* ── Mis Reservas: Solo visible si el usuario inició sesión ── */}
-          {token && <MyReservations reservas={reservas} />}
+          {token && <MyReservations reservas={reservas}
+            onConfirmarPago={handleConfirmarPago}
+            onCancelar={handleCancelar} />
+          }
 
           {/* ── Lista de eventos ── */}
           <h2 className="section-title">Eventos disponibles</h2>

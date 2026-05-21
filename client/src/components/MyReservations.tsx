@@ -1,10 +1,12 @@
 // PROPS - Recibe los datos listos desde el padre (App)
 interface Props {
   reservas: any[]
+  onConfirmarPago: (reservaId: string) => void
+  onCancelar: (reservaId: string) => void
 }
 
 // COMPONENTE - Función pura que renderiza la pantalla basándose en sus props
-function MisReservas({ reservas }: Props) {   
+function MisReservas({ reservas, onConfirmarPago, onCancelar }: Props) {   
 
   // RENDERIZADO CONDICIONAL
 
@@ -41,6 +43,16 @@ function MisReservas({ reservas }: Props) {
                 <code className="codigo-ticket">{reserva.codigoTicket}</code>
               </p>
             </div>
+            {reserva.estado === 'PENDIENTE_PAGO' && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <button className="btn btn-primary" onClick={() => onConfirmarPago(reserva.id)}>
+                  Pagar
+                </button>
+                <button className="btn btn-danger" onClick={() => onCancelar(reserva.id)}>
+                  Cancelar
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
