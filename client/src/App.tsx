@@ -11,6 +11,7 @@ interface Evento {
   titulo: string
   lugar: string
   precio: number
+  cuposDisponibles: number
 }
 
 interface User {
