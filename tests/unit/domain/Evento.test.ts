@@ -1,20 +1,20 @@
-﻿import { Evento } from '../../../src/domain/entities/Evento';
-import { Capacidad } from '../../../src/domain/value-objects/Capacidad';
-import { FechaEvento } from '../../../src/domain/value-objects/FechaEvento';
+﻿import { Event } from '../../../src/modules/event/domain/entities/Event';
+import { Capacity } from '../../../src/modules/event/domain/value-objects/Capacity';
+import { EventDate } from '../../../src/modules/event/domain/value-objects/EventDate';
 
 describe('Evento', () => {
-  let evento: Evento;
+  let evento: Event;
   const fechaFutura = new Date();
   fechaFutura.setDate(fechaFutura.getDate() + 30);
 
   beforeEach(() => {
-    evento = new Evento(
+    evento = new Event(
     '1',                                          // id
     'Conferencia DevOps',                         // titulo
     'La mejor conferencia de DevOps',            // descripcion
-    FechaEvento.crear(fechaFutura),              // fecha 
+    EventDate.create(fechaFutura),              // fecha 
     'Centro de Convenciones',                    // lugar
-    new Capacidad(100),                           // capacidad
+    new Capacity(100),                           // capacidad
     50,                                           // precio
     'org-123',                                    // organizadorId
     0,                                            // reservasConfirmadas

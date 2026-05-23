@@ -5,8 +5,8 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
-import { errorHandler } from './api/middlewares/errorHandler';
-import { v1Routes } from './api/routes/v1';
+import { errorHandler } from '@shared/api/middlewares/errorHandler';
+import { v1Routes } from '@shared/api/routes/v1';
 
 dotenv.config();
 
