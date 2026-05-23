@@ -1,11 +1,11 @@
 // tests/unit/domain/Reserva.test.ts
-import { Reserva } from '../../../src/domain/entities/Reserva';
+import { Reservation } from '../../../src/modules/reservation/domain/entities/Reservation';
 
 describe('Reserva', () => {
-  let reserva: Reserva;
+  let reserva: Reservation;
 
   beforeEach(() => {
-    reserva = new Reserva(
+    reserva = new Reservation(
       '1',
       'evento-1',
       'usuario-1',
@@ -23,7 +23,7 @@ describe('Reserva', () => {
 
     test('deberia asignar fecha de reserva automáticamente', () => {
       const antes = new Date();
-      const nuevaReserva = new Reserva(
+      const nuevaReserva = new Reservation(
         '5',
         'evento-1',
         'usuario-1',
@@ -38,7 +38,7 @@ describe('Reserva', () => {
     });
 
     test('no deberia permitir cantidad negativa', () => {
-      expect(() => new Reserva(
+      expect(() => new Reservation(
         '2',
         'evento-1',
         'usuario-1',
@@ -49,7 +49,7 @@ describe('Reserva', () => {
     });
 
     test('no deberia permitir mas de 4 tickets', () => {
-      expect(() => new Reserva(
+      expect(() => new Reservation(
         '3',
         'evento-1',
         'usuario-1',
@@ -60,7 +60,7 @@ describe('Reserva', () => {
     });
 
     test('deberia tener código de ticket único', () => {
-      const reserva1 = new Reserva(
+      const reserva1 = new Reservation(
         '1',
         'evento-1',
         'usuario-1',
@@ -68,7 +68,7 @@ describe('Reserva', () => {
         'PENDIENTE_PAGO',
         'TICKET-UNICO-1'
       );
-      const reserva2 = new Reserva(
+      const reserva2 = new Reservation(
         '2',
         'evento-1',
         'usuario-2',
@@ -81,7 +81,7 @@ describe('Reserva', () => {
     });
 
     test('deberia mantener la integridad de los datos', () => {
-      const reservaOriginal = new Reserva(
+      const reservaOriginal = new Reservation(
         '8',
         'evento-1',
         'usuario-1',
@@ -125,7 +125,7 @@ describe('Reserva', () => {
     });
 
     test('no deberia confirmar pago si esta expirada', () => {
-      const reservaExpirada = new Reserva(
+      const reservaExpirada = new Reservation(
         '4',
         'evento-1',
         'usuario-1',
@@ -169,7 +169,7 @@ describe('Reserva', () => {
     });
 
     test('deberia poder cancelar una reserva expirada', () => {
-      const reservaExpirada = new Reserva(
+      const reservaExpirada = new Reservation(
         '9',
         'evento-1',
         'usuario-1',
@@ -214,7 +214,7 @@ describe('Reserva', () => {
     });
 
     test('no deberia hacer check-in si esta expirada', () => {
-      const reservaExpirada = new Reserva(
+      const reservaExpirada = new Reservation(
         '10',
         'evento-1',
         'usuario-1',
@@ -270,7 +270,7 @@ describe('Reserva', () => {
     });
 
     test('estado expirada no permite confirmar pago', () => {
-      const reservaExpirada = new Reserva(
+      const reservaExpirada = new Reservation(
         '11',
         'evento-1',
         'usuario-1',

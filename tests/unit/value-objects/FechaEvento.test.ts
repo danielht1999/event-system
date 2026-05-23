@@ -1,4 +1,4 @@
-import { FechaEvento } from '../../../src/domain/value-objects/FechaEvento';
+import { EventDate } from '../../../src/modules/event/domain/value-objects/EventDate';
 
 describe('FechaEvento', () => {
   const fechaFutura = new Date();
@@ -9,7 +9,7 @@ describe('FechaEvento', () => {
 
   describe('crear()', () => {
     test('fecha futura válida', () => {
-      const fecha = FechaEvento.crear(fechaFutura);
+      const fecha = EventDate.create(fechaFutura);
 
       expect(fecha).toBeDefined();
       expect(fecha.value).toEqual(fechaFutura);
@@ -18,26 +18,26 @@ describe('FechaEvento', () => {
     });
 
     test('fecha pasada', () => {
-      expect(() => FechaEvento.crear(fechaPasada)).toThrow('No se puede crear un evento en el pasado');
+      expect(() => EventDate.create(fechaPasada)).toThrow('No se puede crear un evento en el pasado');
     });
 
     test('fecha inválida', () => {
       const fechaInvalida = new Date('2025-13-45');
 
-      expect(() => FechaEvento.crear(fechaInvalida)).toThrow('Fecha invalida');
+      expect(() => EventDate.create(fechaInvalida)).toThrow('Fecha invalida');
     });
   });
 
   describe('reconstruir()', () => {
     test('fecha pasada', () => {
-      const fecha = FechaEvento.reconstruir(fechaPasada);
+      const fecha = EventDate.reconstruct(fechaPasada);
 
       expect(fecha).toBeDefined();
       expect(fecha.value).toEqual(fechaPasada);
     });
 
     test('fecha futura', () => {
-      const fecha = FechaEvento.reconstruir(fechaFutura);
+      const fecha = EventDate.reconstruct(fechaFutura);
 
       expect(fecha).toBeDefined();
       expect(fecha.value.getTime()).toBeGreaterThan(Date.now());
@@ -46,35 +46,35 @@ describe('FechaEvento', () => {
 
   describe('esHoy()', () => {
     test('fecha de hoy', () => {
-      const fecha = FechaEvento.reconstruir(new Date());
+      const fecha = EventDate.reconstruct(new Date());
 
       expect(fecha).toBeDefined();
-      expect(fecha.esHoy()).toBe(true);
+      expect(fecha.isToday()).toBe(true);
     });
 
     test('fecha futura', () => {
-      const fecha = FechaEvento.crear(fechaFutura);
+      const fecha = EventDate.create(fechaFutura);
 
       expect(fecha).toBeDefined();
-      expect(fecha.esHoy()).toBe(false);
+      expect(fecha.isToday()).toBe(false);
     });
   });
 
   describe('faltaParaEvento()', () => {
     test('evento en 30 días', () => {
-      const fecha = FechaEvento.crear(fechaFutura);
+      const fecha = EventDate.create(fechaFutura);
 
       expect(fecha).toBeDefined();
-      expect(fecha.faltaParaEvento()).toEqual(30);
+      expect(fecha.daysUntilEvent()).toEqual(30);
     });
 
     test('evento en 1 día ', () => {
       const fechaManana = new Date();
       fechaManana.setDate(fechaManana.getDate() + 1);
-      const fecha = FechaEvento.crear(fechaManana);
+      const fecha = EventDate.create(fechaManana);
 
       expect(fecha).toBeDefined();
-      expect(fecha.faltaParaEvento()).toEqual(1);
+      expect(fecha.daysUntilEvent()).toEqual(1);
     });
     
   });
