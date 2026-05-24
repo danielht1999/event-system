@@ -4,10 +4,16 @@ import { AuthRequest } from '@shared/api/middlewares/auth';
 import pool from '@shared/infrastructure/database/connection';
 import { CreateReservationCommand } from '../../application/commands/CreateReservationCommand';
 import { CreateReservationHandler } from '../../application/commands/CreateReservationHandler';
+import { ConfirmPaymentCommand } from '../../application/commands/ConfirmPaymentCommand';
+import { ConfirmPaymentHandler } from '../../application/commands/ConfirmPaymentHandler';
+import { CancelReservationCommand } from '../../application/commands/CancelReservationCommand';
+import { CancelReservationHandler } from '../../application/commands/CancelReservationHandler';
 
 export class ReservationController {
   constructor(
-    private createReservationHandler: CreateReservationHandler
+    private createReservationHandler: CreateReservationHandler,
+    private confirmPaymentHandler: ConfirmPaymentHandler,
+    private cancelReservationHandler: CancelReservationHandler
   ) {}
 
   // Comprar ticket (crear reserva)
@@ -47,86 +53,37 @@ export class ReservationController {
       res.status(status).json({ success: false, message: error.message });     
     }
   }
-
-  // Confirmar pago (simulado)
+  
   confirmPayment = async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
     const { id } = req.params;
-    const usuarioId = req.user?.id;
+    const userId = req.user?.id;
 
-    const client = await pool.connect();
-
-    try {
-      await client.query('BEGIN');
-
-      const reservaResult = await client.query(
-        'SELECT * FROM reservas WHERE id = $1 FOR UPDATE',
-        [id]
-      );
-
-      if (reservaResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({
-          success: false,
-          message: 'Reserva no encontrada'
-        });
-      }
-
-      const reserva = reservaResult.rows[0];
-
-      if (reserva.usuario_id !== usuarioId) {
-        await client.query('ROLLBACK');
-        return res.status(403).json({
-          success: false,
-          message: 'No tienes permiso para confirmar esta reserva'
-        });
-      }
-
-      if (reserva.estado !== 'PENDIENTE_PAGO') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          success: false,
-          message: `La reserva ya está ${reserva.estado}`
-        });
-      }
-
-      // Confirmar pago
-      await client.query(
-        `UPDATE reservas SET estado = 'CONFIRMADA', pagado_en = NOW() WHERE id = $1`,
-        [id]
-      );
-
-      // Actualizar reservas confirmadas del evento
-      await client.query(
-        `UPDATE eventos 
-         SET reservas_confirmadas = reservas_confirmadas + $1,
-             reservas_pendientes = reservas_pendientes - $1
-         WHERE id = $2`,
-        [reserva.cantidad_tickets, reserva.evento_id]
-      );
-
-      await client.query('COMMIT');
-
-      res.json({
-        success: true,
-        message: '¡Pago confirmado! Tu ticket ha sido emitido.',
-        data: {
-          id: reserva.id,
-          estado: 'CONFIRMADA',
-          codigoTicket: reserva.codigo_ticket
-        }
-      });
-    } catch (error: any) {
-      await client.query('ROLLBACK');
-      res.status(500).json({
-        success: false,
-        message: 'Error al confirmar pago',
-        error: error.message
-      });
-    } finally {
-      client.release();
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'No autorizado' });
+      return;
     }
-  }
 
+    const command = new ConfirmPaymentCommand({
+      reservationId: id,
+      usuarioId: userId
+    });
+
+    const result = await this.confirmPaymentHandler.execute(command);
+
+    res.json({
+      success: true,
+      message: 'Pago confirmado exitosamente',
+      data: result
+    });
+  } catch (error: any) {
+    const status = error.message.includes('encontrada') ? 404 :
+                   error.message.includes('permiso') ? 403 :
+                   error.message.includes('pendiente') ? 400 : 500;
+    res.status(status).json({ success: false, message: error.message });
+  }
+  }
+  
   // Mis reservas (historial de compras)
   myReservations = async (req: AuthRequest, res: Response): Promise<void> => {
     const usuarioId = req.user?.id;
@@ -167,77 +124,32 @@ export class ReservationController {
 
   // Cancelar reserva
   cancelReservation = async (req: AuthRequest, res: Response): Promise<any> => {
-    const { id } = req.params;
-    const usuarioId = req.user?.id;
-
-    const client = await pool.connect();
-
     try {
-      await client.query('BEGIN');
+    const { id } = req.params;
+    const userId = req.user?.id;
 
-      const reservaResult = await client.query(
-        'SELECT * FROM reservas WHERE id = $1 FOR UPDATE',
-        [id]
-      );
-
-      if (reservaResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({
-          success: false,
-          message: 'Reserva no encontrada'
-        });
-      }
-
-      const reserva = reservaResult.rows[0];
-
-      if (reserva.usuario_id !== usuarioId) {
-        await client.query('ROLLBACK');
-        return res.status(403).json({
-          success: false,
-          message: 'No tienes permiso para cancelar esta reserva'
-        });
-      }
-
-      if (reserva.estado === 'CONFIRMADA') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          success: false,
-          message: 'No puedes cancelar una reserva ya confirmada'
-        });
-      }
-
-      if (reserva.estado === 'CANCELADA') {
-        await client.query('ROLLBACK');
-        return res.status(400).json({
-          success: false,
-          message: 'La reserva ya está cancelada'
-        });
-      }
-
-      await client.query(
-        `UPDATE reservas SET estado = 'CANCELADA' WHERE id = $1`,
-        [id]
-      );
-
-      await client.query(
-        `UPDATE eventos SET reservas_pendientes = reservas_pendientes - $1 WHERE id = $2`,
-        [reserva.cantidad_tickets, reserva.evento_id]
-      );
-
-      await client.query('COMMIT');
-
-      res.json({
-        success: true,
-        message: 'Reserva cancelada exitosamente'
-      });
-    } catch (error: any) {
-      await client.query('ROLLBACK');
-      res.status(500).json({
-        success: false,
-        message: 'Error al cancelar reserva'
-      });
-    } finally {
-      client.release();
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'No autorizado' });
+      return;
     }
+
+    const command = new CancelReservationCommand({
+      reservationId: id,
+      usuarioId: userId
+    });
+
+    const result = await this.cancelReservationHandler.execute(command);
+
+    res.json({
+      success: true,
+      message: 'Cancelacion confirmado exitosamente',
+      data: result
+    });
+  } catch (error: any) {
+    const status = error.message.includes('encontrada') ? 404 :
+                   error.message.includes('permiso') ? 403 :
+                   error.message.includes('pendiente') ? 400 : 500;
+    res.status(status).json({ success: false, message: error.message });
+  }
   }
 }
