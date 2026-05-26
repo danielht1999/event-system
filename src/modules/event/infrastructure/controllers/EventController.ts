@@ -5,12 +5,15 @@ import { CreateEventCommand } from '../../application/commands/CreateEventComman
 import { CreateEventHandler } from '../../application/commands/CreateEventHandler';
 import { IEventRepository } from '../../domain/repositories/IEventRepository';
 import { GetEventsHandler } from '../../application/queries/GetEventsHandler';
+import { GetEventsByOrganizerHandler } from '../../application/queries/GetEventsByOrganizerHandler';
+import { GetEventsByOrganizerQuery } from '../../application/queries/GetEventsByOrganizerQuery';
 
 export class EventController {
   constructor(
     private createEventHandler: CreateEventHandler,
     private eventRepository: IEventRepository,
-    private getEventsHandler: GetEventsHandler
+    private getEventsHandler: GetEventsHandler,
+    private getEventsByOrganizerHandler: GetEventsByOrganizerHandler
   ) {}
 
   // Listar todos los eventos (público)
@@ -102,7 +105,7 @@ export class EventController {
 
       const command = new CreateEventCommand({
         ...req.body,
-        organizerId
+        organizadorId: organizerId
       });
 
       const event = await this.createEventHandler.execute(command);
@@ -187,8 +190,7 @@ export class EventController {
         return;
       }
       
-      // TODO: Agregar campo 'publicado' a la entidad Event
-      const updatedEvent = await this.eventRepository.update(id, { published: true } as any);
+      const updatedEvent = await this.eventRepository.update(id, { estado: 'PUBLICADA' } as any);
       
       res.json({
         success: true,
@@ -241,4 +243,26 @@ export class EventController {
       });
     }
   };
+
+  misEventos = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const organizerId = req.user?.id;
+    
+    if (!organizerId) {
+      res.status(401).json({ success: false, message: 'No autorizado' });
+      return;
+    }
+
+    const query = new GetEventsByOrganizerQuery(organizerId);
+    const result = await this.getEventsByOrganizerHandler.execute(query);
+
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al listar eventos del organizador',
+      error: error.message
+    });
+  }
+}
 }

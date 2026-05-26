@@ -7,8 +7,9 @@ import { eventController } from '@shared/infrastructure/di/container';
 
 const router = Router();
 
-// Rutas públicas
+/// Rutas públicas
 router.get('/', eventController.listar);
+router.get('/mis-eventos', authenticate, organizadorMiddleware, eventController.misEventos); // ← aquí
 router.get('/:id', eventController.obtener);
 router.get('/:id/disponibilidad', eventController.verDisponibilidad);
 

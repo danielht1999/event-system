@@ -17,6 +17,7 @@ import { ReservationController } from '@modules/reservation/infrastructure/contr
 import { ReservationTransactionService } from '@modules/reservation/infrastructure/services/ReservationTransactionService';
 import { ConfirmPaymentHandler } from '@modules/reservation/application/commands/ConfirmPaymentHandler';
 import { CancelReservationHandler } from '@modules/reservation/application/commands/CancelReservationHandler';
+import { GetEventsByOrganizerHandler } from '@modules/event/application/queries/GetEventsByOrganizerHandler';
 
 import pool from '@shared/infrastructure/database/connection';
 
@@ -39,6 +40,9 @@ const createReservationHandler = new CreateReservationHandler(reservationTransac
 const confirmPaymentHandler = new ConfirmPaymentHandler(reservationTransactionService);
 const cancelReservationHandler = new CancelReservationHandler(reservationTransactionService);
 
+//Queries
+const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventRepository);
+
 // Controllers
 export const authController = new AuthController(
   registerHandler,
@@ -49,7 +53,8 @@ export const authController = new AuthController(
 export const eventController = new EventController(
   createEventHandler,
   eventRepository,
-  getEventsHandler
+  getEventsHandler,
+  getEventsByOrganizerHandler
 );
 
 export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler,cancelReservationHandler);

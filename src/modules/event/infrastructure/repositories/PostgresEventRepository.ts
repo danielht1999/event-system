@@ -88,6 +88,10 @@ export class PostgresEventRepository implements IEventRepository {
       fields.push(`precio = $${idx++}`);
       values.push(event.precio);
     }
+    if (event.estado !== undefined) {
+      fields.push(`estado = $${idx++}`);
+      values.push(event.estado);
+    }
 
     if (fields.length === 0) return null;
 

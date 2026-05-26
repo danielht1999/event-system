@@ -5,6 +5,11 @@ import Register from './components/Register'
 import CrearEvento from './components/CrearEvento'
 import MyReservations from './components/MyReservations'
 import ComprarModal from './components/ComprarModal'
+import MyEvents from './components/MyEvents'
+
+// ============================================================================
+// TIPOS E INTERFACES
+// ============================================================================
 
 interface Evento {
   id: string
@@ -21,18 +26,35 @@ interface User {
   rol: string
 }
 
-function App() {
-  // ── Estado global de la app ──────────────────────────────
-  const [eventos, setEventos] = useState<Evento[]>([])      // lista de eventos de la API
-  const [cargando, setCargando] = useState(true)            // spinner mientras carga
-  const [comprando, setComprando] = useState(false)         // loader exclusivo para el botón del modal
-  const [token, setToken] = useState<string | null>(null)   // JWT del usuario logueado
-  const [user, setUser] = useState<User | null>(null)       // datos del usuario logueado
-  const [mostrarRegistro, setMostrarRegistro] = useState(false) // alterna login/registro
-  const [eventoSeleccionado, setEventoSeleccionado] = useState<{id: string, titulo: string} | null>(null) // Estado del modal  
-  const [reservas, setReservas] = useState<any[]>([])       // Estado de reservas compartido
+// ============================================================================
+// COMPONENTE PRINCIPAL APP
+// ============================================================================
 
-  // ── Función para cargar reservas desde la API ───────────
+function App() {
+  
+  // --------------------------------------------------------------------------
+  // 1. ESTADO GLOBAL DE LA APLICACIÓN
+  // --------------------------------------------------------------------------
+  
+  const [eventos, setEventos] = useState<Evento[]>([])      // Lista de eventos de la API
+  const [cargando, setCargando] = useState(true)           // Spinner mientras carga eventos
+  const [comprando, setComprando] = useState(false)        // Loader exclusivo para el botón del modal
+  const [token, setToken] = useState<string | null>(null)  // JWT del usuario logueado
+  const [user, setUser] = useState<User | null>(null)      // Datos del usuario logueado
+  const [mostrarRegistro, setMostrarRegistro] = useState(false) // Alterna login/registro
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<{id: string, titulo: string} | null>(null) // Estado del modal de compra
+  const [reservas, setReservas] = useState<any[]>([])      // Lista de reservas del usuario
+  const [misEventos, setMisEventos] = useState<any[]>([])      
+
+  
+
+  // --------------------------------------------------------------------------
+  // 2. FUNCIONES DE CARGA DE DATOS (API CALLS)
+  // --------------------------------------------------------------------------
+  
+  /**
+   * Carga las reservas del usuario actual desde la API
+   */
   const cargarReservas = () => {
     if (!token) return
     fetch('/api/v1/reservas/mis-reservas', {
@@ -45,25 +67,70 @@ function App() {
       .catch(err => console.error('Error al cargar reservas:', err))
   }
 
-  // Cargar reservas cuando el token cambia (inicio de sesión o restauración)
-  useEffect(() => {
-    if (token) {
-      cargarReservas()
-    } else {
-      setReservas([]) // Limpia el estado al cerrar sesión
-    }
-  }, [token])
+  /**
+   * Recarga la lista de eventos desde la API
+   */
+  const recargarEventos = () => {
+    fetch('/api/v1/eventos')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setEventos(data.data)
+      })
+  }
 
+  const cargarMisEventos = () =>{
+    fetch('/api/v1/eventos/mis-eventos',{
+    headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setMisEventos(data.data)
+      })
+  }
+
+  // --------------------------------------------------------------------------
+  // 3. MANEJADORES DE AUTENTICACIÓN
+  // --------------------------------------------------------------------------
+  
+  /**
+   * Guarda token y datos del usuario al hacer login o registro
+   */
+  const handleLogin = (nuevoToken: string, nuevoUser: User) => {
+    setToken(nuevoToken)
+    setUser(nuevoUser)
+    localStorage.setItem('token', nuevoToken)
+    localStorage.setItem('user', JSON.stringify(nuevoUser))
+  }
+
+  /**
+   * Limpia la sesión al cerrar sesión
+   */
+  const handleLogout = () => {
+    setToken(null)
+    setUser(null)
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+  }
+
+  // --------------------------------------------------------------------------
+  // 4. MANEJADORES DE COMPRA Y RESERVAS
+  // --------------------------------------------------------------------------
+  
+  /**
+   * Abre el modal de compra para un evento específico
+   */
   const handleAbrirModal = (eventoId: string, eventoTitulo: string) => {
     if (!token) {
-      // Sin sesion → sube al login
+      // Sin sesión → sube al login
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
     setEventoSeleccionado({ id: eventoId, titulo: eventoTitulo })
   }
 
-  // Se llama cuando el usuario confirma la cantidad en el modal
+  /**
+   * Confirma la compra de tickets desde el modal
+   */
   const handleConfirmarCompra = async (cantidad: number) => {
     if (!eventoSeleccionado || !token) return
 
@@ -85,7 +152,7 @@ function App() {
 
       if (data.success) {
         setEventoSeleccionado(null) // Cierra el modal de inmediato
-        cargarReservas()            // Recarga el listado al instante (Sincronización Opción B)
+        cargarReservas()            // Recarga el listado al instante
       } else {
         alert(data.message)
       }
@@ -96,7 +163,98 @@ function App() {
     }
   }
 
-  // ── Al iniciar: recupera sesion guardada en localStorage ─
+  /**
+   * Confirma el pago de una reserva pendiente
+   */
+  const handleConfirmarPago = async (reservaId: string) => {
+    try {
+      const response = await fetch(`/api/v1/reservas/${reservaId}/pagar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await response.json()
+      if (data.success) {
+        cargarReservas()
+      } else {
+        alert(data.message)
+      }
+    } catch {
+      alert('Error al confirmar pago')
+    }
+  }
+
+  /**
+   * Cancela una reserva existente
+   */
+  const handleCancelarReserva = async (reservaId: string) => {
+    try {
+      const response = await fetch(`/api/v1/reservas/${reservaId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await response.json()
+      if (data.success) {
+        cargarReservas()
+      } else {
+        alert(data.message)
+      }
+    } catch {
+      alert('Error al cancelar reserva')
+    }
+  }
+
+  const handlePublicarEvento = async (eventoId: string) => {
+    if (!token) return
+    try {
+      const response = await fetch(`/api/v1/eventos/${eventoId}/publicar`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        recargarEventos()    // actualiza lista pública
+        cargarMisEventos()   // actualiza lista del organizador
+      } else {
+        alert(data.message)
+      }
+    } catch {
+      alert('Error al publicar evento')
+    } 
+  }
+
+  const handleCancelarEvento = async (eventoId: string) => {
+    if (!token) return
+    try {
+      const response = await fetch(`/api/v1/eventos/${eventoId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        recargarEventos()    // actualiza lista pública
+        cargarMisEventos()   // actualiza lista del organizador
+      } else {
+        alert(data.message)
+      }
+    } catch {
+      alert('Error al cancelar evento')
+    } 
+  }
+
+
+
+
+  // --------------------------------------------------------------------------
+  // 5. EFECTOS SECUNDARIOS (useEffect)
+  // --------------------------------------------------------------------------
+  
+  /**
+   * Restaura la sesión desde localStorage al iniciar la app
+   */
   useEffect(() => {
     const tokenGuardado = localStorage.getItem('token')
     const userGuardado = localStorage.getItem('user')
@@ -106,7 +264,9 @@ function App() {
     }
   }, [])
 
-  // ── Al iniciar: carga eventos desde la API ───────────────
+  /**
+   * Carga la lista de eventos desde la API al iniciar la app
+   */
   useEffect(() => {
     fetch('/api/v1/eventos')
       .then(res => res.json())
@@ -117,69 +277,34 @@ function App() {
       .catch(() => setCargando(false))
   }, [])
 
-  // ── Guarda token y user al hacer login o registro ────────
-  const handleLogin = (nuevoToken: string, nuevoUser: User) => {
-    setToken(nuevoToken)
-    setUser(nuevoUser)
-    localStorage.setItem('token', nuevoToken)
-    localStorage.setItem('user', JSON.stringify(nuevoUser))
-  }
-
-  // ── Borra token y user al cerrar sesion ──────────────────
-  const handleLogout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-  }
-    
-  // ── recarga los eventos(los eventos creados) ──────────────────
-  const recargarEventos = () => {
-    fetch('/api/v1/eventos')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setEventos(data.data)
-      })
-  }
-
-  const handleConfirmarPago = async (reservaId: string) => {
-  try {
-    const response = await fetch(`/api/v1/reservas/${reservaId}/pagar`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const data = await response.json()
-    if (data.success) {
+  /**
+   * Carga las reservas cuando el token cambia (login/restauración/cierre)
+   */
+  useEffect(() => {
+    if (token) {
       cargarReservas()
     } else {
-      alert(data.message)
+      setReservas([]) // Limpia el estado al cerrar sesión
     }
-  } catch {
-    alert('Error al confirmar pago')
+  }, [token])
+  
+  //Carga los eventos del organizador cuando el token o rol cambian
+  useEffect(() => {
+  if (token && user?.rol === 'ORGANIZADOR') {
+    cargarMisEventos()
+  } else {
+    setMisEventos([])
   }
-}
+  }, [token, user])
 
-const handleCancelar = async (reservaId: string) => {
-  try {
-    const response = await fetch(`/api/v1/reservas/${reservaId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const data = await response.json()
-    if (data.success) {
-      cargarReservas()
-    } else {
-      alert(data.message)
-    }
-  } catch {
-    alert('Error al cancelar reserva')
-  }
-}
-
+  // --------------------------------------------------------------------------
+  // 6. RENDERIZADO (JSX)
+  // --------------------------------------------------------------------------
+  
   return (
     <div className="app">
 
-      {/* ── Header ── */}
+      {/* ===== HEADER ===== */}
       <header className="header">
         <div className="container header-content">
           <h1>Sistema de Eventos</h1>
@@ -187,7 +312,7 @@ const handleCancelar = async (reservaId: string) => {
             <div className="header-user">
               <span>Hola, {user.nombre}</span>
               <button onClick={handleLogout} className="btn btn-outline">
-                Cerrar Sesion
+                Cerrar Sesión
               </button>
             </div>
           )}
@@ -197,7 +322,7 @@ const handleCancelar = async (reservaId: string) => {
       <main className="main">
         <div className="container">
 
-          {/* ── Auth ── */}
+          {/* ===== SECCIÓN DE AUTENTICACIÓN ===== */}
           {!token && (
             <div style={{ maxWidth: '420px', margin: '0 auto' }}>
               {mostrarRegistro ? (
@@ -208,24 +333,34 @@ const handleCancelar = async (reservaId: string) => {
               <p className="form-toggle">
                 {mostrarRegistro ? '¿Ya tienes cuenta? ' : '¿No tienes cuenta? '}
                 <button onClick={() => setMostrarRegistro(!mostrarRegistro)}>
-                  {mostrarRegistro ? 'Inicia sesion' : 'Registrate'}
+                  {mostrarRegistro ? 'Inicia sesión' : 'Regístrate'}
                 </button>
               </p>
             </div>
           )}
 
-          {/* ── CrearEvento: solo visible si es ORGANIZADOR ── */}
+          {/* ===== CREAR EVENTO (solo para ORGANIZADOR) ===== */}
           {token && user?.rol === 'ORGANIZADOR' && (
             <CrearEvento token={token} onEventoCreado={recargarEventos} />
           )}
-          
-          {/* ── Mis Reservas: Solo visible si el usuario inició sesión ── */}
-          {token && <MyReservations reservas={reservas}
-            onConfirmarPago={handleConfirmarPago}
-            onCancelar={handleCancelar} />
-          }
 
-          {/* ── Lista de eventos ── */}
+          {/* ===== EVENTOS CREADOS (solo para ORGANIZADOR) ===== */}
+          {token && user?.rol === 'ORGANIZADOR' && (
+            <MyEvents eventos={misEventos} 
+            onPublicarEvento={handlePublicarEvento} 
+            onCancelarEvento={handleCancelarEvento} />
+          )}
+          
+          {/* ===== MIS RESERVAS (solo usuarios autenticados) ===== */}
+          {token && (
+            <MyReservations 
+              reservas={reservas}
+              onConfirmarPago={handleConfirmarPago}
+              onCancelar={handleCancelarReserva} 
+            />
+          )}
+
+          {/* ===== LISTA DE EVENTOS DISPONIBLES ===== */}
           <h2 className="section-title">Eventos disponibles</h2>
           {cargando ? (
             <p className="empty">Cargando eventos...</p>
@@ -243,7 +378,7 @@ const handleCancelar = async (reservaId: string) => {
             </div>
           )}
 
-          {/* ── Modal de Compra ── */}
+          {/* ===== MODAL DE COMPRA ===== */}
           {eventoSeleccionado && (
             <ComprarModal
               eventoTitulo={eventoSeleccionado.titulo}
