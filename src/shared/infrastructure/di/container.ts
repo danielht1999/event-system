@@ -18,6 +18,7 @@ import { ReservationTransactionService } from '@modules/reservation/infrastructu
 import { ConfirmPaymentHandler } from '@modules/reservation/application/commands/ConfirmPaymentHandler';
 import { CancelReservationHandler } from '@modules/reservation/application/commands/CancelReservationHandler';
 import { GetEventsByOrganizerHandler } from '@modules/event/application/queries/GetEventsByOrganizerHandler';
+import { PostgresEventQueryService } from '@modules/event/infrastructure/queries/PostgresEventQueryService';
 
 import pool from '@shared/infrastructure/database/connection';
 
@@ -30,18 +31,21 @@ const reservationTransactionService = new ReservationTransactionService(pool);
 const passwordHasher = new BcryptPasswordHasher();
 const jwtService = new JwtService();
 
+// Query Service
+const eventQueryService = new PostgresEventQueryService();
+
 // Handlers
 const registerHandler = new RegisterUserHandler(userRepository, passwordHasher, jwtService);
 const loginHandler = new LoginHandler(userRepository, passwordHasher, jwtService);
 const getProfileHandler = new GetProfileHandler(userRepository);
 const createEventHandler = new CreateEventHandler(eventRepository);
-const getEventsHandler = new GetEventsHandler(eventRepository);
+const getEventsHandler = new GetEventsHandler(eventQueryService);
 const createReservationHandler = new CreateReservationHandler(reservationTransactionService);
 const confirmPaymentHandler = new ConfirmPaymentHandler(reservationTransactionService);
 const cancelReservationHandler = new CancelReservationHandler(reservationTransactionService);
 
 //Queries
-const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventRepository);
+const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventQueryService);
 
 // Controllers
 export const authController = new AuthController(
