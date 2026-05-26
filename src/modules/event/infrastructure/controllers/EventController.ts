@@ -6,7 +6,6 @@ import { CreateEventHandler } from '../../application/commands/CreateEventHandle
 import { IEventRepository } from '../../domain/repositories/IEventRepository';
 import { GetEventsHandler } from '../../application/queries/GetEventsHandler';
 import { GetEventsByOrganizerHandler } from '../../application/queries/GetEventsByOrganizerHandler';
-import { GetEventsByOrganizerQuery } from '../../application/queries/GetEventsByOrganizerQuery';
 
 export class EventController {
   constructor(
@@ -252,9 +251,7 @@ export class EventController {
       res.status(401).json({ success: false, message: 'No autorizado' });
       return;
     }
-
-    const query = new GetEventsByOrganizerQuery(organizerId);
-    const result = await this.getEventsByOrganizerHandler.execute(query);
+    const result = await this.getEventsByOrganizerHandler.execute(organizerId);
 
     res.json({ success: true, data: result });
   } catch (error: any) {
