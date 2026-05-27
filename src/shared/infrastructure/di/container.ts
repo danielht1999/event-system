@@ -19,6 +19,7 @@ import { ConfirmPaymentHandler } from '@modules/reservation/application/commands
 import { CancelReservationHandler } from '@modules/reservation/application/commands/CancelReservationHandler';
 import { GetEventsByOrganizerHandler } from '@modules/event/application/queries/GetEventsByOrganizerHandler';
 import { PostgresEventQueryService } from '@modules/event/infrastructure/queries/PostgresEventQueryService';
+import { PostgresReservationQueryService } from '@modules/reservation/infrastructure/queries/PostgresReservationQueryService';
 
 import pool from '@shared/infrastructure/database/connection';
 
@@ -33,6 +34,7 @@ const jwtService = new JwtService();
 
 // Query Service
 const eventQueryService = new PostgresEventQueryService();
+const reservationQueryService = new PostgresReservationQueryService();
 
 // Handlers
 const registerHandler = new RegisterUserHandler(userRepository, passwordHasher, jwtService);
@@ -61,4 +63,4 @@ export const eventController = new EventController(
   getEventsByOrganizerHandler
 );
 
-export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler,cancelReservationHandler);
+export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler,cancelReservationHandler,reservationQueryService);

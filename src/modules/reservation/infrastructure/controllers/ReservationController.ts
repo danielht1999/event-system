@@ -8,12 +8,14 @@ import { ConfirmPaymentCommand } from '../../application/commands/ConfirmPayment
 import { ConfirmPaymentHandler } from '../../application/commands/ConfirmPaymentHandler';
 import { CancelReservationCommand } from '../../application/commands/CancelReservationCommand';
 import { CancelReservationHandler } from '../../application/commands/CancelReservationHandler';
+import { IReservationQueryService } from '../../application/services/IReservationQueryService';
 
 export class ReservationController {
   constructor(
     private createReservationHandler: CreateReservationHandler,
     private confirmPaymentHandler: ConfirmPaymentHandler,
-    private cancelReservationHandler: CancelReservationHandler
+    private cancelReservationHandler: CancelReservationHandler,
+    private reservationQueryService: IReservationQueryService
   ) {}
 
   // Comprar ticket (crear reserva)
@@ -86,40 +88,17 @@ export class ReservationController {
   
   // Mis reservas (historial de compras)
   myReservations = async (req: AuthRequest, res: Response): Promise<void> => {
-    const usuarioId = req.user?.id;
-
-    try {
-      const result = await pool.query(
-        `SELECT r.*, e.titulo as evento_titulo, e.fecha as evento_fecha, e.lugar as evento_lugar
-         FROM reservas r
-         JOIN eventos e ON r.evento_id = e.id
-         WHERE r.usuario_id = $1
-         ORDER BY r.reservado_en DESC`,
-        [usuarioId]
-      );
-
-      res.json({
-        success: true,
-        count: result.rows.length,
-        data: result.rows.map(r => ({
-          id: r.id,
-          eventoId: r.evento_id,
-          eventoTitulo: r.evento_titulo,
-          eventoFecha: r.evento_fecha,
-          eventoLugar: r.evento_lugar,
-          cantidadTickets: r.cantidad_tickets,
-          estado: r.estado,
-          codigoTicket: r.codigo_ticket,
-          reservadoEn: r.reservado_en,
-          pagadoEn: r.pagado_en
-        }))
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: 'Error al obtener reservas'
-      });
-    }
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ success: false, message: 'No autorizado' });
+    return;
+  }
+  try {
+    const reservations = await this.reservationQueryService.findByUser(userId);
+    res.json({ success: true, count: reservations.length, data: reservations });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error al obtener reservas' });
+  }
   }
 
   // Cancelar reserva
