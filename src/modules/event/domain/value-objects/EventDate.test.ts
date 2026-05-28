@@ -1,6 +1,7 @@
-import { EventDate } from '../../../src/modules/event/domain/value-objects/EventDate';
+// src/modules/event/domain/value-objects/EventDate.test.ts
+import { EventDate } from './EventDate';
 
-describe('FechaEvento', () => {
+describe('EventDate', () => {
   const fechaFutura = new Date();
   fechaFutura.setDate(fechaFutura.getDate() + 30);
 

@@ -13,7 +13,7 @@
     "test:coverage": "jest --coverage",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "migrate": "ts-node src/infrastructure/database/migrate.ts"
+    "migrate": "ts-node src/shared/infrastructure/database/migrate.ts"
   },
   "dependencies": {
     "amqplib": "^0.10.3",

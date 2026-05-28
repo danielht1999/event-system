@@ -2,8 +2,8 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
-dotenv.config();
-
+//carga el archivo correcto según el entorno:
+dotenv.config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
@@ -17,11 +17,11 @@ const pool = new Pool({
 
 // Probar conexion
 pool.on('connect', () => {
-  console.log('? Conectado a PostgreSQL');
+  console.log('Conectado a PostgreSQL');
 });
 
 pool.on('error', (err) => {
-  console.error('? Error en PostgreSQL:', err);
+  console.error('Error en PostgreSQL:', err);
 });
 
 export default pool;

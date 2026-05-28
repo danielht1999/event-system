@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS reservas (
     CONSTRAINT max_tickets CHECK (cantidad_tickets <= 4)
 );
 
-CREATE INDEX idx_reservas_evento ON reservas(evento_id);
-CREATE INDEX idx_reservas_usuario ON reservas(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_reservas_evento ON reservas(evento_id);
+CREATE INDEX IF NOT EXISTS idx_reservas_usuario ON reservas(usuario_id);

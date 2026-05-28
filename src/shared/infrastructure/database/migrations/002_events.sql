@@ -13,5 +13,5 @@ CREATE TABLE IF NOT EXISTS eventos (
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_eventos_fecha ON eventos(fecha);
-CREATE INDEX idx_eventos_organizador ON eventos(organizador_id);
+CREATE INDEX IF NOT EXISTS idx_eventos_fecha ON eventos(fecha);
+CREATE INDEX IF NOT EXISTS idx_eventos_organizador ON eventos(organizador_id);
