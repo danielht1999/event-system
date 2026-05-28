@@ -1,5 +1,5 @@
-// tests/unit/value-objects/Email.test.ts
-import { Email } from '../../../src/modules/auth/domain/value-objects/Email';
+// src/modules/auth/domain/value-objects/Email.test.ts
+import { Email } from './Email';
 
 describe('Email', () => {
   test('debería crear un email válido', () => {

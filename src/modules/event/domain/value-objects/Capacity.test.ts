@@ -1,9 +1,10 @@
-﻿import { Capacity } from '../../../src/modules/event/domain/value-objects/Capacity';
+﻿// src/modules/event/domain/value-objects/Capacity.test.ts
+import { Capacity } from './Capacity';
 
-describe('Capacidad', () => {
+describe('Capacity', () => {
   test('debería crear capacidad válida', () => {
-    const capacidad = new Capacity(100);
-    expect(capacidad.value).toBe(100);
+    const capacity = new Capacity(100);
+    expect(capacity.value).toBe(100);
   });
 
   test('debería lanzar error si capacidad es 0', () => {
@@ -15,13 +16,12 @@ describe('Capacidad', () => {
   });
 
   test('debería lanzar error si capacidad supera 10000', () => {
-    // Cambiar el mensaje esperado para que coincida con tu código
     expect(() => new Capacity(15000)).toThrow('La capacidad no puede superar 10,000 personas');
   });
 
   test('debería verificar si hay espacio suficiente', () => {
-    const capacidad = new Capacity(100);
-    expect(capacidad.hasSpace(50, 30)).toBe(true);
-    expect(capacidad.hasSpace(90, 20)).toBe(false);
+    const capacity = new Capacity(100);
+    expect(capacity.hasSpace(50, 30)).toBe(true);
+    expect(capacity.hasSpace(90, 20)).toBe(false);
   });
 });
