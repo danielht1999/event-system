@@ -22,6 +22,7 @@ import { PostgresEventQueryService } from '@modules/event/infrastructure/queries
 import { PostgresReservationQueryService } from '@modules/reservation/infrastructure/queries/PostgresReservationQueryService';
 
 import pool from '@shared/infrastructure/database/connection';
+import { UpdateProfilehandler } from '@modules/auth/application/commands/UpdateProfileHandler';
 
 // Repositorios
 const userRepository = new PostgresUserRepository();
@@ -45,6 +46,7 @@ const getEventsHandler = new GetEventsHandler(eventQueryService);
 const createReservationHandler = new CreateReservationHandler(reservationTransactionService);
 const confirmPaymentHandler = new ConfirmPaymentHandler(reservationTransactionService);
 const cancelReservationHandler = new CancelReservationHandler(reservationTransactionService);
+const updateProfileHandler = new UpdateProfilehandler(userRepository);
 
 //Queries
 const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventQueryService);
@@ -53,7 +55,8 @@ const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventQuerySe
 export const authController = new AuthController(
   registerHandler,
   loginHandler,
-  getProfileHandler
+  getProfileHandler,
+  updateProfileHandler
 );
 
 export const eventController = new EventController(

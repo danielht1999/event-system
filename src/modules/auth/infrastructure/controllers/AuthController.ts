@@ -6,12 +6,15 @@ import { LoginCommand } from '../../application/commands/LoginCommand';
 import { RegisterUserHandler } from '../../application/commands/RegisterUserHandler';
 import { LoginHandler } from '../../application/commands/LoginHandler';
 import { GetProfileHandler } from '../../application/queries/GetProfileHandler';
+import { UpdateProfilehandler } from '../../application/commands/UpdateProfileHandler';
+import { UpdateProfileCommand } from '../../application/commands/UpdateProfileCommand';
 
 export class AuthController {
   constructor(
     private registerHandler: RegisterUserHandler,
     private loginHandler: LoginHandler,
-    private getProfileHandler: GetProfileHandler
+    private getProfileHandler: GetProfileHandler,
+    private updateProfileHandler: UpdateProfilehandler,
   ) {}
 
   register = async (req: Request, res: Response): Promise<void> => {
@@ -115,4 +118,37 @@ export class AuthController {
       });
     }
   };
+
+  updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'No autorizado'
+        });
+        return;
+      }
+      const command = new UpdateProfileCommand({
+        userId: userId,
+        email: req.body.email,
+        nombre: req.body.nombre
+      });
+
+      const update = await this.updateProfileHandler.execute(command);
+
+      res.json({
+        success: true,
+        data: update
+      });
+     } catch (error: any) {
+      const status = error.message === 'Usuario no encontrado' ? 404 : 500;
+      
+      res.status(status).json({
+        success: false,
+        message: error.message
+      });
+    }
+ }
 }

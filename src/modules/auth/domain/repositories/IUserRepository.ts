@@ -14,4 +14,6 @@ export interface IUserRepository {
   findById(id: string): Promise<UserRecord | null>;
   save(user: Omit<UserRecord, 'creado_en'>): Promise<UserRecord>;
   emailExists(email: string): Promise<boolean>;
+  //Partial<Pick<UserRecord, 'email' | 'nombre'>> - Selecciona SOLO email y nombre, y los hace OPCIONALES.
+  update(id: string, data: Partial<Pick<UserRecord, 'email' | 'nombre'>>): Promise<UserRecord>;
 }

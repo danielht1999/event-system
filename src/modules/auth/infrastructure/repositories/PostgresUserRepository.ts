@@ -34,4 +34,40 @@ export class PostgresUserRepository implements IUserRepository {
     const result = await pool.query('SELECT 1 FROM usuarios WHERE email = $1 LIMIT 1', [email]);
     return result.rows.length > 0;
   }
+
+  async update(id: string, data: Partial<Pick<UserRecord, 'email' | 'nombre'>>): Promise<UserRecord> {
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (data.email !== undefined) {
+      updates.push(`email = $${paramIndex}`);
+      values.push(data.email);
+      paramIndex++;
+    }
+
+    if (data.nombre !== undefined) {
+      updates.push(`nombre = $${paramIndex}`);
+      values.push(data.nombre);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      throw new Error('No hay campos para actualizar');
+    }
+
+    const query = `
+      UPDATE usuarios 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, email, nombre, password_hash, rol, creado_en
+    `;
+    values.push(id);
+
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
 }
+
+
+
