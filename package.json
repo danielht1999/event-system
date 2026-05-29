@@ -8,9 +8,9 @@
     "dev:client": "npm run dev --prefix client",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "jest",
+    "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage --runInBand",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "migrate": "ts-node src/shared/infrastructure/database/migrate.ts"
