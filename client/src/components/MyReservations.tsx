@@ -1,55 +1,63 @@
-// PROPS - Recibe los datos listos desde el padre (App)
 interface Props {
   reservas: any[]
   onConfirmarPago: (reservaId: string) => void
   onCancelar: (reservaId: string) => void
 }
 
-// COMPONENTE - Función pura que renderiza la pantalla basándose en sus props
 function MisReservas({ reservas, onConfirmarPago, onCancelar }: Props) {   
-
-  // RENDERIZADO CONDICIONAL
-
-  // SI no hay reservas aún, mostramos el mensaje informativo.
-  // Nota: Al iniciar la app, si el fetch en App tarda unos milisegundos, 
-  // caerá aquí brevemente hasta que el array se llene con los datos de la API.
   if (reservas.length === 0) {
-    return <div className="sin-reservas">No tienes reservas aún</div>
+    return (
+      <div className="sin-reservas-container">
+        <div className="sin-reservas-icono">
+          <span className="icono-migracion">🎟️</span>
+        </div>
+        <h3>No tienes reservas aún</h3>
+        <p>Explora la cartelera de eventos y asegura tu lugar en los mejores eventos.</p>
+      </div>
+    )
   }
 
-  // RENDERIZADO PRINCIPAL - Mostrar la lista de reservas actualizada
   return (
-    <div className="mis-reservas">
-      <h2>Mis Reservas</h2>
-      <div className="reservas-lista">
+    <div className="mis-reservas-section">
+      <h2 className="section-title-clean">Mis Reservas</h2>
+      <div className="reservas-grid-layout">
         {reservas.map((reserva) => (
-          <div key={reserva.id} className="reserva-card">
-            <h3>{reserva.eventoTitulo}</h3>
-            <div className="reserva-detalles">
-              <p>
-                <strong>Fecha:</strong> {new Date(reserva.eventoFecha).toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Cantidad de tickets:</strong> {reserva.cantidadTickets}
-              </p>
-              <p>
-                <strong>Estado:</strong> 
-                <span className={`estado ${reserva.estado.toLowerCase()}`}>
-                  {reserva.estado}
-                </span>
-              </p>
-              <p>
-                <strong>Código del ticket:</strong> 
-                <code className="codigo-ticket">{reserva.codigoTicket}</code>
-              </p>
+          <div key={reserva.id} className="reserva-card-premium">
+            <div className="reserva-card-header">
+              <h3>{reserva.eventoTitulo}</h3>
+              <span className={`badge-estado ${reserva.estado.toLowerCase()}`}>
+                {reserva.estado === 'PENDIENTE_PAGO' ? '⏳ Pendiente de Pago' : `✓ ${reserva.estado}`}
+              </span>
             </div>
+
+            <div className="reserva-card-body">
+              <div className="meta-group">
+                <span className="meta-label">Fecha del Evento</span>
+                <span className="meta-value">
+                  <span className="icono-migracion">📅</span> {new Date(reserva.eventoFecha).toLocaleDateString()}
+                </span>
+              </div>
+              
+              <div className="meta-group">
+                <span className="meta-label">Entradas</span>
+                <span className="meta-value">
+                  <span className="icono-migracion">🎟️</span> {reserva.cantidadTickets} {reserva.cantidadTickets === 1 ? 'ticket' : 'tickets'}
+                </span>
+              </div>
+
+              <div className="meta-group full-width">
+                <span className="meta-label">Código Único de Entrada</span>
+                <code className="codigo-ticket-styled">{reserva.codigoTicket || 'Generando código...'}</code>
+              </div>
+            </div>
+
             {reserva.estado === 'PENDIENTE_PAGO' && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button className="btn btn-primary" onClick={() => onConfirmarPago(reserva.id)}>
-                  Pagar
+              <div className="reserva-card-actions">
+                <button className="btn-action btn-pay" onClick={() => onConfirmarPago(reserva.id)}>
+                  <span className="icono-migracion">💳</span> Proceder al Pago
                 </button>
-                <button className="btn btn-danger" onClick={() => onCancelar(reserva.id)}>
-                  Cancelar
+                <button className="btn-action btn-cancel" onClick={() => onCancelar(reserva.id)}>
+                  Cancelar Reserva
                 </button>
               </div>
             )}

@@ -20,8 +20,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Servir archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -42,11 +40,6 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/v1', v1Routes);
-
-// Ruta para el frontend (corregido)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 
 // Manejador de errores
 app.use(errorHandler);

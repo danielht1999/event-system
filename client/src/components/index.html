@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventify - Explorador</title>
+    <style>
+        /* ============================================ */
+        /* 1. VARIABLES ARMONIZADAS (Estilo Sci-Fi Tech)*/
+        /* ============================================ */
+        :root {
+            --gradient-body: linear-gradient(135deg, #4e54c8 0%, #764ba2 100%);
+            
+            /* Contenedores Base */
+            --bg-card: rgba(13, 17, 23, 0.75);
+            --bg-card-solid: #0d1117;
+            --border-glow: rgba(110, 142, 251, 0.2);
+            --text-accent: #8f94fb;
+            
+            /* Textos */
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+
+            /* Estados Activos / Botones */
+            --success-color: #00e5ff;
+            --success-gradient: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 131, 176, 0.02) 100%);
+            
+            /* Inputs */
+            --bg-input: rgba(0, 0, 0, 0.4);
+        }
+
+        /* ============================================ */
+        /* 2. ESTILOS BASE Y NAVBAR                     */
+        /* ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--gradient-body);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-main);
+            padding-bottom: 60px;
+        }
+
+        .navbar {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-glow);
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #ffffff, var(--text-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: color 0.2s;
+            position: relative;
+            padding: 6px 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-main);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+        }
+
+        .nav-user {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 40px auto 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ============================================ */
+        /* 3. HERO / LOGIN SECTION                      */
+        /* ============================================ */
+        .hero-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 50px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            margin-bottom: 50px;
+        }
+
+        .hero-text h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-text p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* Formulario Login */
+        .login-card {
+            background: var(--bg-card-solid);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .login-card h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: -0.3px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .icon-wrapper {
+            position: absolute;
+            left: 12px;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--text-accent);
+            box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-card-solid);
+            border: 1px solid var(--success-color);
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .btn-action:hover {
+            background: var(--success-gradient);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .login-footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .login-footer a {
+            color: var(--success-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* ============================================ */
+        /* 4. SECCIÓN EVENTOS DISPONIBLES               */
+        /* ============================================ */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: -0.3px;
+        }
+
+        .eventos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .evento-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glow);
+            border-left: 4px solid var(--text-accent);
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .evento-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--text-accent);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .evento-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+
+        .evento-meta {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .evento-precio {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--success-color);
+            margin-top: 5px;
+        }
+
+        .evento-cupos {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+                padding: 30px;
+            }
+            .navbar {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Eventify</div>
+        <div class="nav-links">
+            <a href="#" class="nav-link active">Explorador</a>
+            <span class="nav-user">Invitado</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <section class="hero-section">
+            <div class="hero-text">
+                <h1>Encuentra tus próximos eventos favoritos</h1>
+                <p>Reserva entradas para conciertos, conferencias y talleres exclusivos de forma inmediata y 100% segura.</p>
+            </div>
+            
+            <div class="login-card">
+                <h2>Iniciar sesión</h2>
+                <form onsubmit="return false;">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <span class="icon-wrapper">📧</span>
+                            <input type="email" placeholder="Correo electrónico">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="input-container">
+                            <span class="icon-wrapper">🔒</span>
+                            <input type="password" placeholder="Contraseña">
+                        </div>
+                    </div>
+                    <button class="btn-action">Iniciar sesión</button>
+                    <div class="login-footer">
+                        ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <main>
+            <h2 class="section-title">Eventos Disponibles</h2>
+            
+            <div class="eventos-grid">
+                
+                <div class="evento-card">
+                    <h3 class="evento-title">Evento prueba dos</h3>
+                    <div class="evento-meta">
+                        <span class="icon-wrapper">📍</span>
+                        <span>México</span>
+                    </div>
+                    <div class="evento-precio">$100.00</div>
+                    <div class="evento-cupos">198 cupos disponibles</div>
+                    <button class="btn-action" style="margin-top: auto; margin-bottom: 0;">Comprar Ticket</button>
+                </div>
+
+                <div class="evento-card">
+                    <h3 class="evento-title">Evento prueba</h3>
+                    <div class="evento-meta">
+                        <span class="icon-wrapper">📍</span>
+                        <span>México</span>
+                    </div>
+                    <div class="evento-precio">$100.00</div>
+                    <div class="evento-cupos">100 cupos disponibles</div>
+                    <button class="btn-action" style="margin-top: auto; margin-bottom: 0;">Comprar Ticket</button>
+                </div>
+
+                <div class="evento-card">
+                    <h3 class="evento-title">Conferencia DevOps 2024</h3>
+                    <div class="evento-meta">
+                        <span class="icon-wrapper">📍</span>
+                        <span>Centro de Convenciones</span>
+                    </div>
+                    <div class="evento-precio">$50.00</div>
+                    <div class="evento-cupos">100 cupos disponibles</div>
+                    <button class="btn-action" style="margin-top: auto; margin-bottom: 0;">Comprar Ticket</button>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
