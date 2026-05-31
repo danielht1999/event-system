@@ -573,7 +573,20 @@ body {
     font-size: 0.95rem;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.meta-block-value .icon-wrapper {
+    position: static;
+    left: auto;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
 }
 
 .ticket-code-box {
@@ -799,8 +812,8 @@ body {
 /* -------------------------------------------- */
 .profile-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 16px;
     padding: 24px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -814,7 +827,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
+    flex: 0 1 auto;
 }
 
 .profile-info .pill-led {
