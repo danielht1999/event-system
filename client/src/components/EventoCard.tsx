@@ -14,20 +14,52 @@ interface Props {
 function EventoCard({ evento, onComprar }: Props) {
   return (
     <div className="evento-card">
-      <h3>{evento.titulo}</h3>
-      <p>📍 {evento.lugar}</p>
-      <div className="precio">
-        {evento.precio === 0 ? 'Gratis' : `$${evento.precio}`}
+
+      {/* Título */}
+      <h3 className="evento-title">
+        {evento.titulo}
+      </h3>
+
+      {/* Lugar */}
+      <div className="evento-meta">
+        <span>📍</span>
+        <span>{evento.lugar}</span>
       </div>
-      <p>{evento.cuposDisponibles} cupos disponibles</p>
+
+      {/* Precio */}
+      <div className="evento-precio">
+        {evento.precio === 0
+          ? 'Gratis'
+          : `$${evento.precio}`}
+      </div>
+
+      {/* Cupos */}
+      <div className="evento-cupos">
+        {evento.cuposDisponibles > 0 ? (
+          <div className="pill-led success">
+            <span className="led"></span>
+            {evento.cuposDisponibles} CUPOS DISPONIBLES
+          </div>
+        ) : (
+          <div className="pill-led error">
+            <span className="led"></span>
+            SIN CUPOS
+          </div>
+        )}
+      </div>
+
+      {/* Botón */}
       <button
-        className="btn btn-primary"
+        className="btn-primary"
         style={{ marginTop: '12px' }}
         onClick={() => onComprar(evento.id, evento.titulo)}
         disabled={evento.cuposDisponibles === 0}
       >
-        {evento.cuposDisponibles === 0 ? 'Sin cupos' : 'Comprar Ticket'}
+        {evento.cuposDisponibles === 0
+          ? 'Sin cupos'
+          : 'Comprar Ticket'}
       </button>
+
     </div>
   )
 }

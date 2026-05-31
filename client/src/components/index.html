@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventify - Explorador</title>
+    <title>Eventify - Explorador (Autenticado)</title>
     <style>
         /* ============================================ */
         /* 1. VARIABLES ARMONIZADAS (Estilo Sci-Fi Tech)*/
@@ -21,12 +21,13 @@
             --text-main: #ffffff;
             --text-muted: #8b949e;
 
-            /* Estados Activos / Botones */
+            /* Estados Activos / Botones / LEDs */
             --success-color: #00e5ff;
             --success-gradient: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 131, 176, 0.02) 100%);
+            --success-led: radial-gradient(circle at 35% 35%, #ffffff, #00e5ff);
             
-            /* Inputs */
-            --bg-input: rgba(0, 0, 0, 0.4);
+            --error-color: #ff1744;
+            --error-gradient: linear-gradient(135deg, rgba(255, 23, 68, 0.15) 0%, rgba(203, 45, 62, 0.02) 100%);
         }
 
         /* ============================================ */
@@ -44,7 +45,8 @@
             background-attachment: fixed;
             min-height: 100vh;
             color: var(--text-main);
-            padding-bottom: 60px;
+            display: flex;
+            flex-direction: column;
         }
 
         .navbar {
@@ -71,9 +73,17 @@
             -webkit-text-fill-color: transparent;
         }
 
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-grow: 1;
+            margin-left: 40px;
+        }
+
         .nav-links {
             display: flex;
-            gap: 30px;
+            gap: 24px;
             align-items: center;
         }
 
@@ -94,7 +104,7 @@
         .nav-link.active::after {
             content: '';
             position: absolute;
-            bottom: 0;
+            bottom: -22px; /* Alineado al borde de la navbar */
             left: 0;
             width: 100%;
             height: 2px;
@@ -102,140 +112,79 @@
             box-shadow: 0 0 8px var(--success-color);
         }
 
-        .nav-user {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .container {
-            max-width: 1240px;
-            margin: 40px auto 0 auto;
-            padding: 0 20px;
-        }
-
-        /* ============================================ */
-        /* 3. HERO / LOGIN SECTION                      */
-        /* ============================================ */
-        .hero-section {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-glow);
-            border-radius: 16px;
-            padding: 50px;
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 40px;
-            align-items: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            margin-bottom: 50px;
-        }
-
-        .hero-text h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-            margin-bottom: 20px;
-            letter-spacing: -0.5px;
-        }
-
-        .hero-text p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-
-        /* Formulario Login */
-        .login-card {
-            background: var(--bg-card-solid);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-        }
-
-        .login-card h2 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 25px;
-            letter-spacing: -0.3px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .input-container {
-            position: relative;
+        /* Bloque de Usuario Autenticado */
+        .nav-user-zone {
             display: flex;
             align-items: center;
+            gap: 15px;
         }
 
-        .icon-wrapper {
-            position: absolute;
-            left: 12px;
-            color: var(--text-muted);
+        /* Implementación de tu Pill con LED para el Rol */
+        .pill-led {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 12px 12px 40px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-glow);
-            border-radius: 6px;
+            gap: 8px;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background: var(--success-gradient);
             color: var(--text-main);
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--text-accent);
-            box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
-        }
-
-        .btn-action {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-card-solid);
             border: 1px solid var(--success-color);
+        }
+
+        @keyframes led-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 4px currentColor; }
+            50% { opacity: 0.75; transform: scale(1.1); box-shadow: 0 0 10px currentColor; }
+        }
+
+        .led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            background: var(--success-led);
+            color: var(--success-color);
+            animation: led-pulse 2s infinite ease-in-out;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
             color: var(--text-main);
-            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid rgba(255, 23, 68, 0.4);
+            color: #ff4d6d;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
             font-weight: 600;
-            border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
-            margin-bottom: 20px;
         }
 
-        .btn-action:hover {
-            background: var(--success-gradient);
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        .login-footer {
-            text-align: center;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .login-footer a {
-            color: var(--success-color);
-            text-decoration: none;
-            font-weight: 600;
+        .btn-logout:hover {
+            background: var(--error-gradient);
+            border-color: var(--error-color);
+            box-shadow: 0 0 10px rgba(255, 23, 68, 0.15);
         }
 
         /* ============================================ */
-        /* 4. SECCIÓN EVENTOS DISPONIBLES               */
+        /* 3. CONTENIDO PRINCIPAL                       */
         /* ============================================ */
+        .container {
+            max-width: 1240px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+            flex: 1; /* Empuja el footer hacia abajo */
+        }
+
         .section-title {
             font-size: 1.5rem;
             font-weight: 600;
@@ -276,6 +225,15 @@
             letter-spacing: -0.2px;
         }
 
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            flex-shrink: 0;
+        }
+
         .evento-meta {
             font-size: 0.9rem;
             color: var(--text-muted);
@@ -296,15 +254,90 @@
             color: var(--text-muted);
         }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-            .hero-section {
-                grid-template-columns: 1fr;
-                padding: 30px;
-            }
-            .navbar {
-                padding: 0 20px;
-            }
+        .btn-action {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-card-solid);
+            border: 1px solid var(--success-color);
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: auto;
+        }
+
+        .btn-action:hover {
+            background: var(--success-gradient);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* ============================================ */
+        /* 4. FOOTER HOMOGÉNEO                          */
+        /* ============================================ */
+        .footer {
+            background: var(--bg-card-solid);
+            border-top: 1px solid var(--border-glow);
+            padding: 60px 40px 40px 40px;
+            margin-top: auto;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr repeat(2, 1fr);
+            gap: 40px;
+        }
+
+        .footer-brand h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        .footer-column h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-accent);
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 0 20px; }
+            .nav-menu { margin-left: 20px; }
+            .footer-container { grid-template-columns: 1fr; gap: 30px; }
+            .nav-links { display: none; } /* En responsive real haríamos un menú colapsable */
         }
     </style>
 </head>
@@ -312,43 +345,25 @@
 
     <nav class="navbar">
         <div class="logo">Eventify</div>
-        <div class="nav-links">
-            <a href="#" class="nav-link active">Explorador</a>
-            <span class="nav-user">Invitado</span>
+        <div class="nav-menu">
+            <div class="nav-links">
+                <a href="#" class="nav-link active">Explorador</a>
+                <a href="#" class="nav-link">Mis Reservas (4)</a>
+                <a href="#" class="nav-link">Panel Organizador</a>
+                <a href="#" class="nav-link">Mi Perfil</a>
+            </div>
+            
+            <div class="nav-user-zone">
+                <div class="pill-led">
+                    <span class="led"></span>Organizador
+                </div>
+                <span class="user-name">Organizador Test</span>
+                <button class="btn-logout">Cerrar Sesión</button>
+            </div>
         </div>
     </nav>
 
     <div class="container">
-        
-        <section class="hero-section">
-            <div class="hero-text">
-                <h1>Encuentra tus próximos eventos favoritos</h1>
-                <p>Reserva entradas para conciertos, conferencias y talleres exclusivos de forma inmediata y 100% segura.</p>
-            </div>
-            
-            <div class="login-card">
-                <h2>Iniciar sesión</h2>
-                <form onsubmit="return false;">
-                    <div class="form-group">
-                        <div class="input-container">
-                            <span class="icon-wrapper">📧</span>
-                            <input type="email" placeholder="Correo electrónico">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="input-container">
-                            <span class="icon-wrapper">🔒</span>
-                            <input type="password" placeholder="Contraseña">
-                        </div>
-                    </div>
-                    <button class="btn-action">Iniciar sesión</button>
-                    <div class="login-footer">
-                        ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
-                    </div>
-                </form>
-            </div>
-        </section>
-
         <main>
             <h2 class="section-title">Eventos Disponibles</h2>
             
@@ -358,22 +373,22 @@
                     <h3 class="evento-title">Evento prueba dos</h3>
                     <div class="evento-meta">
                         <span class="icon-wrapper">📍</span>
-                        <span>México</span>
+                        <span>mexico</span>
                     </div>
                     <div class="evento-precio">$100.00</div>
                     <div class="evento-cupos">198 cupos disponibles</div>
-                    <button class="btn-action" style="margin-top: auto; margin-bottom: 0;">Comprar Ticket</button>
+                    <button class="btn-action">Comprar Ticket</button>
                 </div>
 
                 <div class="evento-card">
                     <h3 class="evento-title">Evento prueba</h3>
                     <div class="evento-meta">
                         <span class="icon-wrapper">📍</span>
-                        <span>México</span>
+                        <span>mexico</span>
                     </div>
                     <div class="evento-precio">$100.00</div>
                     <div class="evento-cupos">100 cupos disponibles</div>
-                    <button class="btn-action" style="margin-top: auto; margin-bottom: 0;">Comprar Ticket</button>
+                    <button class="btn-action">Comprar Ticket</button>
                 </div>
 
                 <div class="evento-card">
@@ -384,12 +399,37 @@
                     </div>
                     <div class="evento-precio">$50.00</div>
                     <div class="evento-cupos">100 cupos disponibles</div>
-                    <button class="btn-action" style="margin-top: auto; margin-bottom: 0;">Comprar Ticket</button>
+                    <button class="btn-action">Comprar Ticket</button>
                 </div>
 
             </div>
         </main>
     </div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <h3>Eventify</h3>
+                <p>La plataforma ideal para descubrir y gestionar tus eventos favoritos.</p>
+            </div>
+            <div class="footer-column">
+                <h4>Explorrar</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Todos los eventos</a></li>
+                    <li><a href="#">Conciertos</a></li>
+                    <li><a href="#">Conferencias</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Soporte</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Ayuda y FAQ</a></li>
+                    <li><a href="#">Términos de servicio</a></li>
+                    <li><a href="#">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
 
 </body>
 </html>

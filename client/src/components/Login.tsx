@@ -1,3 +1,4 @@
+// client/src/components/Login.tsx
 import { useState } from 'react'
 
 interface User {
@@ -44,24 +45,40 @@ function Login({ onLogin }: Props) {
   }
 
   return (
-  <div className="card">
-    <h2>Iniciar Sesion</h2>
-    {error && <p className="error">{error}</p>}
-    <form onSubmit={handleSubmit}>
-      <div className="form-group">
-        <input type="email" placeholder="Email" value={email}
-          onChange={e => setEmail(e.target.value)} required />
-      </div>
-      <div className="form-group">
-        <input type="password" placeholder="Password" value={password}
-          onChange={e => setPassword(e.target.value)} required />
-      </div>
-      <button type="submit" className="btn btn-primary" disabled={cargando}>
-        {cargando ? 'Cargando...' : 'Iniciar Sesion'}
-      </button>
-    </form>
-  </div>
-)
+    <div className="hero-auth-box">
+      <h2>Iniciar sesión</h2>
+      {error && <p className="error">{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <div className="input-container">
+            <span className="icon-wrapper">📧</span>
+            <input 
+              type="email" 
+              placeholder="Correo electrónico" 
+              value={email}
+              onChange={e => setEmail(e.target.value)} 
+              required 
+            />
+          </div>
+        </div>
+        <div className="form-group">
+          <div className="input-container">
+            <span className="icon-wrapper">🔒</span>
+            <input 
+              type="password" 
+              placeholder="Contraseña" 
+              value={password}
+              onChange={e => setPassword(e.target.value)} 
+              required 
+            />
+          </div>
+        </div>
+        <button type="submit" className="btn-primary" disabled={cargando}>
+          {cargando ? 'Cargando...' : 'Iniciar sesión'}
+        </button>
+      </form>
+    </div>
+  )
 }
 
 export default Login

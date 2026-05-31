@@ -1,3 +1,4 @@
+// client/src/components/Register.tsx
 import { useState } from 'react'
 
 interface User {
@@ -28,7 +29,7 @@ function Register({ onLogin }: Props) {
       const response = await fetch('/api/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, password, rol }) //datos a mandar
+        body: JSON.stringify({ nombre, email, password, rol })
       })
 
       const data = await response.json()
@@ -46,27 +47,45 @@ function Register({ onLogin }: Props) {
   }
 
   return (
-    <div className="card">
+    <div className="hero-auth-box">
       <h2>Registrarse</h2>
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <input type="text" placeholder="nombre" value={nombre}
-            onChange={e => setNombre(e.target.value)}
-            required
-          />
+          <div className="input-container">
+            <span className="icon-wrapper">👤</span>
+            <input 
+              type="text" 
+              placeholder="Nombre completo" 
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              required
+            />
+          </div>
         </div>
         <div className="form-group">
-          <input type="email" placeholder="Email" value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
+          <div className="input-container">
+            <span className="icon-wrapper">📧</span>
+            <input 
+              type="email" 
+              placeholder="Correo electrónico" 
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
         </div>
         <div className="form-group">
-          <input type="password" placeholder="Password" value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
+          <div className="input-container">
+            <span className="icon-wrapper">🔒</span>
+            <input 
+              type="password" 
+              placeholder="Contraseña" 
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
         </div>
         <div className="form-group">
           <select value={rol} onChange={e => setRol(e.target.value)} required>
@@ -75,12 +94,12 @@ function Register({ onLogin }: Props) {
             <option value="ORGANIZADOR">Organizador</option>
           </select>
         </div>
-        <button type="submit" className="btn btn-primary" disabled={cargando}>
+        <button type="submit" className="btn-primary" disabled={cargando}>
           {cargando ? 'Cargando...' : 'Registrarse'}
         </button>
       </form>
     </div>
-    )
+  )
 }
 
 export default Register

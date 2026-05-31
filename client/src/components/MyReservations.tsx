@@ -1,63 +1,121 @@
+// client/src/components/MyReservations.tsx
+interface Reserva {
+  id: string
+  eventoId: string
+  eventoTitulo: string
+  eventoFecha: string
+  cantidadTickets: number
+  estado: string
+  codigoTicket: string
+}
+
 interface Props {
-  reservas: any[]
+  reservas: Reserva[]
   onConfirmarPago: (reservaId: string) => void
   onCancelar: (reservaId: string) => void
 }
 
-function MisReservas({ reservas, onConfirmarPago, onCancelar }: Props) {   
-  if (reservas.length === 0) {
+function MyReservations({ reservas, onConfirmarPago, onCancelar }: Props) {
+  if (!reservas || reservas.length === 0) {
     return (
-      <div className="sin-reservas-container">
-        <div className="sin-reservas-icono">
-          <span className="icono-migracion">🎟️</span>
-        </div>
-        <h3>No tienes reservas aún</h3>
-        <p>Explora la cartelera de eventos y asegura tu lugar en los mejores eventos.</p>
+      <div className="main-panel">
+        <h1 className="panel-title">Mis Reservas</h1>
+        <p className="empty">No tienes reservas activas.</p>
       </div>
     )
   }
 
+  const getEstadoPill = (estado: string) => {
+    switch (estado) {
+      case 'CONFIRMADA':
+        return 'success'
+      case 'CANCELADA':
+        return 'error'
+      case 'PENDIENTE_PAGO':
+        return 'warning'
+      default:
+        return 'warning'
+    }
+  }
+
+  const getEstadoTexto = (estado: string) => {
+    switch (estado) {
+      case 'CONFIRMADA':
+        return 'CONFIRMADA'
+      case 'CANCELADA':
+        return 'CANCELADA'
+      case 'PENDIENTE_PAGO':
+        return 'PENDIENTE DE PAGO'
+      default:
+        return estado
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Fecha no disponible'
+    return new Date(dateString).toLocaleDateString('es-ES')
+  }
+
   return (
-    <div className="mis-reservas-section">
-      <h2 className="section-title-clean">Mis Reservas</h2>
-      <div className="reservas-grid-layout">
+    <div className="main-panel">
+      <h1 className="panel-title">Mis Reservas</h1>
+      
+      <div className="reservas-grid">
         {reservas.map((reserva) => (
-          <div key={reserva.id} className="reserva-card-premium">
-            <div className="reserva-card-header">
-              <h3>{reserva.eventoTitulo}</h3>
-              <span className={`badge-estado ${reserva.estado.toLowerCase()}`}>
-                {reserva.estado === 'PENDIENTE_PAGO' ? '⏳ Pendiente de Pago' : `✓ ${reserva.estado}`}
-              </span>
+          <div 
+            key={reserva.id} 
+            className="reserva-card"
+            style={{ borderTop: `3px solid var(--${getEstadoPill(reserva.estado)}-color)` }}
+          >
+            <div className="reserva-header">
+              <h3 className="reserva-title">{reserva.eventoTitulo || 'Evento'}</h3>
+              <div className={`pill-led ${getEstadoPill(reserva.estado)}`}>
+                <span className="led"></span>
+                {getEstadoTexto(reserva.estado)}
+              </div>
+            </div>
+            
+            <div className="reserva-meta-row">
+              <div>
+                <div className="meta-block-title">Fecha del Evento</div>
+                <div className="meta-block-value">
+                  <span className="icon-wrapper">🗓️</span>
+                  <span>{formatDate(reserva.eventoFecha)}</span>
+                </div>
+              </div>
+              <div>
+                <div className="meta-block-title">Entradas</div>
+                <div className="meta-block-value">
+                  <span className="icon-wrapper">🎟️</span>
+                  <span>{reserva.cantidadTickets} {reserva.cantidadTickets === 1 ? 'entrada' : 'entradas'}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="reserva-card-body">
-              <div className="meta-group">
-                <span className="meta-label">Fecha del Evento</span>
-                <span className="meta-value">
-                  <span className="icono-migracion">📅</span> {new Date(reserva.eventoFecha).toLocaleDateString()}
-                </span>
-              </div>
-              
-              <div className="meta-group">
-                <span className="meta-label">Entradas</span>
-                <span className="meta-value">
-                  <span className="icono-migracion">🎟️</span> {reserva.cantidadTickets} {reserva.cantidadTickets === 1 ? 'ticket' : 'tickets'}
-                </span>
-              </div>
-
-              <div className="meta-group full-width">
-                <span className="meta-label">Código Único de Entrada</span>
-                <code className="codigo-ticket-styled">{reserva.codigoTicket || 'Generando código...'}</code>
+            <div className="ticket-code-box">
+              <div className="meta-block-title">Código Único de Entrada</div>
+              <div 
+                className={`ticket-code-value ${
+                  reserva.estado === 'CANCELADA' ? 'ticket-cancelado' : ''
+                }`}
+              >
+                {reserva.codigoTicket}
               </div>
             </div>
 
             {reserva.estado === 'PENDIENTE_PAGO' && (
-              <div className="reserva-card-actions">
-                <button className="btn-action btn-pay" onClick={() => onConfirmarPago(reserva.id)}>
-                  <span className="icono-migracion">💳</span> Proceder al Pago
+              <div className="reserva-actions">
+                <button 
+                  className="btn-pagar" 
+                  onClick={() => onConfirmarPago(reserva.id)}
+                >
+                  ✅ Pagar
                 </button>
-                <button className="btn-action btn-cancel" onClick={() => onCancelar(reserva.id)}>
-                  Cancelar Reserva
+                <button 
+                  className="btn-cancelar" 
+                  onClick={() => onCancelar(reserva.id)}
+                >
+                  ❌ Cancelar
                 </button>
               </div>
             )}
@@ -68,4 +126,4 @@ function MisReservas({ reservas, onConfirmarPago, onCancelar }: Props) {
   )
 }
 
-export default MisReservas
+export default MyReservations
