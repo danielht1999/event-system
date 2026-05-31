@@ -4,32 +4,50 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import path from 'path';
 import { errorHandler } from '@shared/api/middlewares/errorHandler';
 import { v1Routes } from '@shared/api/routes/v1';
+import { register } from '@shared/infrastructure/monitoring/metrics';
+import { metricsMiddleware } from '@shared/api/middlewares/metrics.middleware';
 
+// Cargar variables de entorno desde archivo .env
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares globales
+// ==================== MIDDLEWARES GLOBALES ====================
+
+// Helmet: Seguridad - protege contra vulnerabilidades conocidas (XSS, clickjacking, etc.)
 app.use(helmet());
+
+// CORS: Permite peticiones desde otros dominios (útil para APIs públicas)
 app.use(cors());
+
+// JSON: Parsea body de requests con Content-Type: application/json
 app.use(express.json());
+
+// URL Encoded: Parsea body de formularios URL-encoded
 app.use(express.urlencoded({ extended: true }));
+
+// Morgan: Logging de requests HTTP en consola (formato 'dev' para desarrollo)
 app.use(morgan('dev'));
 
+// Metrics Middleware: Registra métricas personalizadas para cada request (tiempos, conteo de rutas)
+app.use(metricsMiddleware);
 
-// Rate limiting
+// ==================== RATE LIMITING ====================
+
+// Limitar solicitudes para evitar abusos y ataques DDoS
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // Ventana de tiempo: 15 minutos
+  max: 100, // Máximo de 100 solicitudes por IP en la ventana de tiempo
   message: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde'
 });
-app.use('/api', limiter);
+app.use('/api', limiter); // Aplica solo a rutas que comienzan con /api
 
-// Health check
+// ==================== ENDPOINTS PÚBLICOS ====================
+
+// Health check: Verifica que el servicio esté funcionando
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -38,11 +56,23 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
+// Metrics endpoint: Expone métricas para Prometheus u otros sistemas de monitoreo
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType); // Tipo de contenido prometheus
+  res.end(await register.metrics()); // Devuelve todas las métricas registradas
+});
+
+// ==================== RUTAS DE LA API ====================
+
+// Versión 1 de la API (todas las rutas comienzan con /api/v1)
 app.use('/api/v1', v1Routes);
 
-// Manejador de errores
+// ==================== MANEJADOR DE ERRORES ====================
+
+// Middleware global para manejar errores (siempre al final)
 app.use(errorHandler);
+
+// ==================== INICIAR SERVIDOR ====================
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
