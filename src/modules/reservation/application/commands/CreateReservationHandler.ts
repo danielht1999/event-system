@@ -3,6 +3,7 @@ import { CreateReservationCommand } from './CreateReservationCommand';
 import { Reservation } from '../../domain/entities/Reservation';
 import { v4 as uuidv4 } from 'uuid';
 import { ReservationTransactionService } from '../../infrastructure/services/ReservationTransactionService';
+import { reservasCreadas } from '@shared/infrastructure/monitoring/metrics';
 
 export interface ReservationResult {
   id: string;
@@ -31,6 +32,8 @@ export class CreateReservationHandler {
     );
 
     await this.reservationTransactionService.createReservation(reservation);
+    //incrmento para metics
+    reservasCreadas.inc();
 
     return {
       id: reservation.id,
