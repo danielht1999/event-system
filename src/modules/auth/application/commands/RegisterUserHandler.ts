@@ -4,6 +4,7 @@ import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { IPasswordHasher } from '../../domain/services/IPasswordHasher';
 import { IJwtService } from '../../domain/services/IJwtService';
 import { v4 as uuidv4 } from 'uuid';
+import { userQuantity } from '@shared/infrastructure/monitoring/metrics';
 
 export interface RegisterUserResult {
   user: {
@@ -41,6 +42,8 @@ export class RegisterUserHandler {
       password_hash: passwordHash,
       rol: command.rol
     });
+    //metrics
+    userQuantity.inc();
 
     // 4. Generar JWT
     const token = this.jwtService.sign({

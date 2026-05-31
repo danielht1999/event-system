@@ -9,7 +9,7 @@ export const reservasCreadas = new Counter({
 
 export const userQuantity = new Gauge({
   name: 'cantidad_usuarios',
-  help: 'cantidad de usuarios'  // typo corregido
+  help: 'cantidad de usuarios'  
 });
 
 export const usedRoutes = new Counter({
