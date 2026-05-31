@@ -1,7 +1,7 @@
-// UserProfile.tsx
+// client/src/components/UserProfile.tsx
 import { useState } from 'react'
 
-interface UserProfile {
+interface UserProfileData {
   id: string
   nombre: string
   email: string
@@ -9,7 +9,7 @@ interface UserProfile {
 }
 
 interface Props {
-  profile: UserProfile | null
+  profile: UserProfileData | null
   onUpdateNombre: (nuevoNombre: string) => Promise<void>
   onUpdateEmail: (nuevoEmail: string) => Promise<void>
 }
@@ -21,7 +21,12 @@ function UserProfile({ profile, onUpdateNombre, onUpdateEmail }: Props) {
   const [error, setError] = useState('')
 
   if (!profile) {
-    return <div className="sin-profile">No se pudo cargar el perfil</div>
+    return (
+      <div className="main-panel">
+        <h1 className="panel-title">Mi Perfil</h1>
+        <p className="empty">No se pudo cargar el perfil</p>
+      </div>
+    )
   }
 
   const iniciarEdicion = (campo: 'nombre' | 'email') => {
@@ -93,115 +98,110 @@ function UserProfile({ profile, onUpdateNombre, onUpdateEmail }: Props) {
   }
 
   return (
-    <div className="perfil-container">
-      <h2>Mi Perfil</h2>
+    <div className="main-panel">
+      <h1 className="panel-title">Mi Perfil</h1>
       
-      <div className="perfil-card">
-        {/* Campo NOMBRE */}
-        <div className="campo-perfil">
-          <label><strong>Nombre:</strong></label>
-          
+      {/* FILA: NOMBRE */}
+      <div className="profile-row">
+        <div className="profile-info">
+          <span className="info-label">Nombre</span>
           {editando === 'nombre' ? (
-            <div className="campo-edicion">
-              <input
-                type="text"
-                value={valorEditado}
-                onChange={(e) => setValorEditado(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') guardarCambios()
-                  if (e.key === 'Escape') cancelarEdicion()
-                }}
-                autoFocus
-                disabled={cargando}
-              />
-              <div className="acciones-edicion">
-                <button 
-                  onClick={guardarCambios} 
-                  className="btn-guardar"
+            <div>
+              <div className="edit-mode">
+                <input
+                  type="text"
+                  className="edit-input"
+                  value={valorEditado}
+                  onChange={(e) => setValorEditado(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') guardarCambios()
+                    if (e.key === 'Escape') cancelarEdicion()
+                  }}
+                  autoFocus
                   disabled={cargando}
-                >
+                />
+                <button className="btn-save" onClick={guardarCambios} disabled={cargando}>
                   {cargando ? 'Guardando...' : 'Guardar'}
                 </button>
-                <button 
-                  onClick={cancelarEdicion} 
-                  className="btn-cancelar"
-                  disabled={cargando}
-                >
+                <button className="btn-cancel" onClick={cancelarEdicion} disabled={cargando}>
                   Cancelar
                 </button>
               </div>
               {error && <div className="error-inline">{error}</div>}
             </div>
           ) : (
-            <div className="campo-valor">
-              <span>{profile.nombre}</span>
-              <button 
-                onClick={() => iniciarEdicion('nombre')} 
-                className="btn-editar"
-                title="Editar nombre"
-              >
-                ✏️
-              </button>
-            </div>
+            <>
+              <span className="info-value">{profile.nombre}</span>
+              {/* Si hubo un error global previo intentando guardar nombre */}
+              {error && editando === null && <div className="error-inline">{error}</div>}
+            </>
           )}
         </div>
+        {editando !== 'nombre' && (
+          <button 
+            className="btn-edit-profile" 
+            onClick={() => iniciarEdicion('nombre')}
+            title="Editar nombre"
+          >
+            ✏️
+          </button>
+        )}
+      </div>
 
-        {/* Campo EMAIL */}
-        <div className="campo-perfil">
-          <label><strong>Email:</strong></label>
-          
+      {/* FILA: EMAIL */}
+      <div className="profile-row">
+        <div className="profile-info">
+          <span className="info-label">Correo electrónico</span>
           {editando === 'email' ? (
-            <div className="campo-edicion">
-              <input
-                type="email"
-                value={valorEditado}
-                onChange={(e) => setValorEditado(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') guardarCambios()
-                  if (e.key === 'Escape') cancelarEdicion()
-                }}
-                autoFocus
-                disabled={cargando}
-              />
-              <div className="acciones-edicion">
-                <button 
-                  onClick={guardarCambios} 
-                  className="btn-guardar"
+            <div>
+              <div className="edit-mode">
+                <input
+                  type="email"
+                  className="edit-input"
+                  value={valorEditado}
+                  onChange={(e) => setValorEditado(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') guardarCambios()
+                    if (e.key === 'Escape') cancelarEdicion()
+                  }}
+                  autoFocus
                   disabled={cargando}
-                >
+                />
+                <button className="btn-save" onClick={guardarCambios} disabled={cargando}>
                   {cargando ? 'Guardando...' : 'Guardar'}
                 </button>
-                <button 
-                  onClick={cancelarEdicion} 
-                  className="btn-cancelar"
-                  disabled={cargando}
-                >
+                <button className="btn-cancel" onClick={cancelarEdicion} disabled={cargando}>
                   Cancelar
                 </button>
               </div>
               {error && <div className="error-inline">{error}</div>}
             </div>
           ) : (
-            <div className="campo-valor">
-              <span>{profile.email}</span>
-              <button 
-                onClick={() => iniciarEdicion('email')} 
-                className="btn-editar"
-                title="Editar email"
-              >
-                ✏️
-              </button>
-            </div>
+            <>
+              <span className="info-value">{profile.email}</span>
+              {/* Si hubo un error global previo intentando guardar email */}
+              {error && editando === null && <div className="error-inline">{error}</div>}
+            </>
           )}
         </div>
+        {editando !== 'email' && (
+          <button 
+            className="btn-edit-profile" 
+            onClick={() => iniciarEdicion('email')}
+            title="Editar email"
+          >
+            ✏️
+          </button>
+        )}
+      </div>
 
-        {/* Campo ROL (solo lectura, sin edición) */}
-        <div className="campo-perfil">
-          <label><strong>Rol:</strong></label>
-          <div className="campo-valor">
-            <span className={`rol-badge ${profile.rol.toLowerCase()}`}>
-              {profile.rol === 'ORGANIZADOR' ? 'Organizador' : 'Usuario'}
-            </span>
+      {/* FILA: ROL */}
+      <div className="profile-row">
+        <div className="profile-info">
+          <span className="info-label">Rol Asignado</span>
+          <div className="pill-led success">
+            <span className="led"></span>
+            {profile.rol === 'ORGANIZADOR' ? 'Organizador' : 'Usuario'}
           </div>
         </div>
       </div>
