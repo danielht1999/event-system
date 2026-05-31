@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventify - Explorador (Autenticado)</title>
+    <style>
+        /* ============================================ */
+        /* 1. VARIABLES ARMONIZADAS (Estilo Sci-Fi Tech)*/
+        /* ============================================ */
+        :root {
+            --gradient-body: linear-gradient(135deg, #4e54c8 0%, #764ba2 100%);
+            
+            /* Contenedores Base */
+            --bg-card: rgba(13, 17, 23, 0.75);
+            --bg-card-solid: #0d1117;
+            --border-glow: rgba(110, 142, 251, 0.2);
+            --text-accent: #8f94fb;
+            
+            /* Textos */
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+
+            /* Estados Activos / Botones / LEDs */
+            --success-color: #00e5ff;
+            --success-gradient: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 131, 176, 0.02) 100%);
+            --success-led: radial-gradient(circle at 35% 35%, #ffffff, #00e5ff);
+            
+            --error-color: #ff1744;
+            --error-gradient: linear-gradient(135deg, rgba(255, 23, 68, 0.15) 0%, rgba(203, 45, 62, 0.02) 100%);
+        }
+
+        /* ============================================ */
+        /* 2. ESTILOS BASE Y NAVBAR                     */
+        /* ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--gradient-body);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-glow);
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #ffffff, var(--text-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-grow: 1;
+            margin-left: 40px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: color 0.2s;
+            position: relative;
+            padding: 6px 0;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-main);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -22px; /* Alineado al borde de la navbar */
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+        }
+
+        /* Bloque de Usuario Autenticado */
+        .nav-user-zone {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Implementación de tu Pill con LED para el Rol */
+        .pill-led {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            background: var(--success-gradient);
+            color: var(--text-main);
+            border: 1px solid var(--success-color);
+        }
+
+        @keyframes led-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 4px currentColor; }
+            50% { opacity: 0.75; transform: scale(1.1); box-shadow: 0 0 10px currentColor; }
+        }
+
+        .led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            background: var(--success-led);
+            color: var(--success-color);
+            animation: led-pulse 2s infinite ease-in-out;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid rgba(255, 23, 68, 0.4);
+            color: #ff4d6d;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: var(--error-gradient);
+            border-color: var(--error-color);
+            box-shadow: 0 0 10px rgba(255, 23, 68, 0.15);
+        }
+
+        /* ============================================ */
+        /* 3. CONTENIDO PRINCIPAL                       */
+        /* ============================================ */
+        .container {
+            max-width: 1240px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+            flex: 1; /* Empuja el footer hacia abajo */
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: -0.3px;
+        }
+
+        .eventos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .evento-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glow);
+            border-left: 4px solid var(--text-accent);
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .evento-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--text-accent);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .evento-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .evento-meta {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .evento-precio {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--success-color);
+            margin-top: 5px;
+        }
+
+        .evento-cupos {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-card-solid);
+            border: 1px solid var(--success-color);
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: auto;
+        }
+
+        .btn-action:hover {
+            background: var(--success-gradient);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* ============================================ */
+        /* 4. FOOTER HOMOGÉNEO                          */
+        /* ============================================ */
+        .footer {
+            background: var(--bg-card-solid);
+            border-top: 1px solid var(--border-glow);
+            padding: 60px 40px 40px 40px;
+            margin-top: auto;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr repeat(2, 1fr);
+            gap: 40px;
+        }
+
+        .footer-brand h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        .footer-column h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-accent);
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 0 20px; }
+            .nav-menu { margin-left: 20px; }
+            .footer-container { grid-template-columns: 1fr; gap: 30px; }
+            .nav-links { display: none; } /* En responsive real haríamos un menú colapsable */
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Eventify</div>
+        <div class="nav-menu">
+            <div class="nav-links">
+                <a href="#" class="nav-link active">Explorador</a>
+                <a href="#" class="nav-link">Mis Reservas (4)</a>
+                <a href="#" class="nav-link">Panel Organizador</a>
+                <a href="#" class="nav-link">Mi Perfil</a>
+            </div>
+            
+            <div class="nav-user-zone">
+                <div class="pill-led">
+                    <span class="led"></span>Organizador
+                </div>
+                <span class="user-name">Organizador Test</span>
+                <button class="btn-logout">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <main>
+            <h2 class="section-title">Eventos Disponibles</h2>
+            
+            <div class="eventos-grid">
+                
+                <div class="evento-card">
+                    <h3 class="evento-title">Evento prueba dos</h3>
+                    <div class="evento-meta">
+                        <span class="icon-wrapper">📍</span>
+                        <span>mexico</span>
+                    </div>
+                    <div class="evento-precio">$100.00</div>
+                    <div class="evento-cupos">198 cupos disponibles</div>
+                    <button class="btn-action">Comprar Ticket</button>
+                </div>
+
+                <div class="evento-card">
+                    <h3 class="evento-title">Evento prueba</h3>
+                    <div class="evento-meta">
+                        <span class="icon-wrapper">📍</span>
+                        <span>mexico</span>
+                    </div>
+                    <div class="evento-precio">$100.00</div>
+                    <div class="evento-cupos">100 cupos disponibles</div>
+                    <button class="btn-action">Comprar Ticket</button>
+                </div>
+
+                <div class="evento-card">
+                    <h3 class="evento-title">Conferencia DevOps 2024</h3>
+                    <div class="evento-meta">
+                        <span class="icon-wrapper">📍</span>
+                        <span>Centro de Convenciones</span>
+                    </div>
+                    <div class="evento-precio">$50.00</div>
+                    <div class="evento-cupos">100 cupos disponibles</div>
+                    <button class="btn-action">Comprar Ticket</button>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <h3>Eventify</h3>
+                <p>La plataforma ideal para descubrir y gestionar tus eventos favoritos.</p>
+            </div>
+            <div class="footer-column">
+                <h4>Explorrar</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Todos los eventos</a></li>
+                    <li><a href="#">Conciertos</a></li>
+                    <li><a href="#">Conferencias</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Soporte</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Ayuda y FAQ</a></li>
+                    <li><a href="#">Términos de servicio</a></li>
+                    <li><a href="#">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

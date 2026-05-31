@@ -1,55 +1,121 @@
-// PROPS - Recibe los datos listos desde el padre (App)
+// client/src/components/MyReservations.tsx
+interface Reserva {
+  id: string
+  eventoId: string
+  eventoTitulo: string
+  eventoFecha: string
+  cantidadTickets: number
+  estado: string
+  codigoTicket: string
+}
+
 interface Props {
-  reservas: any[]
+  reservas: Reserva[]
   onConfirmarPago: (reservaId: string) => void
   onCancelar: (reservaId: string) => void
 }
 
-// COMPONENTE - Función pura que renderiza la pantalla basándose en sus props
-function MisReservas({ reservas, onConfirmarPago, onCancelar }: Props) {   
-
-  // RENDERIZADO CONDICIONAL
-
-  // SI no hay reservas aún, mostramos el mensaje informativo.
-  // Nota: Al iniciar la app, si el fetch en App tarda unos milisegundos, 
-  // caerá aquí brevemente hasta que el array se llene con los datos de la API.
-  if (reservas.length === 0) {
-    return <div className="sin-reservas">No tienes reservas aún</div>
+function MyReservations({ reservas, onConfirmarPago, onCancelar }: Props) {
+  if (!reservas || reservas.length === 0) {
+    return (
+      <div className="main-panel">
+        <h1 className="panel-title">Mis Reservas</h1>
+        <p className="empty">No tienes reservas activas.</p>
+      </div>
+    )
   }
 
-  // RENDERIZADO PRINCIPAL - Mostrar la lista de reservas actualizada
+  const getEstadoPill = (estado: string) => {
+    switch (estado) {
+      case 'CONFIRMADA':
+        return 'success'
+      case 'CANCELADA':
+        return 'error'
+      case 'PENDIENTE_PAGO':
+        return 'warning'
+      default:
+        return 'warning'
+    }
+  }
+
+  const getEstadoTexto = (estado: string) => {
+    switch (estado) {
+      case 'CONFIRMADA':
+        return 'CONFIRMADA'
+      case 'CANCELADA':
+        return 'CANCELADA'
+      case 'PENDIENTE_PAGO':
+        return 'PENDIENTE DE PAGO'
+      default:
+        return estado
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Fecha no disponible'
+    return new Date(dateString).toLocaleDateString('es-ES')
+  }
+
   return (
-    <div className="mis-reservas">
-      <h2>Mis Reservas</h2>
-      <div className="reservas-lista">
+    <div className="main-panel">
+      <h1 className="panel-title">Mis Reservas</h1>
+      
+      <div className="reservas-grid">
         {reservas.map((reserva) => (
-          <div key={reserva.id} className="reserva-card">
-            <h3>{reserva.eventoTitulo}</h3>
-            <div className="reserva-detalles">
-              <p>
-                <strong>Fecha:</strong> {new Date(reserva.eventoFecha).toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Cantidad de tickets:</strong> {reserva.cantidadTickets}
-              </p>
-              <p>
-                <strong>Estado:</strong> 
-                <span className={`estado ${reserva.estado.toLowerCase()}`}>
-                  {reserva.estado}
-                </span>
-              </p>
-              <p>
-                <strong>Código del ticket:</strong> 
-                <code className="codigo-ticket">{reserva.codigoTicket}</code>
-              </p>
+          <div 
+            key={reserva.id} 
+            className="reserva-card"
+            style={{ borderTop: `3px solid var(--${getEstadoPill(reserva.estado)}-color)` }}
+          >
+            <div className="reserva-header">
+              <h3 className="reserva-title">{reserva.eventoTitulo || 'Evento'}</h3>
+              <div className={`pill-led ${getEstadoPill(reserva.estado)}`}>
+                <span className="led"></span>
+                {getEstadoTexto(reserva.estado)}
+              </div>
             </div>
+            
+            <div className="reserva-meta-row">
+              <div>
+                <div className="meta-block-title">Fecha del Evento</div>
+                <div className="meta-block-value">
+                  <span className="icon-wrapper">🗓️</span>
+                  <span>{formatDate(reserva.eventoFecha)}</span>
+                </div>
+              </div>
+              <div>
+                <div className="meta-block-title">Entradas</div>
+                <div className="meta-block-value">
+                  <span className="icon-wrapper">🎟️</span>
+                  <span>{reserva.cantidadTickets} {reserva.cantidadTickets === 1 ? 'entrada' : 'entradas'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="ticket-code-box">
+              <div className="meta-block-title">Código Único de Entrada</div>
+              <div 
+                className={`ticket-code-value ${
+                  reserva.estado === 'CANCELADA' ? 'ticket-cancelado' : ''
+                }`}
+              >
+                {reserva.codigoTicket}
+              </div>
+            </div>
+
             {reserva.estado === 'PENDIENTE_PAGO' && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button className="btn btn-primary" onClick={() => onConfirmarPago(reserva.id)}>
-                  Pagar
+              <div className="reserva-actions">
+                <button 
+                  className="btn-pagar" 
+                  onClick={() => onConfirmarPago(reserva.id)}
+                >
+                  ✅ Pagar
                 </button>
-                <button className="btn btn-danger" onClick={() => onCancelar(reserva.id)}>
-                  Cancelar
+                <button 
+                  className="btn-cancelar" 
+                  onClick={() => onCancelar(reserva.id)}
+                >
+                  ❌ Cancelar
                 </button>
               </div>
             )}
@@ -60,4 +126,4 @@ function MisReservas({ reservas, onConfirmarPago, onCancelar }: Props) {
   )
 }
 
-export default MisReservas
+export default MyReservations
