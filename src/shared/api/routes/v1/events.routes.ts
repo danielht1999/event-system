@@ -9,7 +9,7 @@ const router = Router();
 
 /// Rutas públicas
 router.get('/', eventController.listar);
-router.get('/mis-eventos', authenticate, organizadorMiddleware, eventController.misEventos); // ← aquí
+router.get('/mis-eventos', authenticate, organizadorMiddleware, eventController.misEventos); 
 router.get('/:id', eventController.obtener);
 router.get('/:id/disponibilidad', eventController.verDisponibilidad);
 

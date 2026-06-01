@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
+    "dev:load-test": "npm run dev -- --isLoadTest",
     "dev:client": "npm run dev --prefix client",
     "build": "tsc",
     "start": "node dist/server.js",
