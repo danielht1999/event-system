@@ -38,12 +38,17 @@ app.use(metricsMiddleware);
 // ==================== RATE LIMITING ====================
 
 // Limitar solicitudes para evitar abusos y ataques DDoS
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // Ventana de tiempo: 15 minutos
-  max: 100, // Máximo de 100 solicitudes por IP en la ventana de tiempo
-  message: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde'
-});
-app.use('/api', limiter); // Aplica solo a rutas que comienzan con /api
+// Revisa si la terminal ejecutó el comando con el flag personalizado
+const isLoadTest = process.argv.includes('--isLoadTest');
+
+if (!isLoadTest) {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde'
+  });
+  app.use('/api', limiter);
+}
 
 // ==================== ENDPOINTS PÚBLICOS ====================
 
