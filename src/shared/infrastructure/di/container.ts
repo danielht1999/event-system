@@ -23,11 +23,14 @@ import { PostgresReservationQueryService } from '@modules/reservation/infrastruc
 
 import pool from '@shared/infrastructure/database/connection';
 import { UpdateProfilehandler } from '@modules/auth/application/commands/UpdateProfileHandler';
+import { ExpireReservationsHandler } from '@modules/reservation/application/commands/ExpireReservationsHandler';
+import { PostgresReservationRepository } from '@modules/reservation/infrastructure/repositories/PostgresReservationRepository';
 
 // Repositorios
 const userRepository = new PostgresUserRepository();
 const eventRepository = new PostgresEventRepository();
 const reservationTransactionService = new ReservationTransactionService(pool);
+const reservationRepository = new PostgresReservationRepository();
 
 // Servicios
 const passwordHasher = new BcryptPasswordHasher();
@@ -47,6 +50,7 @@ const createReservationHandler = new CreateReservationHandler(reservationTransac
 const confirmPaymentHandler = new ConfirmPaymentHandler(reservationTransactionService);
 const cancelReservationHandler = new CancelReservationHandler(reservationTransactionService);
 const updateProfileHandler = new UpdateProfilehandler(userRepository);
+export const expireReservationHandler = new ExpireReservationsHandler(reservationRepository);
 
 //Queries
 const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventQueryService);
@@ -66,4 +70,4 @@ export const eventController = new EventController(
   getEventsByOrganizerHandler
 );
 
-export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler,cancelReservationHandler,reservationQueryService);
+export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler,cancelReservationHandler,reservationQueryService); 

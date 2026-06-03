@@ -82,6 +82,44 @@ export class PostgresReservationRepository implements IReservationRepository {
     );
   }
 
+  async expireObsoleteReservations(): Promise<number> {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Tu query atómica exacta
+      const resultado = await client.query(`
+        WITH reservas_expiradas AS (
+          UPDATE reservas
+          SET estado = 'EXPIRADA'
+          WHERE estado = 'PENDIENTE_PAGO'
+            AND reservado_en <= NOW() - INTERVAL '15 minutes'
+          RETURNING evento_id, cantidad_tickets
+        )
+        UPDATE eventos e
+        SET reservas_pendientes = e.reservas_pendientes - sub.total_tickets
+        FROM (
+          SELECT 
+            evento_id,
+            SUM(cantidad_tickets) AS total_tickets
+          FROM reservas_expiradas
+          GROUP BY evento_id
+        ) sub
+        WHERE e.id = sub.evento_id
+        RETURNING e.id;
+      `);
+
+      await client.query('COMMIT');
+      return resultado.rowCount || 0;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   private mapToEntity(row: any): Reservation {
     return new Reservation(
       row.id,

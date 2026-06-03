@@ -9,7 +9,7 @@ import { v1Routes } from '@shared/api/routes/v1';
 import { register } from '@shared/infrastructure/monitoring/metrics';
 import { metricsMiddleware } from '@shared/api/middlewares/metrics.middleware';
 import { startReservationExpiryWorker } from '@shared/workers/reservationExpiry.worker';
-import pool from '@shared/infrastructure/database/connection';
+import { expireReservationHandler } from '@shared/infrastructure/di/container';
 
 // Cargar variables de entorno desde archivo .env
 dotenv.config();
@@ -85,7 +85,7 @@ app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
   //recupera periodicamente las reservas expiradas
-  startReservationExpiryWorker(pool);
+  startReservationExpiryWorker(expireReservationHandler);
   console.log('Worker de expiración de reservas iniciado');
 });
 

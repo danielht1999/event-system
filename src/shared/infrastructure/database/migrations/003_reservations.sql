@@ -5,9 +5,9 @@ CREATE TABLE IF NOT EXISTS reservas (
     cantidad_tickets INT NOT NULL,
     estado VARCHAR(20) DEFAULT 'PENDIENTE_PAGO',
     codigo_ticket VARCHAR(50) UNIQUE NOT NULL,
-    reservado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    pagado_en TIMESTAMP,
-    checked_in_en TIMESTAMP,
+    reservado_en TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
+    pagado_en TIMESTAMPTZ,                              
+    checked_in_en TIMESTAMPTZ,                           
     CONSTRAINT max_tickets CHECK (cantidad_tickets <= 4)
 );
 
