@@ -10,72 +10,33 @@ export const startReservationExpiryWorker = (pool: Pool) => {
 
     try {
       await client.query('BEGIN')
-
-      // Obtener reservas pendientes con más de 15 minutos
-      const resultado = await client.query(
-        `
-        SELECT 
-          id,
-          evento_id,
-          cantidad_tickets,
-          estado,
-          reservado_en,
-          NOW() - reservado_en AS tiempo_transcurrido
-        FROM reservas
-        WHERE estado = $1
-          AND reservado_en <= NOW() - INTERVAL '15 minutes'
-        FOR UPDATE
-        `,
-        ['PENDIENTE_PAGO']
-      )
-
-      // No hay reservas expiradas -> terminar normalmente
-      if (resultado.rows.length === 0) {
-        await client.query('COMMIT')
-        return
-      }
-
-      // Obtener IDs de reservas expiradas
-      const reservationIds = resultado.rows.map((r) => r.id)
-
-      // Marcar reservas como EXPIRADA
-      await client.query(
-        `
-        UPDATE reservas
-        SET estado = 'EXPIRADA'
-        WHERE id = ANY($1)
-        `,
-        [reservationIds]
-      )
-
-      // Agrupar tickets por evento
-      const eventosMap = new Map<string, number>()
-
-      for (const reserva of resultado.rows) {
-        const actual = eventosMap.get(reserva.evento_id) || 0
-
-        eventosMap.set(
-          reserva.evento_id,
-          actual + reserva.cantidad_tickets
+      // Expirar reservas y liberar cupos en una sola operación atómica
+      const resultado = await client.query(`
+        WITH reservas_expiradas AS (
+          UPDATE reservas
+          SET estado = 'EXPIRADA'
+          WHERE estado = 'PENDIENTE_PAGO'
+            AND reservado_en <= NOW() - INTERVAL '15 minutes'
+          RETURNING evento_id, cantidad_tickets
         )
-      }
 
-      // Devolver cupos pendientes al evento
-      for (const [eventoId, tickets] of eventosMap) {
-        await client.query(
-          `
-          UPDATE eventos
-          SET reservas_pendientes = reservas_pendientes - $1
-          WHERE id = $2
-          `,
-          [tickets, eventoId]
-        )
-      }
+        UPDATE eventos e
+        SET reservas_pendientes = e.reservas_pendientes - sub.total_tickets
+        FROM (
+          SELECT 
+            evento_id,
+            SUM(cantidad_tickets) AS total_tickets
+          FROM reservas_expiradas
+          GROUP BY evento_id
+        ) sub
+        WHERE e.id = sub.evento_id
+        RETURNING e.id;
+      `)
 
       await client.query('COMMIT')
 
       console.log(
-        `Reservas expiradas procesadas: ${resultado.rows.length}`
+        `Eventos actualizados por reservas expiradas: ${resultado.rowCount}`
       )
     } catch (error) {
       await client.query('ROLLBACK')
@@ -85,3 +46,43 @@ export const startReservationExpiryWorker = (pool: Pool) => {
     }
   })
 }
+//  const resultado = await client.query(`
+//         -- ===========================================================
+//         -- PARTE 1: CTE (Common Table Expression) - "reservas_expiradas"
+//         -- ===========================================================
+//         -- Una CTE es como una "tabla temporal" que existe solo durante
+//         -- la ejecución de esta consulta. Se define con WITH.
+//         -- ===========================================================
+        
+//         WITH reservas_expiradas AS (
+//           -- Esta es la operación principal que MODIFICA datos (UPDATE)
+//           UPDATE reservas
+//           -- Cambiamos el estado a EXPIRADA
+//           SET estado = 'EXPIRADA'
+//           -- Condiciones para expirar:
+//           WHERE estado = 'PENDIENTE_PAGO'           -- Solo reservas sin pagar
+//             AND reservado_en <= NOW() - INTERVAL '15 minutes'  -- Más viejo de 15 min
+//           -- La magia: RETURNING nos devuelve los datos de las filas afectadas
+//           RETURNING evento_id, cantidad_tickets
+//         )
+        
+//         -- ===========================================================
+//         -- PARTE 2: ACTUALIZACIÓN DE EVENTOS
+//         -- ===========================================================
+//         -- Aquí liberamos los cupos de cada evento que perdió reservas
+//         -- ===========================================================
+        
+//         UPDATE eventos e
+//         -- Restamos los tickets de las reservas expiradas
+//         SET reservas_pendientes = e.reservas_pendientes - sub.total_tickets
+//         FROM (
+//           -- Subconsulta: Agrupa por evento para sumar los tickets expirados
+//           SELECT 
+//             evento_id,
+//             SUM(cantidad_tickets) AS total_tickets  -- Suma todos los tickets expirados
+//           FROM reservas_expiradas  -- Datos que vienen de la CTE de arriba
+//           GROUP BY evento_id        -- Agrupamos por evento
+//         ) sub  -- Esta subconsulta se llama "sub"
+//         WHERE e.id = sub.evento_id  -- Conectamos con la tabla eventos
+//         RETURNING e.id;              -- Devolvemos los IDs de eventos afectados
+//       `)
