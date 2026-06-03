@@ -14,7 +14,8 @@
     "test:coverage": "jest --coverage --runInBand",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "migrate": "ts-node src/shared/infrastructure/database/migrate.ts"
+    "migrate": "ts-node src/shared/infrastructure/database/migrate.ts",
+    "seed": "ts-node src/shared/infrastructure/database/seed.ts"
   },
   "dependencies": {
     "amqplib": "^0.10.3",

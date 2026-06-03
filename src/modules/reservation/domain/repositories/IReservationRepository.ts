@@ -9,4 +9,5 @@ export interface IReservationRepository {
   findByTicketCode(code: string): Promise<Reservation | null>;
   update(reservation: Reservation): Promise<void>;
   delete(id: string): Promise<void>;
+  expireObsoleteReservations(): Promise<number>
 }

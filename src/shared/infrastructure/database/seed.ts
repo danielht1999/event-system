@@ -1,129 +1,294 @@
-import pool from './connection';
-import bcrypt from 'bcrypt';
-import crypto from 'crypto'; // Nativo de Node.js para generar el código de ticket único
+import pool from './connection'
+import bcrypt from 'bcrypt'
+import crypto from 'crypto'
+
+// ============================================
+// Helpers
+// ============================================
+
+function generateTicketCode(): string {
+  return `TCK-${crypto.randomBytes(4).toString('hex').toUpperCase()}`
+}
 
 async function seed() {
-  console.log('[SEED] Iniciando inserción de datos de prueba...');
-  
+  console.log('[SEED] Iniciando inserción de datos de prueba...')
+
+  const client = await pool.connect()
+
   try {
-    const passwordHash = await bcrypt.hash('123456', 10);
-    
-    // ----------------------------------------------------
-    // 1. INSERTAR USUARIOS (IDs fijos para testing)
-    // ----------------------------------------------------
-    const organizadorId = '11111111-1111-1111-1111-111111111111';
-    const asistenteId   = '22222222-2222-2222-2222-222222222222';
+    await client.query('BEGIN')
+
+    // ============================================
+    // Verificar tablas
+    // ============================================
+
+    await client.query('SELECT 1 FROM usuarios LIMIT 1')
+    await client.query('SELECT 1 FROM eventos LIMIT 1')
+    await client.query('SELECT 1 FROM reservas LIMIT 1')
+
+    // ============================================
+    // Password común
+    // ============================================
+
+    const passwordHash = await bcrypt.hash('123456', 10)
+
+    // ============================================
+    // USERS
+    // ============================================
+
+    const users = {
+      organizador1: '11111111-1111-1111-1111-111111111111',
+      organizador2: '22222222-2222-2222-2222-222222222222',
+
+      asistente1: '33333333-3333-3333-3333-333333333333',
+      asistente2: '44444444-4444-4444-4444-444444444444',
+      asistente3: '55555555-5555-5555-5555-555555555555'
+    }
 
     const usuariosQuery = `
-      INSERT INTO usuarios (id, email, nombre, password_hash, rol)
-      VALUES 
-        ('${organizadorId}', 'organizador@test.com', 'Organizador Test', $1, 'ORGANIZADOR'),
-        ('${asistenteId}', 'asistente@test.com', 'Asistente Test', $1, 'asistente')
-      ON CONFLICT (email) DO NOTHING;
-    `;
-    
-    await pool.query(usuariosQuery, [passwordHash]);
-    console.log('Usuarios mapeados.');
+      INSERT INTO usuarios (
+        id,
+        email,
+        nombre,
+        password_hash,
+        rol
+      )
+      VALUES
+        (
+          '${users.organizador1}',
+          'organizador@test.com',
+          'Organizador Principal',
+          $1,
+          'ORGANIZADOR'
+        ),
+        (
+          '${users.organizador2}',
+          'organizador2@test.com',
+          'Organizador Secundario',
+          $1,
+          'ORGANIZADOR'
+        ),
+        (
+          '${users.asistente1}',
+          'asistente1@test.com',
+          'Asistente Uno',
+          $1,
+          'ASISTENTE'
+        ),
+        (
+          '${users.asistente2}',
+          'asistente2@test.com',
+          'Asistente Dos',
+          $1,
+          'ASISTENTE'
+        ),
+        (
+          '${users.asistente3}',
+          'asistente3@test.com',
+          'Asistente Tres',
+          $1,
+          'ASISTENTE'
+        )
+      ON CONFLICT DO NOTHING;
+    `
 
-    // ----------------------------------------------------
-    // 2. INSERTAR EVENTOS (Mapeado exacto con tus columnas)
-    // ----------------------------------------------------
-    const evento1Id = 'a1111111-1111-1111-1111-111111111111';
-    const evento2Id = 'b2222222-2222-2222-2222-222222222222';
-    const evento3Id = 'c3333333-3333-3333-3333-333333333333';
+    await client.query(usuariosQuery, [passwordHash])
+
+    console.log('[SEED] Usuarios insertados')
+
+    // ============================================
+    // EVENTS
+    // ============================================
+
+    const events = {
+      event1: 'a1111111-1111-1111-1111-111111111111',
+      event2: 'b2222222-2222-2222-2222-222222222222',
+      event3: 'c3333333-3333-3333-3333-333333333333',
+      event4: 'd4444444-4444-4444-4444-444444444444'
+    }
 
     const eventosQuery = `
       INSERT INTO eventos (
-        id, organizador_id, titulo, descripcion, lugar, 
-        fecha, capacidad_total, precio, estado, reservas_confirmadas, reservas_pendientes
+        id,
+        organizador_id,
+        titulo,
+        descripcion,
+        lugar,
+        fecha,
+        capacidad_total,
+        precio,
+        estado,
+        reservas_confirmadas,
+        reservas_pendientes
       )
-      VALUES 
+      VALUES
         (
-          '${evento1Id}', 
-          '${organizadorId}', 
-          'Conferencia de Arquitectura de Software', 
-          'Sistemas distribuidos, escalabilidad con colas de mensajería y optimización de base de datos.', 
-          'Auditorio Virtual Alpha', 
-          NOW() + INTERVAL '10 days', 
-          150, 
-          150.00, 
-          'PUBLICADO', 
-          1, 
+          '${events.event1}',
+          '${users.organizador1}',
+          'Conferencia de Arquitectura de Software',
+          'Sistemas distribuidos y microservicios.',
+          'Auditorio Central Tech',
+          NOW() + INTERVAL '10 days',
+          150,
+          150.00,
+          'PUBLICADO',
+          3,
+          2
+        ),
+        (
+          '${events.event2}',
+          '${users.organizador1}',
+          'Workshop de Testing con k6',
+          'Pruebas de carga y estrés.',
+          'Laboratorio Beta',
+          NOW() + INTERVAL '15 days',
+          60,
+          0,
+          'PUBLICADO',
+          1,
+          6
+        ),
+        (
+          '${events.event3}',
+          '${users.organizador2}',
+          'Hackathon Fullstack Node.js',
+          'Backend escalable en 48 horas.',
+          'Centro Nexus',
+          NOW() + INTERVAL '30 days',
+          200,
+          50,
+          'BORRADOR',
+          0,
           0
         ),
         (
-          '${evento2Id}', 
-          '${organizadorId}', 
-          'Workshop Práctico de k6 y Pruebas de Carga', 
-          'Aprende a encontrar los límites de concurrencia y estrés de tus APIs.', 
-          'Laboratorio Tech Room B', 
-          NOW() + INTERVAL '15 days', 
-          50, 
-          0.00, 
-          'PUBLICADO', 
-          0, 
+          '${events.event4}',
+          '${users.organizador2}',
+          'Curso Intensivo PostgreSQL',
+          'Índices, locks y performance.',
+          'Sala Delta',
+          NOW() + INTERVAL '7 days',
+          80,
+          75,
+          'PUBLICADO',
+          4,
           1
-        ),
-        (
-          '${evento3Id}', 
-          '${organizadorId}', 
-          'Hackathon de Node.js & TypeScript', 
-          'Construye backend escalable en un fin de semana intenso.', 
-          'Centro de Convenciones Nexus', 
-          NOW() + INTERVAL '30 days', 
-          200, 
-          45.50, 
-          'BORRADOR', 
-          0, 
-          0
         )
-      ON CONFLICT (id) DO NOTHING;
-    `;
+      ON CONFLICT DO NOTHING;
+    `
 
-    await pool.query(eventosQuery);
-    console.log('Eventos mapeados (Borradores y Publicados).');
+    await client.query(eventosQuery)
 
-    // ----------------------------------------------------
-    // 3. INSERTAR RESERVAS COHERENTES
-    // ----------------------------------------------------
-    // Generamos códigos únicos aleatorios que cumplan con VARCHAR(50) UNIQUE
-    const ticketCode1 = `TCK-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-    const ticketCode2 = `TCK-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    console.log('[SEED] Eventos insertados')
+
+    // ============================================
+    // RESERVAS
+    // ============================================
 
     const reservasQuery = `
-      INSERT INTO reservas (id, evento_id, usuario_id, cantidad_tickets, estado, codigo_ticket, pagado_en)
-      VALUES 
+      INSERT INTO reservas (
+        id,
+        evento_id,
+        usuario_id,
+        cantidad_tickets,
+        estado,
+        codigo_ticket,
+        pagado_en,
+        reservado_en
+      )
+      VALUES
         (
-          'f1111111-1111-1111-1111-111111111111', 
-          '${evento1Id}', 
-          '${asistenteId}', 
-          1, 
-          'CONFIRMADA', 
-          '${ticketCode1}', 
-          NOW()
+          'f1111111-1111-1111-1111-111111111111',
+          $1,
+          $4,
+          1,
+          'CONFIRMADA',
+          $6,
+          NOW(),
+          NOW() - INTERVAL '2 hours'
         ),
         (
-          'f2222222-2222-2222-2222-222222222222', 
-          '${evento2Id}', 
-          '${asistenteId}', 
-          2, 
-          'PENDIENTE_PAGO', 
-          '${ticketCode2}', 
-          NULL
+          'f2222222-2222-2222-2222-222222222222',
+          $2,
+          $5,
+          2,
+          'PENDIENTE_PAGO',
+          $7,
+          NULL,
+          NOW() - INTERVAL '5 minutes'
+        ),
+        (
+          'f3333333-3333-3333-3333-333333333333',
+          $2,
+          $4,
+          4,
+          'PENDIENTE_PAGO',
+          $8,
+          NULL,
+          NOW() - INTERVAL '25 minutes'
+        ),
+        (
+          'f4444444-4444-4444-4444-444444444444',
+          $1,
+          $5,
+          2,
+          'CANCELADA',
+          $9,
+          NULL,
+          NOW() - INTERVAL '1 day'
+        ),
+        (
+          'f5555555-5555-5555-5555-555555555555',
+          $3,
+          $4,
+          3,
+          'CONFIRMADA',
+          $10,
+          NOW(),
+          NOW() - INTERVAL '3 days'
+        ),
+        (
+          'f6666666-6666-6666-6666-666666666666',
+          $1,
+          $5,
+          4,
+          'EXPIRADA',
+          $11,
+          NULL,
+          NOW() - INTERVAL '40 minutes'
         )
-      ON CONFLICT (id) DO NOTHING;
-    `;
+      ON CONFLICT DO NOTHING;
+    `
 
-    await pool.query(reservasQuery);
-    console.log('Reservas de prueba enlazadas con tickets únicos.');
-    console.log('Seeding estructurado con éxito.');
+    await client.query(reservasQuery, [
+      events.event1,
+      events.event2,
+      events.event4,
 
+      users.asistente1,
+      users.asistente2,
+
+      generateTicketCode(),
+      generateTicketCode(),
+      generateTicketCode(),
+      generateTicketCode(),
+      generateTicketCode(),
+      generateTicketCode()
+    ])
+
+    console.log('[SEED] Reservas insertadas')
+
+    await client.query('COMMIT')
+
+    console.log('[SEED] Datos insertados correctamente')
   } catch (error) {
-    console.error('Error crítico en el seeding:', error);
+    await client.query('ROLLBACK')
+    console.error('[SEED ERROR]', error)
   } finally {
-    await pool.end();
-    process.exit(0);
+    client.release()
+    await pool.end()
+    process.exit(0)
   }
 }
 
-seed();
+seed()

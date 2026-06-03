@@ -1,51 +1,25 @@
-import cron from 'node-cron'
-import { Pool } from 'pg'
+import cron from 'node-cron';
+import { ExpireReservationsHandler } from '@modules/reservation/application/commands/ExpireReservationsHandler';
+import { ExpireReservationsCommand } from '@modules/reservation/application/commands/ExpireReservationsCommand';
 
-export const startReservationExpiryWorker = (pool: Pool) => {
-  // Ejecutar cada 15 minutos
-  cron.schedule('*/15 * * * *', async () => {
-    console.log('Verificando reservas expiradas...')
-
-    const client = await pool.connect()
-
+export const startReservationExpiryWorker = (expireHandler: ExpireReservationsHandler) => {
+  // Ejecutar cada minuto para una precisión milimétrica
+  cron.schedule('* * * * *', async () => {
     try {
-      await client.query('BEGIN')
-      // Expirar reservas y liberar cupos en una sola operación atómica
-      const resultado = await client.query(`
-        WITH reservas_expiradas AS (
-          UPDATE reservas
-          SET estado = 'EXPIRADA'
-          WHERE estado = 'PENDIENTE_PAGO'
-            AND reservado_en <= NOW() - INTERVAL '15 minutes'
-          RETURNING evento_id, cantidad_tickets
-        )
-
-        UPDATE eventos e
-        SET reservas_pendientes = e.reservas_pendientes - sub.total_tickets
-        FROM (
-          SELECT 
-            evento_id,
-            SUM(cantidad_tickets) AS total_tickets
-          FROM reservas_expiradas
-          GROUP BY evento_id
-        ) sub
-        WHERE e.id = sub.evento_id
-        RETURNING e.id;
-      `)
-
-      await client.query('COMMIT')
-
-      console.log(
-        `Eventos actualizados por reservas expiradas: ${resultado.rowCount}`
-      )
+      // Instanciamos el comando
+      const command = new ExpireReservationsCommand();
+      
+      // Ejecutamos a través del Handler
+      const eventosAfectados = await expireHandler.execute(command);
+      
+      if (eventosAfectados > 0) {
+        console.log(`[Worker] Éxito: Se liberaron cupos en ${eventosAfectados} eventos.`);
+      }
     } catch (error) {
-      await client.query('ROLLBACK')
-      console.error('Error procesando reservas expiradas:', error)
-    } finally {
-      client.release()
+      console.error('[Worker Error] Error al disparar el comando de expiración:', error);
     }
-  })
-}
+  });
+};
 //  const resultado = await client.query(`
 //         -- ===========================================================
 //         -- PARTE 1: CTE (Common Table Expression) - "reservas_expiradas"
