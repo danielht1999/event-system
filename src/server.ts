@@ -10,10 +10,12 @@ import { register } from '@shared/infrastructure/monitoring/metrics';
 import { metricsMiddleware } from '@shared/api/middlewares/metrics.middleware';
 import { startReservationExpiryWorker } from '@shared/workers/reservationExpiry.worker';
 import { expireReservationHandler } from '@shared/infrastructure/di/container';
+import { validateEnv } from '@shared/infrastructure/config/env.validator'
 
 // Cargar variables de entorno desde archivo .env
 dotenv.config();
-
+//valido las variables de entorno
+validateEnv();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
