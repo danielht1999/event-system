@@ -1,17 +1,12 @@
 // src/modules/event/domain/entities/Event.ts
 import { EventDate } from '../value-objects/EventDate';
 import { Capacity } from '../value-objects/Capacity';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
 
 export type EventStatus = 
   | 'BORRADOR'
   | 'PUBLICADA' 
   | 'CANCELADA';
-
-export interface IDomainEvent {
-  eventName: string;
-  occurredOn: Date;
-  data: any;
-}
 
 export class Event {
   // 1. La bolsa de eventos que leerá el repositorio

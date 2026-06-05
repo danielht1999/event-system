@@ -1,7 +1,7 @@
 // src/modules/event/infrastructure/services/EventCacheSubscriber.ts
 import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 import { cacheService } from '@shared/infrastructure/cache/cache.service';
-import { IDomainEvent } from '../../domain/entities/Event';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
 
 export class EventCacheSubscriber {
   constructor() {
