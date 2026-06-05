@@ -15,7 +15,9 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "migrate": "ts-node src/shared/infrastructure/database/migrate.ts",
-    "seed": "ts-node src/shared/infrastructure/database/seed.ts"
+    "seed": "ts-node src/shared/infrastructure/database/seed.ts",
+    "load:events": "k6 run tests/load/events.load.js",
+    "load:reservations": "k6 run tests/load/reservations.load.js"
   },
   "dependencies": {
     "amqplib": "^0.10.3",
