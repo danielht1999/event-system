@@ -25,6 +25,7 @@ import pool from '@shared/infrastructure/database/connection';
 import { UpdateProfilehandler } from '@modules/auth/application/commands/UpdateProfileHandler';
 import { ExpireReservationsHandler } from '@modules/reservation/application/commands/ExpireReservationsHandler';
 import { PostgresReservationRepository } from '@modules/reservation/infrastructure/repositories/PostgresReservationRepository';
+import { CachedEventQueryService } from '@modules/event/infrastructure/queries/CachedEventQueryService';
 
 // Repositorios
 const userRepository = new PostgresUserRepository();
@@ -37,15 +38,16 @@ const passwordHasher = new BcryptPasswordHasher();
 const jwtService = new JwtService();
 
 // Query Service
-const eventQueryService = new PostgresEventQueryService();
+const postgresEventQueryService = new PostgresEventQueryService();
 const reservationQueryService = new PostgresReservationQueryService();
+const cachedEventQueryService = new CachedEventQueryService(postgresEventQueryService);//usar el redis
 
 // Handlers
 const registerHandler = new RegisterUserHandler(userRepository, passwordHasher, jwtService);
 const loginHandler = new LoginHandler(userRepository, passwordHasher, jwtService);
 const getProfileHandler = new GetProfileHandler(userRepository);
 const createEventHandler = new CreateEventHandler(eventRepository);
-const getEventsHandler = new GetEventsHandler(eventQueryService);
+const getEventsHandler = new GetEventsHandler(cachedEventQueryService);
 const createReservationHandler = new CreateReservationHandler(reservationTransactionService);
 const confirmPaymentHandler = new ConfirmPaymentHandler(reservationTransactionService);
 const cancelReservationHandler = new CancelReservationHandler(reservationTransactionService);
@@ -53,7 +55,7 @@ const updateProfileHandler = new UpdateProfilehandler(userRepository);
 export const expireReservationHandler = new ExpireReservationsHandler(reservationRepository);
 
 //Queries
-const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(eventQueryService);
+const getEventsByOrganizerHandler = new GetEventsByOrganizerHandler(cachedEventQueryService);
 
 // Controllers
 export const authController = new AuthController(
