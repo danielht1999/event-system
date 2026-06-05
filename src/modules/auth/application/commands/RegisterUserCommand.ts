@@ -16,9 +16,17 @@ export class RegisterUserCommand {
       throw new Error('Nombre es requerido');
     }
 
+    // Validación de rol
+    const validRoles: string[] = ['ORGANIZADOR', 'ASISTENTE'];
+    const userRol = data.rol || 'ASISTENTE';
+    
+    if (!validRoles.includes(userRol)) {
+      throw new Error('Rol inválido. Los roles válidos son: ORGANIZADOR o ASISTENTE');
+    }
+
     this.email = data.email.toLowerCase();
     this.nombre = data.nombre.trim();
     this.password = data.password;
-    this.rol = data.rol === 'ORGANIZADOR' ? 'ORGANIZADOR' : 'ASISTENTE';
+    this.rol = userRol; // Asigna el rol validado directamente
   }
 }

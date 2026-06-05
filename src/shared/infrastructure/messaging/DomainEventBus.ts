@@ -1,6 +1,6 @@
 // src/shared/infrastructure/messaging/DomainEventBus.ts
 import { EventEmitter } from 'events';
-import { IDomainEvent } from '@modules/event/domain/entities/Event';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
 
 class DomainEventBus {
   private bus = new EventEmitter();

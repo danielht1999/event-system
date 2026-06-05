@@ -3,8 +3,10 @@ import { RegisterUserCommand } from './RegisterUserCommand';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { IPasswordHasher } from '../../domain/services/IPasswordHasher';
 import { IJwtService } from '../../domain/services/IJwtService';
+import { User } from '../../domain/entities/User';
 import { v4 as uuidv4 } from 'uuid';
 import { userQuantity } from '@shared/infrastructure/monitoring/metrics';
+import { UserRole } from '../../domain/entities/User';
 
 export interface RegisterUserResult {
   user: {
@@ -24,41 +26,47 @@ export class RegisterUserHandler {
   ) {}
 
   async execute(command: RegisterUserCommand): Promise<RegisterUserResult> {
-    // 1. Verificar que el email no exista
+    // 1. Validación cruzada de infraestructura: Verificar disponibilidad del email
     const emailExists = await this.userRepository.emailExists(command.email);
     if (emailExists) {
       throw new Error('El email ya está registrado');
     }
 
-    // 2. Hashear password (usando servicio, no bcrypt directo)
+    // 2. Hashear password usando el servicio abstracto de dominio
     const passwordHash = await this.passwordHasher.hash(command.password);
 
-    // 3. Crear usuario
+    // 3. DOMINIO: Instanciar la entidad rica de dominio User
     const userId = uuidv4();
-    const user = await this.userRepository.save({
-      id: userId,
-      email: command.email,
-      nombre: command.nombre,
-      password_hash: passwordHash,
-      rol: command.rol
-    });
-    //metrics
+    const newUser = new User(
+      userId,
+      command.email,
+      command.nombre,
+      command.rol as UserRole
+    );
+
+    // Opcional: Registramos el hecho histórico dentro de la bolsa de eventos si lo deseas
+    newUser.recordEvent('UserRegistered', { userId: newUser.id, email: newUser.email });
+
+    // 4. PERSISTENCIA: Delegamos el almacenamiento y despacho de eventos usando el método explícito
+    const savedUser = await this.userRepository.create(newUser, passwordHash);
+    
+    // Incremento de métricas para monitoreo técnico
     userQuantity.inc();
 
-    // 4. Generar JWT
+    // 5. INFRAESTRUCTURA: Generar JWT usando los datos devueltos por el dominio
     const token = this.jwtService.sign({
-      id: user.id,
-      email: user.email,
-      rol: user.rol
+      id: savedUser.id,
+      email: savedUser.email,
+      rol: savedUser.rol
     });
 
-    // 5. Retornar resultado (sin exponer password_hash)
+    // 6. Retornar resultado estructurado (El DTO nunca expone secretos)
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        nombre: user.nombre,
-        rol: user.rol
+        id: savedUser.id,
+        email: savedUser.email,
+        nombre: savedUser.nombre,
+        rol: savedUser.rol
       },
       token
     };

@@ -16,45 +16,31 @@ export class UpdateProfilehandler {
   ) {}
 
   async execute(command: UpdateProfileCommand): Promise<UpdateUserResult> {    
-    // 1. Verificar que el usuario existe antes de hacer nada
-    const userExists = await this.userRepository.findById(command.userId);
-    if (!userExists) {
+    // 1. Recuperamos la agregación/entidad completa desde la BD
+    const user = await this.userRepository.findById(command.userId);
+    if (!user) {
       throw new Error(`Usuario con id ${command.userId} no encontrado`);
     }
 
-    // 2. Preparar el objeto con los datos reales que se van a actualizar
-    const dataToUpdate: Partial<{ email: string; nombre: string }> = {};
-
-    // 3. Validar y añadir el email solo si cambió
-    //userExists.email es el email del usario que sale en la db
-    if (command.email !== undefined && command.email !== userExists.email) {
+    // 2. Validación de negocio cruzada: Si el email cambia, verificamos disponibilidad
+    if (command.email !== undefined && command.email !== user.email) {
       const emailTaken = await this.userRepository.emailExists(command.email);
       if (emailTaken) {
         throw new Error(`El email ${command.email} ya está registrado`);
       }
-      dataToUpdate.email = command.email;
     }
 
-    // 4. Añadir el nombre solo si viene en el comando y es diferente al actual
-    if (command.nombre !== undefined && command.nombre !== userExists.nombre) {
-      dataToUpdate.nombre = command.nombre;
-    }
+    // 3. FUSIÓN DE ESTADOS: Resolvemos los opcionales antes de ir al dominio
+    const nombreFinal = command.nombre ?? user.nombre;
+    const emailFinal = command.email ?? user.email;
 
-    // 5. Si no hay cambios reales, retornamos el usuario que ya trajimos de la BD
-    if (Object.keys(dataToUpdate).length === 0) {
-      return {
-        user: {
-          id: userExists.id,
-          email: userExists.email,
-          nombre: userExists.nombre
-        }
-      };
-    }
+    // 4. DELEGACIÓN AL DOMINIO: La entidad valida el formato interno, muta y genera los eventos
+    user.actualizarPerfil(nombreFinal, emailFinal);
 
-    // 6. Ejecutar la actualización si hubo cambios
-    const updatedUser = await this.userRepository.update(command.userId, dataToUpdate);    
+    // 5. PERSISTENCIA ATÓMICA: Guardamos con save() (Upsert), despachando eventos automáticamente
+    const updatedUser = await this.userRepository.save(user);    
 
-    // 7. Retornar el resultado con la data fresca de la BD
+    // 6. Retornar el DTO de respuesta estructurado
     return {
       user: {
         id: updatedUser.id,

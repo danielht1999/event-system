@@ -1,33 +1,41 @@
 // src/modules/auth/infrastructure/repositories/PostgresUserRepository.ts
 import pool from '@shared/infrastructure/database/connection';
-import { IUserRepository, UserRecord } from '../../domain/repositories/IUserRepository';
-
+import { IUserRepository } from '../../domain/repositories/IUserRepository';
+import { User } from '../../domain/entities/User';
+import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 
 export class PostgresUserRepository implements IUserRepository {
-   async findByEmail(email: string): Promise<UserRecord | null> {
+  
+  /**
+   * Mapeador interno para transformar los datos relacionales de la BD 
+   * en una instancia de la entidad rica de dominio User.
+   */
+  private mapToEntity(row: any): User {
+    return new User(
+      row.id,
+      row.email,
+      row.nombre,
+      row.rol,
+      row.creado_en
+    );
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
     const result = await pool.query(
-      'SELECT id, email, nombre, password_hash, rol, creado_en FROM usuarios WHERE email = $1',
+      'SELECT id, email, nombre, rol, creado_en FROM usuarios WHERE email = $1',
       [email]
     );
-    return result.rows[0] || null;
+    if (!result.rows[0]) return null;
+    return this.mapToEntity(result.rows[0]);
   }
 
-  async findById(id: string): Promise<UserRecord | null> {
+  async findById(id: string): Promise<User | null> {
     const result = await pool.query(
-      'SELECT id, email, nombre, password_hash, rol, creado_en FROM usuarios WHERE id = $1',
+      'SELECT id, email, nombre, rol, creado_en FROM usuarios WHERE id = $1',
       [id]
     );
-    return result.rows[0] || null;
-  }
-
- async save(user: Omit<UserRecord, 'creado_en'>): Promise<UserRecord> {
-    const result = await pool.query(
-      `INSERT INTO usuarios (id, email, nombre, password_hash, rol)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, email, nombre, rol, creado_en`,
-      [user.id, user.email, user.nombre, user.password_hash, user.rol]
-    );
-    return result.rows[0];
+    if (!result.rows[0]) return null;
+    return this.mapToEntity(result.rows[0]);
   }
 
   async emailExists(email: string): Promise<boolean> {
@@ -35,39 +43,81 @@ export class PostgresUserRepository implements IUserRepository {
     return result.rows.length > 0;
   }
 
-  async update(id: string, data: Partial<Pick<UserRecord, 'email' | 'nombre'>>): Promise<UserRecord> {
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+  // =========================================================================
+  // CASO DE USO: AUTENTICACIÓN (LOGIN)
+  // Recupera de forma aislada el hash para el Handler de Login.
+  // =========================================================================
+  async findByEmailWithPassword(email: string): Promise<{ user: User; passwordHash: string } | null> {
+    const result = await pool.query(
+      'SELECT id, email, nombre, password_hash, rol, creado_en FROM usuarios WHERE email = $1',
+      [email]
+    );
+    
+    const row = result.rows[0];
+    if (!row) return null;
 
-    if (data.email !== undefined) {
-      updates.push(`email = $${paramIndex}`);
-      values.push(data.email);
-      paramIndex++;
-    }
+    return {
+      user: this.mapToEntity(row),
+      passwordHash: row.password_hash
+    };
+  }
 
-    if (data.nombre !== undefined) {
-      updates.push(`nombre = $${paramIndex}`);
-      values.push(data.nombre);
-      paramIndex++;
-    }
-
-    if (updates.length === 0) {
-      throw new Error('No hay campos para actualizar');
-    }
-
+  // =========================================================================
+  // CASO DE USO: REGISTRO
+  // Persiste el usuario nuevo inyectando su hash por primera vez.
+  // =========================================================================
+  async create(user: User, passwordHash: string): Promise<User> {
     const query = `
-      UPDATE usuarios 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING id, email, nombre, password_hash, rol, creado_en
+      INSERT INTO usuarios (id, email, nombre, rol, password_hash, creado_en)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, email, nombre, rol, creado_en
     `;
-    values.push(id);
 
-    const result = await pool.query(query, values);
-    return result.rows[0];
+    const result = await pool.query(query, [
+      user.id,
+      user.email,
+      user.nombre,
+      user.rol,
+      passwordHash,
+      user.creadoEn
+    ]);
+
+    const domainEvents = user.pullDomainEvents();
+    domainEvents.forEach((domainEvent) => {
+      domainEventBus.publish(domainEvent.eventName, domainEvent);
+    });
+
+    return this.mapToEntity(result.rows[0]);
+  }
+
+  // =========================================================================
+  // CASO DE USO: CORE DOMINIO (Sincronización de Perfil / Roles)
+  // Hace UPSERT protegiendo explícitamente el password_hash existente.
+  // =========================================================================
+  async save(user: User): Promise<User> {
+    const query = `
+      INSERT INTO usuarios (id, email, nombre, rol, creado_en)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        nombre = EXCLUDED.nombre,
+        rol = EXCLUDED.rol
+      RETURNING id, email, nombre, rol, creado_en
+    `;
+
+    const result = await pool.query(query, [
+      user.id,
+      user.email,
+      user.nombre,
+      user.rol,
+      user.creadoEn
+    ]);
+
+    const domainEvents = user.pullDomainEvents();
+    domainEvents.forEach((domainEvent) => {
+      domainEventBus.publish(domainEvent.eventName, domainEvent);
+    });
+
+    return this.mapToEntity(result.rows[0]);
   }
 }
-
-
-

@@ -22,26 +22,28 @@ export class LoginHandler {
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
-    // 1. Buscar usuario por email
-    const user = await this.userRepository.findByEmail(command.email);
-    if (!user) {
+    // 1. Buscar agregación de Login (Usuario + Credencial) por email
+    const authAggregation = await this.userRepository.findByEmailWithPassword(command.email);
+    if (!authAggregation) {
       throw new Error('Email o contraseña incorrectos');
     }
 
-    // 2. Verificar password
-    const isValid = await this.passwordHasher.compare(command.password, user.password_hash);
+    const { user, passwordHash } = authAggregation;
+
+    // 2. Verificar contraseña usando el hash extraído externamente
+    const isValid = await this.passwordHasher.compare(command.password, passwordHash);
     if (!isValid) {
       throw new Error('Email o contraseña incorrectos');
     }
 
-    // 3. Generar JWT
+    // 3. Generar JWT acoplado a las propiedades de la entidad pura
     const token = this.jwtService.sign({
       id: user.id,
       email: user.email,
       rol: user.rol
     });
 
-    // 4. Retornar resultado
+    // 4. Retornar DTO de salida
     return {
       user: {
         id: user.id,
