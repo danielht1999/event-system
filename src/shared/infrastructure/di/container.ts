@@ -27,6 +27,8 @@ import { ExpireReservationsHandler } from '@modules/reservation/application/comm
 import { PostgresReservationRepository } from '@modules/reservation/infrastructure/repositories/PostgresReservationRepository';
 import { CachedEventQueryService } from '@modules/event/infrastructure/queries/CachedEventQueryService';
 
+import { EventCacheSubscriber } from '@modules/event/infrastructure/services/EventCacheSubscriber';
+
 // Repositorios
 const userRepository = new PostgresUserRepository();
 const eventRepository = new PostgresEventRepository();
@@ -40,7 +42,7 @@ const jwtService = new JwtService();
 // Query Service
 const postgresEventQueryService = new PostgresEventQueryService();
 const reservationQueryService = new PostgresReservationQueryService();
-const cachedEventQueryService = new CachedEventQueryService(postgresEventQueryService);//usar el redis
+const cachedEventQueryService = new CachedEventQueryService(postgresEventQueryService);
 
 // Handlers
 const registerHandler = new RegisterUserHandler(userRepository, passwordHasher, jwtService);
@@ -72,4 +74,6 @@ export const eventController = new EventController(
   getEventsByOrganizerHandler
 );
 
-export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler,cancelReservationHandler,reservationQueryService); 
+export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler, cancelReservationHandler, reservationQueryService); 
+
+new EventCacheSubscriber();
