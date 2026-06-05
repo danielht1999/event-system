@@ -32,11 +32,6 @@ export class EventController {
   // Obtener un evento por ID (público)
   obtener = async (req: Request, res: Response): Promise<void> => {
     try {
-      if (!this.eventRepository) {
-        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
-        return;
-      }
-      
       const { id } = req.params;
       const event = await this.eventRepository.findById(id);
       
@@ -61,11 +56,6 @@ export class EventController {
   // Ver disponibilidad de cupos (público)
   verDisponibilidad = async (req: Request, res: Response): Promise<void> => {
     try {
-      if (!this.eventRepository) {
-        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
-        return;
-      }
-      
       const { id } = req.params;
       const event = await this.eventRepository.findById(id);
       
@@ -74,11 +64,10 @@ export class EventController {
         return;
       }
       
-      // TODO: Obtener reservas actuales de otro repositorio      
       res.json({
         success: true,
         data: {
-          capacidadTotal: event.capacidadTotal,
+          capacidadTotal: event.capacidadTotal.value,
           cuposDisponibles: event.cuposDisponibles,
           estaLleno: event.estaLleno()
         }
@@ -126,18 +115,12 @@ export class EventController {
     }
   };
 
-  // Actualizar evento (solo ORGANIZADOR)
+  // Actualizar evento (solo ORGANIZADOR) - Mantiene actualización parcial de textos planos
   actualizar = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      if (!this.eventRepository) {
-        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
-        return;
-      }
-      
       const { id } = req.params;
       const organizerId = req.user?.id;
       
-      // Verificar que el evento existe y pertenece al organizador
       const event = await this.eventRepository.findById(id);
       
       if (!event) {
@@ -166,14 +149,9 @@ export class EventController {
     }
   };
 
-  // Publicar evento (cambiar estado a publicado)
+  // REFACTORIZADO: Publicar evento pasando por Dominio
   publicar = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      if (!this.eventRepository) {
-        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
-        return;
-      }
-      
       const { id } = req.params;
       const organizerId = req.user?.id;
       
@@ -189,30 +167,30 @@ export class EventController {
         return;
       }
       
-      const updatedEvent = await this.eventRepository.update(id, { estado: 'PUBLICADA' } as any);
+      // 1. Ejecutamos la validación y cambio de estado dentro de la entidad
+      event.publicar(); 
+      
+      // 2. Guardamos la entidad mutada. Esto dispara automáticamente la invalidación de caché
+      const savedEvent = await this.eventRepository.save(event);
       
       res.json({
         success: true,
         message: 'Evento publicado exitosamente',
-        data: updatedEvent
+        data: savedEvent
       });
     } catch (error: any) {
-      res.status(500).json({
+      // Si la entidad tira el error de "Solo se pueden publicar eventos en borrador", respondemos 400
+      const status = error.message.includes('estado BORRADOR') ? 400 : 500;
+      res.status(status).json({
         success: false,
         message: 'Error al publicar evento',
         error: error.message
       });
     }
   };
-
-  // Cancelar evento (solo ORGANIZADOR)
+  // REFACTORIZADO: Cancelar evento pasando por Dominio (No borra la fila)
   cancelar = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      if (!this.eventRepository) {
-        res.status(500).json({ success: false, message: 'Repositorio no disponible' });
-        return;
-      }
-      
       const { id } = req.params;
       const organizerId = req.user?.id;
       
@@ -228,11 +206,16 @@ export class EventController {
         return;
       }
       
-      await this.eventRepository.delete(id);
+      // 1. Transicionamos el estado a CANCELADA en el dominio
+      event.cancelar();
+      
+      // 2. Persistimos los cambios usando save() en lugar de eliminar el registro
+      const savedEvent = await this.eventRepository.save(event);
       
       res.json({
         success: true,
-        message: 'Evento cancelado exitosamente'
+        message: 'Evento cancelado exitosamente',
+        data: savedEvent
       });
     } catch (error: any) {
       res.status(500).json({
@@ -244,22 +227,22 @@ export class EventController {
   };
 
   misEventos = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const organizerId = req.user?.id;
-    
-    if (!organizerId) {
-      res.status(401).json({ success: false, message: 'No autorizado' });
-      return;
-    }
-    const result = await this.getEventsByOrganizerHandler.execute(organizerId);
+    try {
+      const organizerId = req.user?.id;
+      
+      if (!organizerId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
+      }
+      const result = await this.getEventsByOrganizerHandler.execute(organizerId);
 
-    res.json({ success: true, data: result });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al listar eventos del organizador',
-      error: error.message
-    });
-  }
-}
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Error al listar eventos del organizador',
+        error: error.message
+      });
+    }
+  };
 }

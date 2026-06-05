@@ -23,6 +23,17 @@ export class CreateEventHandler {
       0   // reservasPendientes
     );
 
-    return this.eventRepository.save(event);
+    // Apuntamos en la entidad que el evento ha sido creado/actualizado.
+    // Esto guardará 'EventStatusUpdated' en la bolsa interna de la entidad.
+    event.recordEvent('EventStatusUpdated', {
+      eventId: event.id,
+      organizerId: event.organizadorId
+    });
+
+    // Guardamos en la base de datos. 
+    // El método save() de PostgresEventRepository se encargará de vaciar la bolsa y avisar al Bus.
+    const result = await this.eventRepository.save(event);
+
+    return result;
   }
 }

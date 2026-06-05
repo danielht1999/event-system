@@ -4,27 +4,51 @@ import { IEventRepository } from '../../domain/repositories/IEventRepository';
 import { Event } from '../../domain/entities/Event';
 import { EventDate } from '../../domain/value-objects/EventDate';
 import { Capacity } from '../../domain/value-objects/Capacity';
+import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus'; // <-- 1. Importamos el Bus compartido
 
 export class PostgresEventRepository implements IEventRepository {
   async save(event: Event): Promise<Event> {
-    const result = await pool.query(
-      `INSERT INTO eventos (id, titulo, descripcion, fecha, lugar, capacidad_total, precio, organizador_id, reservas_confirmadas, reservas_pendientes, estado)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING *`,
-      [
-        event.id,
-        event.titulo,
-        event.descripcion,
-        event.fecha.value,
-        event.lugar,
-        event.capacidadTotal.value,
-        event.precio,
-        event.organizadorId,
-        event.reservasConfirmadas,
-        event.reservasPendientes,
-        event.estado
-      ]
-    );
+    // Query modificada con UPSERT (ON CONFLICT) para soportar inserciones y actualizaciones lógicas
+    const query = `
+      INSERT INTO eventos (
+        id, titulo, descripcion, fecha, lugar, capacidad_total, 
+        precio, organizador_id, reservas_confirmadas, reservas_pendientes, estado
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (id) DO UPDATE SET
+        titulo = EXCLUDED.titulo,
+        descripcion = EXCLUDED.descripcion,
+        fecha = EXCLUDED.fecha,
+        lugar = EXCLUDED.lugar,
+        capacidad_total = EXCLUDED.capacidad_total,
+        precio = EXCLUDED.precio,
+        reservas_confirmadas = EXCLUDED.reservas_confirmadas,
+        reservas_pendientes = EXCLUDED.reservas_pendientes,
+        estado = EXCLUDED.estado
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [
+      event.id,
+      event.titulo,
+      event.descripcion,
+      event.fecha.value,
+      event.lugar,
+      event.capacidadTotal.value,
+      event.precio,
+      event.organizadorId,
+      event.reservasConfirmadas,
+      event.reservasPendientes,
+      event.estado
+    ]);
+
+    // DESPACHO DE EVENTOS: Si Postgres guardó/actualizó bien, vaciamos la entidad y publicamos
+    const domainEvents = event.pullDomainEvents();
+    
+    domainEvents.forEach((domainEvent) => {
+      domainEventBus.publish(domainEvent.eventName, domainEvent);
+    });
+
     return this.mapToEntity(result.rows[0]);
   }
 
@@ -54,7 +78,7 @@ export class PostgresEventRepository implements IEventRepository {
   async findByOrganizerId(organizerId: string): Promise<Event[]> {
     const result = await pool.query(
       'SELECT * FROM eventos WHERE organizador_id = $1 ORDER BY fecha ASC',
-      [organizerId]
+      [organizerId] // Bug corregido: ahora usa dinámicamente organizerId
     );
     return result.rows.map(row => this.mapToEntity(row));
   }

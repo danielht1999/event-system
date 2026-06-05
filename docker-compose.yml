@@ -31,6 +31,12 @@ services:
     restart: unless-stopped
     depends_on:  
       - prometheus
+  redis:
+    image: redis:7-alpine
+    container_name: event-system-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
 
   
 volumes:

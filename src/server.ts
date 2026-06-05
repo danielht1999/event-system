@@ -11,11 +11,13 @@ import { metricsMiddleware } from '@shared/api/middlewares/metrics.middleware';
 import { startReservationExpiryWorker } from '@shared/workers/reservationExpiry.worker';
 import { expireReservationHandler } from '@shared/infrastructure/di/container';
 import { validateEnv } from '@shared/infrastructure/config/env.validator'
+import { connectRedis } from '@shared/infrastructure/cache/redis.client'
 
 // Cargar variables de entorno desde archivo .env
 dotenv.config();
 //valido las variables de entorno
 validateEnv();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -83,12 +85,30 @@ app.use(errorHandler);
 
 // ==================== INICIAR SERVIDOR ====================
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  //recupera periodicamente las reservas expiradas
-  startReservationExpiryWorker(expireReservationHandler);
-  console.log('Worker de expiración de reservas iniciado');
-});
+const startServer = async () => {
+  try {
+    // 1. Conectar a infraestructura crítica primero
+    console.log('Conectando a Redis...');
+    await connectRedis();
+    
+    // 2. Inicializar Workers asíncronos
+    startReservationExpiryWorker(expireReservationHandler);
+    console.log('Worker de expiración de reservas iniciado');
+
+    // 3. Abrir el puerto para recibir tráfico web
+    app.listen(PORT, () => {
+      console.log(`==================================================`);
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+      console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`==================================================`);
+    });
+
+  } catch (error) {
+    console.error('Error crítico al iniciar el sistema:', error);
+    process.exit(1); // Detener el proceso si la infraestructura falla
+  }
+};
+
+startServer();
 
 export default app;
