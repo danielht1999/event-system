@@ -98,36 +98,49 @@ export class PostgresReservationRepository implements IReservationRepository {
   // =========================================================================
   // WORKER: Expiración masiva en base de datos
   // =========================================================================
-  async expireObsoleteReservations(): Promise<number> {
+  async expireObsoleteReservations(): Promise<Reservation[]> {
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
       
-      // Mantienes tu query avanzada WITH para actualizar el stock relacional de forma masiva y atómica
       const resultado = await client.query(`
         WITH reservas_expiradas AS (
           UPDATE reservas
           SET estado = 'EXPIRADA'
           WHERE estado = 'PENDIENTE_PAGO'
             AND reservado_en <= NOW() - INTERVAL '15 minutes'
-          RETURNING evento_id, cantidad_tickets
+          RETURNING *
+        ),
+        actualizar_eventos AS (
+          UPDATE eventos e
+          SET reservas_pendientes = e.reservas_pendientes - sub.total_tickets
+          FROM (
+            SELECT 
+              evento_id,
+              SUM(cantidad_tickets) AS total_tickets
+            FROM reservas_expiradas
+            GROUP BY evento_id
+          ) sub
+          WHERE e.id = sub.evento_id
         )
-        UPDATE eventos e
-        SET reservas_pendientes = e.reservas_pendientes - sub.total_tickets
-        FROM (
-          SELECT 
-            evento_id,
-            SUM(cantidad_tickets) AS total_tickets
-          FROM reservas_expiradas
-          GROUP BY evento_id
-        ) sub
-        WHERE e.id = sub.evento_id
-        RETURNING e.id;
+        SELECT * FROM reservas_expiradas;
       `);
 
       await client.query('COMMIT');
-      return resultado.rowCount || 0;
+      
+      // RECONSTRUCCIÓN DDD: Mapeamos forzando 'PENDIENTE_PAGO' para el ciclo de vida del Handler
+      return resultado.rows.map(row => new Reservation(
+        row.id,
+        row.evento_id,
+        row.usuario_id,
+        Number(row.cantidad_tickets),
+        'PENDIENTE_PAGO', // <-- Estado previo para engañar al Dominio de forma segura
+        row.codigo_ticket,
+        new Date(row.reservado_en),
+        row.pagado_en ? new Date(row.pagado_en) : undefined,
+        row.checked_in_en ? new Date(row.checked_in_en) : undefined
+      ));
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

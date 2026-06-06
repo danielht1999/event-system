@@ -25,6 +25,7 @@ export interface IReservationRepository {
   /**
    * Caso de uso especializado para el Worker. 
    * Cambia masivamente a 'EXPIRADA' las reservas que superaron el tiempo límite de pago.
+   * Devuelve las entidades Reservation modificadas para procesar sus eventos.
    */
-  expireObsoleteReservations(): Promise<number>;
+  expireObsoleteReservations(): Promise<Reservation[]>;
 }
