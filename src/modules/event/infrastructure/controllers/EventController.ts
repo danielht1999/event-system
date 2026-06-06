@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '@shared/api/middlewares/auth';
 import { CreateEventCommand } from '../../application/commands/CreateEventCommand';
 import { CreateEventHandler } from '../../application/commands/CreateEventHandler';
-import { IEventRepository } from '../../domain/repositories/IEventRepository';
+import { IEventRepository,EventUpdateData } from '../../domain/repositories/IEventRepository';
 import { GetEventsHandler } from '../../application/queries/GetEventsHandler';
 import { GetEventsByOrganizerHandler } from '../../application/queries/GetEventsByOrganizerHandler';
 
@@ -121,6 +121,7 @@ export class EventController {
       const { id } = req.params;
       const organizerId = req.user?.id;
       
+      // 1. Validar la existencia previa del evento
       const event = await this.eventRepository.findById(id);
       
       if (!event) {
@@ -128,12 +129,22 @@ export class EventController {
         return;
       }
       
+      // 2. Control de autoría/acceso de dominio
       if (event.organizadorId !== organizerId) {
         res.status(403).json({ success: false, message: 'No tienes permiso para editar este evento' });
         return;
       }
       
-      const updatedEvent = await this.eventRepository.update(id, req.body);
+      // 3. Sanitización y mapeo explícito al DTO plano EventUpdateData
+      // Esto previene mutaciones masivas accidentales o maliciosas desde el cliente HTTP
+      const updateData: EventUpdateData = {
+        titulo: req.body.titulo !== undefined ? String(req.body.titulo).trim() : undefined,
+        descripcion: req.body.descripcion !== undefined ? String(req.body.descripcion).trim() : undefined,
+        lugar: req.body.lugar !== undefined ? String(req.body.lugar).trim() : undefined
+      };
+      
+      // 4. Ejecución del query especializado de infraestructura para datos planos
+      const updatedEvent = await this.eventRepository.updateData(id, updateData);
       
       res.json({
         success: true,

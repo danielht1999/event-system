@@ -18,9 +18,9 @@ export class Reservation {
     public readonly cantidadTickets: number,
     private _estado: ReservationStatus,
     public readonly codigoTicket: string,
-    public reservadoEn: Date = new Date(),
-    public pagadoEn?: Date,
-    public checkedInEn?: Date
+    public readonly reservadoEn: Date = new Date(), // Cambiado a readonly ya que es la fecha de inserción
+    private _pagadoEn?: Date,    // Privatizado para evitar modificaciones anémicas
+    private _checkedInEn?: Date  // Privatizado para evitar modificaciones anémicas
   ) {
     this.validateQuantity();
   }
@@ -34,9 +34,12 @@ export class Reservation {
     }
   }
 
-  get estado(): ReservationStatus {
-    return this._estado;
-  }
+  // =========================================================================
+  // GETTERS DE LECTURA SEGURA
+  // =========================================================================
+  get estado(): ReservationStatus { return this._estado; }
+  get pagadoEn(): Date | undefined { return this._pagadoEn; }
+  get checkedInEn(): Date | undefined { return this._checkedInEn; }
 
   public recordEvent(name: string, data: any): void {
     this._domainEvents.push({
@@ -53,7 +56,7 @@ export class Reservation {
   }
 
   // =========================================================================
-  // ACCIONES EXPLICITAS DE NEGOCIO (MUTADORES)
+  // ACCIONES EXPLÍCITAS DE NEGOCIO
   // =========================================================================
 
   public confirmarPago(): void {
@@ -61,7 +64,7 @@ export class Reservation {
       throw new Error('Solo se pueden confirmar reservas en estado pendiente');
     }
     this._estado = 'CONFIRMADA';
-    this.pagadoEn = new Date();
+    this._pagadoEn = new Date();
 
     this.recordEvent('ReservationConfirmed', {
       reservationId: this.id,
@@ -91,7 +94,7 @@ export class Reservation {
       throw new Error('Solo se puede hacer check-in de reservas confirmadas');
     }
     this._estado = 'CHECKED_IN';
-    this.checkedInEn = new Date();
+    this._checkedInEn = new Date();
 
     this.recordEvent('ReservationCheckedIn', {
       reservationId: this.id,
