@@ -11,15 +11,14 @@ import { UpdateProfileCommand } from '../../application/commands/UpdateProfileCo
 
 export class AuthController {
   constructor(
-    private registerHandler: RegisterUserHandler,
-    private loginHandler: LoginHandler,
-    private getProfileHandler: GetProfileHandler,
-    private updateProfileHandler: UpdateProfilehandler,
+    private readonly registerHandler: RegisterUserHandler,
+    private readonly loginHandler: LoginHandler,
+    private readonly getProfileHandler: GetProfileHandler,
+    private readonly updateProfileHandler: UpdateProfilehandler,
   ) {}
 
   register = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Validación básica de existencia de campos
       if (!req.body.email || !req.body.password || !req.body.nombre) {
         res.status(400).json({
           success: false,
@@ -43,7 +42,6 @@ export class AuthController {
         data: result
       });
     } catch (error: any) {
-      // Errores de validación del comando o del handler
       const isClientError = error.message.includes('Email') ||
                             error.message.includes('password') ||
                             error.message.includes('Nombre') ||
@@ -130,25 +128,33 @@ export class AuthController {
         });
         return;
       }
+
       const command = new UpdateProfileCommand({
         userId: userId,
         email: req.body.email,
         nombre: req.body.nombre
       });
 
-      const update = await this.updateProfileHandler.execute(command);
+      const result = await this.updateProfileHandler.execute(command);
 
       res.json({
         success: true,
-        data: update
+        message: 'Perfil actualizado exitosamente',
+        data: result.user // Extraemos la propiedad interna para no anidar { data: { user: ... } }
       });
-     } catch (error: any) {
-      const status = error.message === 'Usuario no encontrado' ? 404 : 500;
+    } catch (error: any) {
+      // CAPTURA DE ERRORES DEL DOMINIO Y VALUE OBJECTS AUDITADOS
+      const isValidationError = error.message.includes('registrado') || 
+                                error.message.includes('inválido') || 
+                                error.message.includes('formato');
+                                
+      const status = error.message === 'Usuario no encontrado' ? 404 :
+                     isValidationError ? 400 : 500;
       
       res.status(status).json({
         success: false,
         message: error.message
       });
     }
- }
+  };
 }

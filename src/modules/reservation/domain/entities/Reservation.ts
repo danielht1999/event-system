@@ -25,6 +25,24 @@ export class Reservation {
     this.validateQuantity();
   }
 
+    public static create(props: {
+      id: string;
+      eventoId: string;
+      usuarioId: string;
+      cantidadTickets: number;
+      codigoTicket: string;
+    }): Reservation {
+      return new Reservation(
+        props.id,
+        props.eventoId,
+        props.usuarioId,
+        props.cantidadTickets,
+        'PENDIENTE_PAGO',
+        props.codigoTicket,
+        new Date()
+      );
+    }
+
   private validateQuantity(): void {
     if (this.cantidadTickets <= 0) {
       throw new Error('La cantidad de tickets debe ser mayor a 0');
