@@ -3,13 +3,24 @@ export class Email {
   private readonly _value: string;
 
   constructor(email: string) {
-    if (!this.isValid(email)) {
+    // 1. Defensa inicial contra nulos, indefinidos o vacíos
+    if (!email || typeof email !== 'string') {
+      throw new Error('El email es requerido y debe ser una cadena de texto');
+    }
+
+    // 2. Sanitización inmediata: Limpiamos espacios y estandarizamos a minúsculas
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    // 3. Validación sobre el valor limpio
+    if (!this.isValid(sanitizedEmail)) {
       throw new Error(`Email inválido: ${email}`);
     }
-    this._value = email.toLowerCase();
+
+    this._value = sanitizedEmail;
   }
 
   private isValid(email: string): boolean {
+    // Tu regex actual es excelente para interceptar estructuras reales sin falsos positivos comunes
     const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
     return emailRegex.test(email);
   }
@@ -18,7 +29,7 @@ export class Email {
     return this._value;
   }
 
-  equals(other: Email): boolean {
-    return this._value === other._value;
+  public equals(other: Email): boolean {
+    return this._value === other.value;
   }
 }

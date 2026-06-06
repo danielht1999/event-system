@@ -2,39 +2,50 @@
 import pool from '@shared/infrastructure/database/connection';
 import { IReservationRepository } from '../../domain/repositories/IReservationRepository';
 import { Reservation } from '../../domain/entities/Reservation';
+import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 
 export class PostgresReservationRepository implements IReservationRepository {
-  async save(reservation: Reservation): Promise<void> {  
-    const client = await pool.connect();
-    try {
-    await client.query('BEGIN');
-    await client.query(`INSERT INTO reservas (id, evento_id, usuario_id, cantidad_tickets, estado, codigo_ticket, reservado_en, pagado_en, checked_in_en)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        reservation.id,              
-        reservation.eventoId,        
-        reservation.usuarioId,       
-        reservation.cantidadTickets, 
-        reservation.estado,          
-        reservation.codigoTicket,    
-        reservation.reservadoEn,     
-        reservation.pagadoEn,        
-        reservation.checkedInEn      
-      ]);
-    await client.query(
-      `UPDATE eventos SET reservas_pendientes = reservas_pendientes + $1 WHERE id = $2`,
-      [reservation.cantidadTickets, reservation.eventoId] 
-    );
-     await client.query('COMMIT');
-   } catch (error) {
-     await client.query('ROLLBACK');
-     throw error;
-   } finally {
-     client.release();
-   }
- }
+  
+  // =========================================================================
+  // UPSERT: Guarda o Sincroniza el estado de la reserva y despacha eventos
+  // =========================================================================
+  async save(reservation: Reservation): Promise<Reservation> {  
+    const query = `
+      INSERT INTO reservas (
+        id, evento_id, usuario_id, cantidad_tickets, estado, codigo_ticket, reservado_en, pagado_en, checked_in_en
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (id) DO UPDATE SET
+        estado = EXCLUDED.estado,
+        pagado_en = EXCLUDED.pagado_en,
+        checked_in_en = EXCLUDED.checked_in_en
+      RETURNING *
+    `;
 
-   async findById(id: string): Promise<Reservation | null> {
+    // Leemos usando los getters públicos y camelCase estrictos de la entidad
+    const result = await pool.query(query, [
+      reservation.id,              
+      reservation.eventoId,        
+      reservation.usuarioId,       
+      reservation.cantidadTickets, 
+      reservation.estado,          
+      reservation.codigoTicket,    
+      reservation.reservadoEn,     
+      reservation.pagadoEn, 
+      reservation.checkedInEn     
+    ]);
+
+    // DESPACHO REACTIVO DE EVENTOS DE DOMINIO:
+    // La mutación de cupos de eventos se delega a los listeners de estos eventos
+    const domainEvents = reservation.pullDomainEvents();
+    domainEvents.forEach((domainEvent) => {
+      domainEventBus.publish(domainEvent.eventName, domainEvent);
+    });
+
+    return this.mapToEntity(result.rows[0]);
+  }
+
+  async findById(id: string): Promise<Reservation | null> {
     const result = await pool.query(
       'SELECT * FROM reservas WHERE id = $1',
       [id]
@@ -42,9 +53,20 @@ export class PostgresReservationRepository implements IReservationRepository {
     return result.rows[0] ? this.mapToEntity(result.rows[0]) : null;
   }
 
+  // =========================================================================
+  // BLOQUEO CONCURRENTE: Requerido por la interfaz para evitar condiciones de carrera
+  // =========================================================================
+  async findByIdForUpdate(id: string): Promise<Reservation | null> {
+    const result = await pool.query(
+      'SELECT * FROM reservas WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+    return result.rows[0] ? this.mapToEntity(result.rows[0]) : null;
+  }
+
   async findByEvent(eventId: string): Promise<Reservation[]> {
     const result = await pool.query(
-      'SELECT * FROM reservas WHERE evento_id = $1',
+      'SELECT * FROM reservas WHERE evento_id = $1 ORDER BY reservado_en DESC',
       [eventId]
     );
     return result.rows.map(row => this.mapToEntity(row));
@@ -52,7 +74,7 @@ export class PostgresReservationRepository implements IReservationRepository {
 
   async findByUser(userId: string): Promise<Reservation[]> {
     const result = await pool.query(
-      'SELECT * FROM reservas WHERE usuario_id = $1',
+      'SELECT * FROM reservas WHERE usuario_id = $1 ORDER BY reservado_en DESC',
       [userId]
     );
     return result.rows.map(row => this.mapToEntity(row));
@@ -65,30 +87,24 @@ export class PostgresReservationRepository implements IReservationRepository {
     );
     return result.rows[0] ? this.mapToEntity(result.rows[0]) : null;
   }
-
-  async update(reservation: Reservation): Promise<void> {
-    await pool.query(
-    `UPDATE reservas 
-     SET estado = $1, pagado_en = $2, checked_in_en = $3
-     WHERE id = $4`,
-    [reservation.estado, reservation.pagadoEn, reservation.checkedInEn, reservation.id]
-  );
-  }
   
   async delete(id: string): Promise<void> {
-    const result = await pool.query(
+    await pool.query(
       'DELETE FROM reservas WHERE id = $1',
       [id]
     );
   }
 
+  // =========================================================================
+  // WORKER: Expiración masiva en base de datos
+  // =========================================================================
   async expireObsoleteReservations(): Promise<number> {
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
       
-      // Tu query atómica exacta
+      // Mantienes tu query avanzada WITH para actualizar el stock relacional de forma masiva y atómica
       const resultado = await client.query(`
         WITH reservas_expiradas AS (
           UPDATE reservas
@@ -120,19 +136,20 @@ export class PostgresReservationRepository implements IReservationRepository {
     }
   }
 
+  /**
+   * Mapeador adaptado al constructor rico de la entidad Reservation
+   */
   private mapToEntity(row: any): Reservation {
     return new Reservation(
       row.id,
       row.evento_id,
       row.usuario_id,
-      row.cantidad_tickets,
+      Number(row.cantidad_tickets),
       row.estado,
       row.codigo_ticket,
-      row.reservado_en,
-      row.pagado_en,
-      row.checked_in_en
+      new Date(row.reservado_en),
+      row.pagado_en ? new Date(row.pagado_en) : undefined,
+      row.checked_in_en ? new Date(row.checked_in_en) : undefined
     );
-        }
- }
-
-
+  }
+}

@@ -1,14 +1,14 @@
 // src/modules/event/infrastructure/repositories/PostgresEventRepository.ts
 import pool from '@shared/infrastructure/database/connection';
-import { IEventRepository } from '../../domain/repositories/IEventRepository';
+import { IEventRepository, EventUpdateData } from '../../domain/repositories/IEventRepository';
 import { Event } from '../../domain/entities/Event';
 import { EventDate } from '../../domain/value-objects/EventDate';
 import { Capacity } from '../../domain/value-objects/Capacity';
-import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus'; // <-- 1. Importamos el Bus compartido
+import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 
 export class PostgresEventRepository implements IEventRepository {
+  
   async save(event: Event): Promise<Event> {
-    // Query modificada con UPSERT (ON CONFLICT) para soportar inserciones y actualizaciones lógicas
     const query = `
       INSERT INTO eventos (
         id, titulo, descripcion, fecha, lugar, capacidad_total, 
@@ -28,6 +28,7 @@ export class PostgresEventRepository implements IEventRepository {
       RETURNING *
     `;
 
+    // Leemos a través de los getters debido a que las propiedades son private
     const result = await pool.query(query, [
       event.id,
       event.titulo,
@@ -42,9 +43,8 @@ export class PostgresEventRepository implements IEventRepository {
       event.estado
     ]);
 
-    // DESPACHO DE EVENTOS: Si Postgres guardó/actualizó bien, vaciamos la entidad y publicamos
+    // Despacho automático de la bolsa de eventos acumulados en el dominio
     const domainEvents = event.pullDomainEvents();
-    
     domainEvents.forEach((domainEvent) => {
       domainEventBus.publish(domainEvent.eventName, domainEvent);
     });
@@ -78,46 +78,33 @@ export class PostgresEventRepository implements IEventRepository {
   async findByOrganizerId(organizerId: string): Promise<Event[]> {
     const result = await pool.query(
       'SELECT * FROM eventos WHERE organizador_id = $1 ORDER BY fecha ASC',
-      [organizerId] // Bug corregido: ahora usa dinámicamente organizerId
+      [organizerId]
     );
     return result.rows.map(row => this.mapToEntity(row));
   }
 
-  async update(id: string, event: Partial<Event>): Promise<Event | null> {
+  // =========================================================================
+  // MANTENIMIENTO: Cambios puramente planos vía DTO EventUpdateData
+  // =========================================================================
+  async updateData(id: string, data: EventUpdateData): Promise<Event | null> {
     const fields: string[] = [];
     const values: any[] = [];
     let idx = 1;
 
-    if (event.titulo !== undefined) {
+    if (data.titulo !== undefined) {
       fields.push(`titulo = $${idx++}`);
-      values.push(event.titulo);
+      values.push(data.titulo);
     }
-    if (event.descripcion !== undefined) {
+    if (data.descripcion !== undefined) {
       fields.push(`descripcion = $${idx++}`);
-      values.push(event.descripcion);
+      values.push(data.descripcion);
     }
-    if (event.fecha !== undefined) {
-      fields.push(`fecha = $${idx++}`);
-      values.push(event.fecha.value);
-    }
-    if (event.lugar !== undefined) {
+    if (data.lugar !== undefined) {
       fields.push(`lugar = $${idx++}`);
-      values.push(event.lugar);
-    }
-    if (event.capacidadTotal !== undefined) {
-      fields.push(`capacidad_total = $${idx++}`);
-      values.push(event.capacidadTotal.value);
-    }
-    if (event.precio !== undefined) {
-      fields.push(`precio = $${idx++}`);
-      values.push(event.precio);
-    }
-    if (event.estado !== undefined) {
-      fields.push(`estado = $${idx++}`);
-      values.push(event.estado);
+      values.push(data.lugar);
     }
 
-    if (fields.length === 0) return null;
+    if (fields.length === 0) return this.findById(id);
 
     values.push(id);
     const query = `
@@ -147,6 +134,9 @@ export class PostgresEventRepository implements IEventRepository {
     return result.rows.length > 0;
   }
 
+  /**
+   * Reconstruye la entidad rica de dominio mapeando el orden exacto del constructor.
+   */
   private mapToEntity(row: any): Event {
     return new Event(
       row.id,
@@ -155,11 +145,12 @@ export class PostgresEventRepository implements IEventRepository {
       EventDate.reconstruct(new Date(row.fecha)),
       row.lugar,
       new Capacity(row.capacidad_total),
-      row.precio,
+      Number(row.precio),
       row.organizador_id,
       row.reservas_confirmadas,
       row.reservas_pendientes,
-      row.estado
+      row.estado,
+      new Date(row.creado_en)
     );
   }
 }

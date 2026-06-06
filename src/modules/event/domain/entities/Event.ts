@@ -9,25 +9,39 @@ export type EventStatus =
   | 'CANCELADA';
 
 export class Event {
-  // 1. La bolsa de eventos que leerá el repositorio
   private _domainEvents: IDomainEvent[] = [];
 
   constructor(
     public readonly id: string,
-    public titulo: string,
-    public descripcion: string,
-    public fecha: EventDate,  
-    public lugar: string,
-    public capacidadTotal: Capacity,
-    public precio: number,
-    public organizadorId: string,
-    public reservasConfirmadas: number,
-    public reservasPendientes: number,    
-    public estado: EventStatus = 'BORRADOR',
-    public creadoEn: Date = new Date()
+    private _titulo: string,
+    private _descripcion: string,
+    private _fecha: EventDate,  
+    private _lugar: string,
+    private _capacidadTotal: Capacity,
+    private _precio: number, // TODO: Evolucionar a Value Object Price en el futuro
+    public readonly organizadorId: string,
+    private _reservasConfirmadas: number = 0,
+    private _reservasPendientes: number = 0,    
+    private _estado: EventStatus = 'BORRADOR',
+    public readonly creadoEn: Date = new Date()
   ) {}
 
-  // 2. Método para empujar eventos a la bolsa
+  // =========================================================================
+  // GETTERS (Lecturas seguras hacia el exterior/mapeadores)
+  // =========================================================================
+  get titulo(): string { return this._titulo; }
+  get descripcion(): string { return this._descripcion; }
+  get fecha(): EventDate { return this._fecha; }
+  get lugar(): string { return this._lugar; }
+  get capacidadTotal(): Capacity { return this._capacidadTotal; }
+  get precio(): number { return this._precio; }
+  get reservasConfirmadas(): number { return this._reservasConfirmadas; }
+  get reservasPendientes(): number { return this._reservasPendientes; }
+  get estado(): EventStatus { return this._estado; }
+
+  // =========================================================================
+  // GESTIÓN DE EVENTOS DE DOMINIO
+  // =========================================================================
   public recordEvent(name: string, data: any): void {
     this._domainEvents.push({
       eventName: name,
@@ -36,81 +50,76 @@ export class Event {
     });
   }
 
-  pullDomainEvents(): IDomainEvent[] {
-  const events = [...this._domainEvents];
-  this._domainEvents = [];
-  return events;
-}
+  public pullDomainEvents(): IDomainEvent[] {
+    const events = [...this._domainEvents];
+    this._domainEvents = [];
+    return events;
+  }
 
   // =========================================================================
-  // NÚCLEO DDD: ACCIONES EXPLICITAS DE NEGOCIO
+  // NÚCLEO DDD: INVARIANTES Y ACCIONES EXPLICITAS
   // =========================================================================
 
-  publicar(): void {
-    // Validar estado anterior
-    if (this.estado !== 'BORRADOR') {
-        throw new Error('Solo se pueden publicar eventos en estado BORRADOR');
+  public publicar(): void {
+    if (this._estado !== 'BORRADOR') {
+      throw new Error('Solo se pueden publicar eventos en estado BORRADOR');
     }
-    
-    this.estado = 'PUBLICADA';
-    
-    // Registramos el hecho histórico
-    this.recordEvent('EventStatusUpdated', {
-        eventId: this.id,
-        organizerId: this.organizadorId
-    });
+    this._estado = 'PUBLICADA';
+    this.recordEvent('EventStatusUpdated', { eventId: this.id, organizerId: this.organizadorId });
   }
 
-  cancelar(): void {
-    if (this.estado === 'CANCELADA') return;
-    
-    this.estado = 'CANCELADA';
-    
-    // Registramos el hecho histórico
-    this.recordEvent('EventCancelled', {
-      eventId: this.id,
-      organizerId: this.organizadorId
-    });
+  public cancelar(): void {
+    if (this._estado === 'CANCELADA') return;
+    this._estado = 'CANCELADA';
+    this.recordEvent('EventCancelled', { eventId: this.id, organizerId: this.organizadorId });
   }
 
-  estaLleno(): boolean {
-    return this.reservasConfirmadas >= this.capacidadTotal.value;
+  public estaLleno(): boolean {
+    return this._reservasConfirmadas >= this._capacidadTotal.value;
   }
 
   get cuposDisponibles(): number {
-    return this.capacidadTotal.value - this.reservasConfirmadas - this.reservasPendientes;
+    return this._capacidadTotal.value - this._reservasConfirmadas - this._reservasPendientes;
   }
 
-  reservar(cantidad: number): { exitosa: boolean, razon?: string }{
-    if(cantidad > 4) {
-      return { exitosa: false, razon: 'Máximo 4 tickets por persona' }
-    }
-    if(this.cuposDisponibles < cantidad) {
-      return { exitosa: false, razon: 'No hay suficiente capacidad' }
-    }
-    this.reservasPendientes += cantidad;
+  public puedeReservar(cantidad: number): boolean {
+    return this.cuposDisponibles >= cantidad && this._estado === 'PUBLICADA';
+  }
 
-    // Modificó cupos, registramos
+  /**
+   * Provisiona asientos tentativos en el evento. Defiende sus invariantes agresivamente.
+   */
+  public reservar(cantidad: number): void {
+    if (cantidad > 4) {
+      throw new Error('Máximo 4 tickets por persona');
+    }
+    if (!this.puedeReservar(cantidad)) {
+      throw new Error('No hay suficiente capacidad disponible o el evento no está publicado');
+    }
+    
+    this._reservasPendientes += cantidad;
+
     this.recordEvent('EventSeatsProvisioned', {
       eventId: this.id,
-      organizerId: this.organizadorId
+      organizerId: this.organizadorId,
+      cantidad
     });
-
-    return { exitosa: true };
   }
 
-  confirmarReserva(cantidad: number){
-    this.reservasPendientes -= cantidad;
-    this.reservasConfirmadas += cantidad;
+  /**
+   * Confirma la reserva convirtiendo cupos pendientes en confirmados definitivos.
+   */
+  public confirmarReserva(cantidad: number): void {
+    if (this._reservasPendientes < cantidad) {
+      throw new Error('No puedes confirmar más reservas de las que están pendientes');
+    }
+    this._reservasPendientes -= cantidad;
+    this._reservasConfirmadas += cantidad;
 
-    // Modificó estado de reservas, registramos
-    this.recordEvent('EventStatusUpdated', {
+    this.recordEvent('EventReservationConfirmed', { 
       eventId: this.id,
-      organizerId: this.organizadorId
+      organizerId: this.organizadorId,
+      cantidad
     });
   }  
-
-  puedeReservar(cantidad: number): boolean {
-    return this.reservasConfirmadas + cantidad <= this.capacidadTotal.value;
-  }
 }

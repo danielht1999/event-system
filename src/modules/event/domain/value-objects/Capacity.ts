@@ -1,22 +1,29 @@
 // src/modules/event/domain/value-objects/Capacity.ts
-export class Capacity {
-  private readonly _value: number;
 
-  constructor(capacidad: number) {
-    if (capacidad <= 0) {
+export class Capacity {
+  // Usamos 'public readonly' en el constructor para ahorrarnos la propiedad privada y el getter plano
+  constructor(public readonly value: number) {
+    if (value <= 0) {
       throw new Error('La capacidad debe ser mayor a 0');
     }
-    if (capacidad > 10000) {
+    if (value > 10000) {
       throw new Error('La capacidad no puede superar 10,000 personas');
     }
-    this._value = capacidad;
   }
 
-  get value(): number {
-    return this._value;
+  /**
+   * Evalúa si hay espacio suficiente basándose en la ocupación actual
+   */
+  public hasSpace(reservasActuales: number, cantidadReservar: number): boolean {
+    return reservasActuales + cantidadReservar <= this.value;
   }
 
-  hasSpace(reservasActuales: number, cantidadReservar: number): boolean {
-    return reservasActuales + cantidadReservar <= this._value;
+  /**
+   * Calcula los cupos que quedan disponibles de forma centralizada.
+   * Evita que la entidad Event u otros servicios dupliquen la resta (capacidad - ocupados) por ahí fuera.
+   */
+  public seatsLeft(reservasActuales: number): number {
+    const restantes = this.value - reservasActuales;
+    return restantes < 0 ? 0 : restantes;
   }
 }
