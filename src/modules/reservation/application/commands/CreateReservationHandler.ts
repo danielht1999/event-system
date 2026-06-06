@@ -20,25 +20,24 @@ export class CreateReservationHandler {
 
   async execute(command: CreateReservationCommand): Promise<ReservationResult> {
     const id = uuidv4();
-    const codigoTicket = `TICKET-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const codigoTicket = `TICKET-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    const reservation = new Reservation(
+    //Usamos la factoría limpia del dominio. Cero strings hardcodeados aquí.
+    const reservation = Reservation.create({
       id,
-      command.eventoId,
-      command.usuarioId,
-      command.cantidadTickets,
-      'PENDIENTE_PAGO',
+      eventoId: command.eventoId,
+      usuarioId: command.usuarioId,
+      cantidadTickets: command.cantidadTickets,
       codigoTicket
-    );
+    });
 
     await this.reservationTransactionService.createReservation(reservation);
-    //incrmento para metics
     reservasCreadas.inc();
 
     return {
       id: reservation.id,
       codigoTicket: reservation.codigoTicket,
-      estado: reservation.estado,
+      estado: reservation.estado, // Lee de forma segura el getter
       cantidadTickets: reservation.cantidadTickets,
       expiraEn: '15 minutos'
     };

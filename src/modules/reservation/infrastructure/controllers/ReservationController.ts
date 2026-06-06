@@ -1,7 +1,6 @@
 // src/modules/reservation/infrastructure/controllers/ReservationController.ts
 import { Response } from 'express';
 import { AuthRequest } from '@shared/api/middlewares/auth';
-import pool from '@shared/infrastructure/database/connection';
 import { CreateReservationCommand } from '../../application/commands/CreateReservationCommand';
 import { CreateReservationHandler } from '../../application/commands/CreateReservationHandler';
 import { ConfirmPaymentCommand } from '../../application/commands/ConfirmPaymentCommand';
@@ -12,10 +11,10 @@ import { IReservationQueryService } from '../../application/services/IReservatio
 
 export class ReservationController {
   constructor(
-    private createReservationHandler: CreateReservationHandler,
-    private confirmPaymentHandler: ConfirmPaymentHandler,
-    private cancelReservationHandler: CancelReservationHandler,
-    private reservationQueryService: IReservationQueryService
+    private readonly createReservationHandler: CreateReservationHandler,
+    private readonly confirmPaymentHandler: ConfirmPaymentHandler,
+    private readonly cancelReservationHandler: CancelReservationHandler,
+    private readonly reservationQueryService: IReservationQueryService
   ) {}
 
   // Comprar ticket (crear reserva)
@@ -27,7 +26,6 @@ export class ReservationController {
         return;
       }
       
-      // Validación básica de existencia de campos
       if (!req.body.eventoId || !req.body.cantidadTickets) {
         res.status(400).json({
           success: false,
@@ -56,79 +54,80 @@ export class ReservationController {
     }
   }
   
-  confirmPayment = async (req: AuthRequest, res: Response): Promise<any> => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id;
+  // Confirmar pago de la reserva
+  confirmPayment = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ success: false, message: 'No autorizado' });
-      return;
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
+      }
+
+      const command = new ConfirmPaymentCommand({
+        reservationId: id,
+        usuarioId: userId
+      });
+
+      const result = await this.confirmPaymentHandler.execute(command);
+
+      res.json({
+        success: true,
+        message: 'Pago confirmado exitosamente',
+        data: result
+      });
+    } catch (error: any) {
+      const status = error.message.includes('encontrada') ? 404 :
+                     error.message.includes('permiso') ? 403 :
+                     error.message.includes('pendiente') ? 400 : 500;
+      res.status(status).json({ success: false, message: error.message });
     }
-
-    const command = new ConfirmPaymentCommand({
-      reservationId: id,
-      usuarioId: userId
-    });
-
-    const result = await this.confirmPaymentHandler.execute(command);
-
-    res.json({
-      success: true,
-      message: 'Pago confirmado exitosamente',
-      data: result
-    });
-  } catch (error: any) {
-    const status = error.message.includes('encontrada') ? 404 :
-                   error.message.includes('permiso') ? 403 :
-                   error.message.includes('pendiente') ? 400 : 500;
-    res.status(status).json({ success: false, message: error.message });
-  }
   }
   
   // Mis reservas (historial de compras)
   myReservations = async (req: AuthRequest, res: Response): Promise<void> => {
-  const userId = req.user?.id;
-  if (!userId) {
-    res.status(401).json({ success: false, message: 'No autorizado' });
-    return;
-  }
-  try {
-    const reservations = await this.reservationQueryService.findByUser(userId);
-    res.json({ success: true, count: reservations.length, data: reservations });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error al obtener reservas' });
-  }
-  }
-
-  // Cancelar reserva
-  cancelReservation = async (req: AuthRequest, res: Response): Promise<any> => {
-    try {
-    const { id } = req.params;
     const userId = req.user?.id;
-
     if (!userId) {
       res.status(401).json({ success: false, message: 'No autorizado' });
       return;
     }
-
-    const command = new CancelReservationCommand({
-      reservationId: id,
-      usuarioId: userId
-    });
-
-    const result = await this.cancelReservationHandler.execute(command);
-
-    res.json({
-      success: true,
-      message: 'Cancelacion confirmado exitosamente',
-      data: result
-    });
-  } catch (error: any) {
-    const status = error.message.includes('encontrada') ? 404 :
-                   error.message.includes('permiso') ? 403 :
-                   error.message.includes('pendiente') ? 400 : 500;
-    res.status(status).json({ success: false, message: error.message });
+    try {
+      const reservations = await this.reservationQueryService.findByUser(userId);
+      res.json({ success: true, count: reservations.length, data: reservations });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: 'Error al obtener reservas' });
+    }
   }
+
+  // Cancelar reserva
+  cancelReservation = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
+      }
+
+      const command = new CancelReservationCommand({
+        reservationId: id,
+        usuarioId: userId
+      });
+
+      const result = await this.cancelReservationHandler.execute(command);
+
+      res.json({
+        success: true,
+        message: 'Reserva cancelada exitosamente',
+        data: result
+      });
+    } catch (error: any) {
+      const status = error.message.includes('encontrada') ? 404 :
+                     error.message.includes('permiso') ? 403 :
+                     error.message.includes('pendiente') ? 400 : 500;
+      res.status(status).json({ success: false, message: error.message });
+    }
   }
 }

@@ -1,28 +1,34 @@
 // src/modules/auth/domain/entities/User.ts
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { Email } from '../value-objects/Email';
 
 export type UserRole = 'ORGANIZADOR' | 'ASISTENTE';
 
 export class User {
-  // 1. Consistencia estructural con la bolsa de eventos
   private _domainEvents: IDomainEvent[] = [];
+  private _email: Email; 
 
   constructor(
     public readonly id: string,
-    private _email: string,        // 2. Protegemos contra mutaciones directas de infraestructura
-    private _nombre: string,       // 2. Protegemos contra mutaciones directas de infraestructura
-    private _rol: UserRole,        // 2. Protegemos contra mutaciones directas de infraestructura
+    emailInicial: string,           
+    private _nombre: string,       
+    private _rol: UserRole,        
     public readonly creadoEn: Date = new Date()
   ) {
-    this.validarEmail(this._email);
+    // El Value Object se encarga de validar, limpiar espacios y pasar a minúsculas al nacer
+    this._email = new Email(emailInicial);
   }
 
   // =========================================================================
   // GETTERS (Lecturas seguras)
   // =========================================================================
-  get email(): string { return this._email; }
+  // Mantenemos el retorno como string plano para no romper la compatibilidad externa
+  get email(): string { return this._email.value; }
   get nombre(): string { return this._nombre; }
   get rol(): UserRole { return this._rol; }
+
+  // Obtenemos el objeto Value Object si el sistema lo requiere en algún punto de dominio
+  get emailVO(): Email { return this._email; }
 
   // =========================================================================
   // CONTROL DE EVENTOS DE DOMINIO
@@ -44,12 +50,6 @@ export class User {
   // =========================================================================
   // NÚCLEO DDD: ACCIONES EXPLICITAS Y VALIDACIONES
   // =========================================================================
-  private validarEmail(email: string): void {
-    if (!email.includes('@')) {
-      throw new Error('El formato del correo electrónico es inválido');
-    }
-  }
-
   esOrganizador(): boolean {
     return this._rol === 'ORGANIZADOR';
   }
@@ -64,7 +64,6 @@ export class User {
     const rolAnterior = this._rol;
     this._rol = nuevoRol;
 
-    // Hecho histórico: Útil a futuro para el punto 14 (Blacklist/invalidar JWT)
     this.recordEvent('UserRoleChanged', {
       userId: this.id,
       rolAnterior,
@@ -72,15 +71,15 @@ export class User {
     });
   }
 
-  actualizarPerfil(nuevoNombre: string, nuevoEmail: string): void {
-    this.validarEmail(nuevoEmail);
+  // Ahora aceptamos el Value Object rico directamente desde el Handler
+  actualizarPerfil(nuevoNombre: string, nuevoEmail: Email): void {
     this._nombre = nuevoNombre;
-    this._email = nuevoEmail;
+    this._email = nuevoEmail; // Guardamos el objeto ya validado
 
     this.recordEvent('UserProfileUpdated', {
       userId: this.id,
       nombre: this._nombre,
-      email: this._email
+      email: this._email.value // Publicamos el string limpio en el evento
     });
   }
 }

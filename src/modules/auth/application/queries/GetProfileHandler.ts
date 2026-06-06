@@ -16,7 +16,7 @@ export class GetProfileHandler {
       email: user.email,
       nombre: user.nombre,
       rol: user.rol,
-      creado_en: user.creadoEn
+      creadoEn: user.creadoEn
     };
   }
 }
