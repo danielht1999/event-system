@@ -1,7 +1,8 @@
 // src/shared/domain/IDomainEvent.ts
 
-export interface IDomainEvent {
+// Ahora recibe una 'T' que por defecto es any por compatibilidad, pero puede ser estricta
+export interface IDomainEvent<T = any> {
   eventName: string;
   occurredOn: Date;
-  data: any;
+  data: T; 
 }

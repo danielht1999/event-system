@@ -2,6 +2,7 @@
 import { EventDate } from '../value-objects/EventDate';
 import { Capacity } from '../value-objects/Capacity';
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
 
 export type EventStatus = 
   | 'BORRADOR'
@@ -65,13 +66,13 @@ export class Event {
       throw new Error('Solo se pueden publicar eventos en estado BORRADOR');
     }
     this._estado = 'PUBLICADA';
-    this.recordEvent('EventStatusUpdated', { eventId: this.id, organizerId: this.organizadorId });
+    this.recordEvent(DomainEventNames.EVENT.STATUS_UPDATED, { eventId: this.id, organizerId: this.organizadorId });
   }
 
   public cancelar(): void {
     if (this._estado === 'CANCELADA') return;
     this._estado = 'CANCELADA';
-    this.recordEvent('EventCancelled', { eventId: this.id, organizerId: this.organizadorId });
+    this.recordEvent(DomainEventNames.EVENT.CANCELLED, { eventId: this.id, organizerId: this.organizadorId });
   }
 
   public estaLleno(): boolean {
@@ -99,7 +100,7 @@ export class Event {
     
     this._reservasPendientes += cantidad;
 
-    this.recordEvent('EventSeatsProvisioned', {
+    this.recordEvent(DomainEventNames.EVENT.SEATS_PROVISIONED, {
       eventId: this.id,
       organizerId: this.organizadorId,
       cantidad
@@ -116,7 +117,7 @@ export class Event {
     this._reservasPendientes -= cantidad;
     this._reservasConfirmadas += cantidad;
 
-    this.recordEvent('EventReservationConfirmed', { 
+    this.recordEvent(DomainEventNames.EVENT.RESERVATION_CONFIRMED, { 
       eventId: this.id,
       organizerId: this.organizadorId,
       cantidad

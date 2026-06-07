@@ -1,6 +1,7 @@
 // src/shared/infrastructure/messaging/DomainEventBus.ts
 import { EventEmitter } from 'events';
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { DomainEventPayloadMap } from '@shared/domain/DomainEventPayloads';
 
 class DomainEventBus {
   private bus = new EventEmitter();
@@ -15,8 +16,11 @@ class DomainEventBus {
     this.bus.emit(eventName, event);
   }
 
-  // Los suscriptores usan este método para quedarse escuchando un evento específico
-  listen(eventName: string, callback: (event: IDomainEvent) => void): void {
+  // MÁGIA DE TS: Al elegir un evento 'K' del mapa, infiere el tipo de su data automáticamente
+  listen<K extends keyof DomainEventPayloadMap>(
+    eventName: K,
+    callback: (event: IDomainEvent<DomainEventPayloadMap[K]>) => void
+  ): void {
     this.bus.on(eventName, callback);
   }
 }

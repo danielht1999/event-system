@@ -1,12 +1,14 @@
 // src/modules/reservation/infrastructure/services/ReservationTransactionService.ts
 import { Pool } from 'pg';
 import { Reservation } from '../../domain/entities/Reservation';
+import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
 
 export class ReservationTransactionService {
   constructor(private pool: Pool) {}
 
-  // 1. Crear Reservación sigue un patrón transaccional fuerte
-  async createReservation(reservation: Reservation): Promise<void> {
+  // 1. Crear Reservación - Ahora devuelve la entidad para despachar eventos de forma segura
+  async createReservation(reservation: Reservation): Promise<Reservation> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -17,7 +19,7 @@ export class ReservationTransactionService {
       }
 
       const evento = resultado.rows[0];
-      // Mantenemos la protección de aforo en la base de datos por concurrencia real
+      
       if (evento.capacidad_total < evento.reservas_confirmadas + evento.reservas_pendientes + reservation.cantidadTickets) {
         throw new Error('No hay cupos suficientes');
       }
@@ -30,7 +32,7 @@ export class ReservationTransactionService {
           reservation.eventoId,        
           reservation.usuarioId,       
           reservation.cantidadTickets, 
-          reservation.estado, // Toma el estado controlado por la entidad ('PENDIENTE_PAGO')
+          reservation.estado, 
           reservation.codigoTicket,    
           reservation.reservadoEn,     
           reservation.pagadoEn,        
@@ -41,7 +43,16 @@ export class ReservationTransactionService {
       await client.query(`UPDATE eventos SET reservas_pendientes = reservas_pendientes + $1 WHERE id = $2`,
         [reservation.cantidadTickets, reservation.eventoId] 
       );
+
       await client.query('COMMIT');
+
+      // 💡 Extracción y publicación segura post-COMMIT de los eventos acumulados al crear la reserva
+      const domainEvents: IDomainEvent[] = reservation.pullDomainEvents();
+      domainEvents.forEach((domainEvent) => {
+        domainEventBus.publish(domainEvent.eventName, domainEvent);
+      });
+
+      return reservation;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -50,7 +61,7 @@ export class ReservationTransactionService {
     }
   }
 
-  // 2. Confirmar Pago ENRIQUECIDO CON DOMINIO Rich 
+  // 2. Confirmar Pago - Devuelve la entidad mutada
   async confirmPayment(reservationId: string, userId: string): Promise<Reservation> {
     const client = await this.pool.connect();
     try {
@@ -66,7 +77,6 @@ export class ReservationTransactionService {
         throw new Error('No tienes permiso para confirmar esta reserva');
       }
 
-      // Reconstruimos la entidad de dominio original a partir de la fila SQL
       const reservation = new Reservation(
         row.id,
         row.evento_id,
@@ -79,11 +89,8 @@ export class ReservationTransactionService {
         row.checked_in_en
       );
 
-      // EL NÚCLEO DDD: Delegamos la mutación a la entidad.
-      // Aquí se valida la invariante interna y nace el evento 'ReservationConfirmed'
       reservation.confirmarPago();
 
-      // Persistimos el estado real dictado por la entidad
       await client.query(
         `UPDATE reservas SET estado = $1, pagado_en = $2 WHERE id = $3`,
         [reservation.estado, reservation.pagadoEn, reservation.id]
@@ -98,7 +105,7 @@ export class ReservationTransactionService {
       );     
       
       await client.query('COMMIT');
-      return reservation; // Devolvemos la entidad con sus eventos listos para ser publicados
+      return reservation; 
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -107,7 +114,7 @@ export class ReservationTransactionService {
     }
   }
 
-  // 3. Cancelar Reservación ENRIQUECIDA CON DOMINIO Rich
+  // 3. Cancelar Reservación
   async cancelReservation(reservationId: string, userId: string): Promise<Reservation> {
     const client = await this.pool.connect();
     try {
@@ -123,7 +130,6 @@ export class ReservationTransactionService {
         throw new Error('No tienes permiso para cancelar esta reserva');
       }
 
-      // Reconstruimos la entidad
       const reservation = new Reservation(
         row.id,
         row.evento_id,
@@ -137,8 +143,6 @@ export class ReservationTransactionService {
       );
 
       const estadoAnterior = reservation.estado;
-
-      //Muta la entidad de forma segura y genera 'ReservationCancelled'
       reservation.cancelar();
 
       await client.query(
@@ -146,7 +150,6 @@ export class ReservationTransactionService {
         [reservation.estado, reservation.id]
       );
       
-      // Solo resta pendientes si estaba en PENDIENTE_PAGO antes del cambio
       if (estadoAnterior === 'PENDIENTE_PAGO') {
         await client.query(
           `UPDATE eventos SET reservas_pendientes = reservas_pendientes - $1 WHERE id = $2`,

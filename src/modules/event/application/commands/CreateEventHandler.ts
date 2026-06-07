@@ -5,6 +5,7 @@ import { Event } from '../../domain/entities/Event';
 import { v4 as uuidv4 } from 'uuid';
 import { EventDate } from '../../domain/value-objects/EventDate';
 import { Capacity } from '../../domain/value-objects/Capacity';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
 
 export class CreateEventHandler {
   constructor(private eventRepository: IEventRepository) {}
@@ -25,7 +26,7 @@ export class CreateEventHandler {
 
     // Apuntamos en la entidad que el evento ha sido creado/actualizado.
     // Esto guardará 'EventStatusUpdated' en la bolsa interna de la entidad.
-    event.recordEvent('EventStatusUpdated', {
+    event.recordEvent(DomainEventNames.EVENT.STATUS_UPDATED, {
       eventId: event.id,
       organizerId: event.organizadorId
     });
