@@ -5,6 +5,7 @@ import { Event } from '../../domain/entities/Event';
 import { EventDate } from '../../domain/value-objects/EventDate';
 import { Capacity } from '../../domain/value-objects/Capacity';
 import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
 
 export class PostgresEventRepository implements IEventRepository {
   
@@ -44,8 +45,11 @@ export class PostgresEventRepository implements IEventRepository {
     ]);
 
     // Despacho automático de la bolsa de eventos acumulados en el dominio
-    const domainEvents = event.pullDomainEvents();
+    const domainEvents: IDomainEvent[] = event.pullDomainEvents();
     domainEvents.forEach((domainEvent) => {
+      //  Usamos 'as any' en el publish del repositorio únicamente porque aquí 
+      // estamos barriendo un array dinámico de eventos pasados, pero el Bus 
+      // mantendrá el tipeo estricto y seguro en los métodos .listen()
       domainEventBus.publish(domainEvent.eventName, domainEvent);
     });
 
