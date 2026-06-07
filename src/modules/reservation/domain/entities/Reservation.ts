@@ -1,5 +1,6 @@
 // src/modules/reservation/domain/entities/Reservation.ts
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
 
 export type ReservationStatus = 
   | 'PENDIENTE_PAGO'
@@ -84,7 +85,7 @@ export class Reservation {
     this._estado = 'CONFIRMADA';
     this._pagadoEn = new Date();
 
-    this.recordEvent('ReservationConfirmed', {
+    this.recordEvent(DomainEventNames.RESERVATION.CONFIRMED, {
       reservationId: this.id,
       eventoId: this.eventoId,
       cantidadTickets: this.cantidadTickets
@@ -99,7 +100,7 @@ export class Reservation {
     const estadoAnterior = this._estado;
     this._estado = 'CANCELADA';
 
-    this.recordEvent('ReservationCancelled', {
+    this.recordEvent(DomainEventNames.RESERVATION.CANCELLED, {
       reservationId: this.id,
       eventoId: this.eventoId,
       cantidadTickets: this.cantidadTickets,
@@ -114,7 +115,7 @@ export class Reservation {
     this._estado = 'CHECKED_IN';
     this._checkedInEn = new Date();
 
-    this.recordEvent('ReservationCheckedIn', {
+    this.recordEvent(DomainEventNames.RESERVATION.CHECKED_IN, {
       reservationId: this.id,
       eventoId: this.eventoId
     });
@@ -128,7 +129,7 @@ export class Reservation {
 
     this._estado = 'EXPIRADA';
 
-    this.recordEvent('ReservationExpired', {
+    this.recordEvent(DomainEventNames.RESERVATION.EXPIRED, {
       reservationId: this.id,
       eventoId: this.eventoId,
       cantidadTickets: this.cantidadTickets

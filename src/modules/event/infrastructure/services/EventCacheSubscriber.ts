@@ -2,6 +2,7 @@
 import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 import { cacheService } from '@shared/infrastructure/cache/cache.service';
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { DomainEventNames } from '@shared/domain/DomainEventNames'; 
 
 export class EventCacheSubscriber {
   constructor() {
@@ -9,15 +10,16 @@ export class EventCacheSubscriber {
   }
 
   private setupListeners(): void {
-    // Mapeamos los 3 nombres de eventos exactos que dispara nuestra entidad Event.ts
     const cacheInvalidationEvents = [
-      'EventCancelled', 
-      'EventSeatsProvisioned', 
-      'EventStatusUpdated'
+      DomainEventNames.EVENT.CANCELLED, 
+      DomainEventNames.EVENT.SEATS_PROVISIONED, 
+      DomainEventNames.EVENT.STATUS_UPDATED
     ];
 
     cacheInvalidationEvents.forEach((eventName) => {
-      domainEventBus.listen(eventName, async (event: IDomainEvent) => {
+      // Nota: Le pasamos 'any' temporalmente aquí al listen porque estamos iterando un array dinámico,
+      // pero ya está usando el nombre de evento correcto del catálogo.
+      domainEventBus.listen(eventName as any, async (event: IDomainEvent) => {
         try {
           const { organizerId } = event.data;
 

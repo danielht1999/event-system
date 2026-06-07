@@ -1,6 +1,7 @@
 // src/modules/auth/domain/entities/User.ts
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
 import { Email } from '../value-objects/Email';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
 
 export type UserRole = 'ORGANIZADOR' | 'ASISTENTE';
 
@@ -64,7 +65,7 @@ export class User {
     const rolAnterior = this._rol;
     this._rol = nuevoRol;
 
-    this.recordEvent('UserRoleChanged', {
+    this.recordEvent(DomainEventNames.AUTH.USER_ROLE_CHANGED, {
       userId: this.id,
       rolAnterior,
       nuevoRol
@@ -76,7 +77,7 @@ export class User {
     this._nombre = nuevoNombre;
     this._email = nuevoEmail; // Guardamos el objeto ya validado
 
-    this.recordEvent('UserProfileUpdated', {
+    this.recordEvent(DomainEventNames.AUTH.USER_PROFILE_UPDATED, {
       userId: this.id,
       nombre: this._nombre,
       email: this._email.value // Publicamos el string limpio en el evento
