@@ -10,20 +10,29 @@ export class EventCacheSubscriber {
   }
 
   private setupListeners(): void {
+    // Unificamos todos los eventos que requieren la misma estrategia de invalidación de caché
     const cacheInvalidationEvents = [
+      // Módulo EVENT
       DomainEventNames.EVENT.CANCELLED, 
       DomainEventNames.EVENT.SEATS_PROVISIONED, 
-      DomainEventNames.EVENT.STATUS_UPDATED
+      DomainEventNames.EVENT.STATUS_UPDATED,
+      
+      // Módulo RESERVATION (Ahora enriquecidos con organizerId en el payload)
+      DomainEventNames.RESERVATION.CREATED,
+      DomainEventNames.RESERVATION.CANCELLED,
+      DomainEventNames.RESERVATION.EXPIRED
     ];
 
     cacheInvalidationEvents.forEach((eventName) => {
-      // Nota: Le pasamos 'any' temporalmente aquí al listen porque estamos iterando un array dinámico,
-      // pero ya está usando el nombre de evento correcto del catálogo.
       domainEventBus.listen(eventName as any, async (event: IDomainEvent) => {
         try {
+          // Extraemos organizerId de forma segura. 
           const { organizerId } = event.data;
 
-          // Limpieza selectiva y en paralelo en Redis para no bloquear el hilo de ejecución
+          if (!organizerId) {
+            console.warn(`[Cache Subscriber] Advertencia: Se recibió ${eventName} sin organizerId.`);
+            return;
+          }
           await Promise.all([
             cacheService.delete('events:all'),
             cacheService.delete(`events:organizer:${organizerId}`)
@@ -31,7 +40,7 @@ export class EventCacheSubscriber {
 
           console.log(`[Cache Subscriber] Redis invalidado con éxito ante: ${eventName} (Organizador: ${organizerId})`);
         } catch (error) {
-          // Principio Fail-Safe: si Redis falla, la app no se cae porque los datos ya están seguros en Postgres
+          // Mantienes tu principio Fail-Safe intacto
           console.error(`[Cache Subscriber] Error crítico al limpiar Redis en ${eventName}:`, error);
         }
       });

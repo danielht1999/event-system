@@ -27,22 +27,30 @@ export class Reservation {
   }
 
     public static create(props: {
-      id: string;
-      eventoId: string;
-      usuarioId: string;
-      cantidadTickets: number;
-      codigoTicket: string;
-    }): Reservation {
-      return new Reservation(
-        props.id,
-        props.eventoId,
-        props.usuarioId,
-        props.cantidadTickets,
-        'PENDIENTE_PAGO',
-        props.codigoTicket,
-        new Date()
-      );
-    }
+    id: string;
+    eventoId: string;
+    usuarioId: string;
+    cantidadTickets: number;
+    codigoTicket: string;
+  }): Reservation {
+    const reservation = new Reservation(
+      props.id,
+      props.eventoId,
+      props.usuarioId,
+      props.cantidadTickets,
+      'PENDIENTE_PAGO',
+      props.codigoTicket,
+      new Date()
+    );
+
+    reservation.recordEvent(DomainEventNames.RESERVATION.CREATED, {
+      reservationId: reservation.id,
+      eventoId: reservation.eventoId,
+      cantidadTickets: reservation.cantidadTickets
+    });
+
+    return reservation;
+  }
 
   private validateQuantity(): void {
     if (this.cantidadTickets <= 0) {

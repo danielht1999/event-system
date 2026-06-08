@@ -46,9 +46,15 @@ export class ReservationTransactionService {
 
       await client.query('COMMIT');
 
-      // 💡 Extracción y publicación segura post-COMMIT de los eventos acumulados al crear la reserva
+      const organizerId = evento.organizador_id;
+
+      // Extracción y publicación segura post-COMMIT de los eventos acumulados al crear la reserva
       const domainEvents: IDomainEvent[] = reservation.pullDomainEvents();
       domainEvents.forEach((domainEvent) => {
+        domainEvent.data = {
+          ...domainEvent.data,
+          organizerId: organizerId
+        };
         domainEventBus.publish(domainEvent.eventName, domainEvent);
       });
 
@@ -76,6 +82,10 @@ export class ReservationTransactionService {
       if (row.usuario_id !== userId) {
         throw new Error('No tienes permiso para confirmar esta reserva');
       }
+
+      // Obtenemos el evento para extraer su organizador antes del commit
+      const resultadoEvento = await client.query('SELECT organizador_id FROM eventos WHERE id = $1', [row.evento_id]);
+      const organizerId = resultadoEvento.rows[0]?.organizador_id;
 
       const reservation = new Reservation(
         row.id,
@@ -105,6 +115,17 @@ export class ReservationTransactionService {
       );     
       
       await client.query('COMMIT');
+
+      // Extracción y publicación segura de eventos inyectando el contexto de infraestructura necesario
+      const domainEvents: IDomainEvent[] = reservation.pullDomainEvents();
+      domainEvents.forEach((domainEvent) => {
+        domainEvent.data = {
+          ...domainEvent.data,
+          organizerId: organizerId
+        };
+        domainEventBus.publish(domainEvent.eventName, domainEvent);
+      });
+
       return reservation; 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -129,6 +150,10 @@ export class ReservationTransactionService {
       if (row.usuario_id !== userId) {
         throw new Error('No tienes permiso para cancelar esta reserva');
       }
+
+      // Obtenemos el evento para extraer su organizador antes del commit
+      const resultadoEvento = await client.query('SELECT organizador_id FROM eventos WHERE id = $1', [row.evento_id]);
+      const organizerId = resultadoEvento.rows[0]?.organizador_id;
 
       const reservation = new Reservation(
         row.id,
@@ -158,6 +183,17 @@ export class ReservationTransactionService {
       }
       
       await client.query('COMMIT');
+
+      // Extracción y publicación segura de eventos inyectando el contexto de infraestructura necesario
+      const domainEvents: IDomainEvent[] = reservation.pullDomainEvents();
+      domainEvents.forEach((domainEvent) => {
+        domainEvent.data = {
+          ...domainEvent.data,
+          organizerId: organizerId
+        };
+        domainEventBus.publish(domainEvent.eventName, domainEvent);
+      });
+
       return reservation;
     } catch (error) {
       await client.query('ROLLBACK');
