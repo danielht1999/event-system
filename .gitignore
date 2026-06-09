@@ -16,3 +16,5 @@ temp/
 *.db
 Show-ProjectTree.ps1
 scripts/
+logs/
+*.log
