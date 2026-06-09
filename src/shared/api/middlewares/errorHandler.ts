@@ -4,7 +4,7 @@ import {
   DomainError,
   ValidationError,
   ErrorCategory
-} from '../../domain/errors';
+} from '@shared/domain/errors';
 
 import { logger } from '../../infrastructure/logging/winston';
 
