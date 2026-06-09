@@ -1,6 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
-import { DomainError } from '../../domain/errors/DomainError';
+
+import {
+  DomainError,
+  ValidationError,
+  ErrorCategory
+} from '../../domain/errors';
+
 import { logger } from '../../infrastructure/logging/winston';
+
+const STATUS_MAP = {
+  [ErrorCategory.VALIDATION]: 400,
+  [ErrorCategory.UNAUTHORIZED]: 401,
+  [ErrorCategory.FORBIDDEN]: 403,
+  [ErrorCategory.NOT_FOUND]: 404,
+  [ErrorCategory.CONFLICT]: 409,
+  [ErrorCategory.INTERNAL]: 500,
+};
 
 export function errorHandler(
   err: Error,
@@ -8,32 +23,49 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  // 1. Si es un error controlado por tu lógica de negocio
+
+  // ==================== 1. ERRORES DE DOMINIO CONTROLADOS ====================
+
   if (err instanceof DomainError) {
-    logger.warn(`[Domain Error] ${err.code}: ${err.message}`);
-    return res.status(400).json({
-      status: 'fail',
+
+    logger.warn({
+      category: err.category,
       code: err.code,
-      message: err.message
+      message: err.message,
+      path: req.path,
+      method: req.method,
     });
+
+    const response: Record<string, unknown> = {
+      status: 'fail',
+      category: err.category,
+      code: err.code,
+      message: err.message,
+    };
+
+    // Solo ValidationError tiene details
+    if (err instanceof ValidationError && err.details) {
+      response.details = err.details;
+    }
+
+    return res
+      .status(STATUS_MAP[err.category] ?? 400)
+      .json(response);
   }
 
-  // 2. Si es un colapso inesperado de infraestructura (Postgres, Redis, etc.)
+  // ==================== 2. ERRORES INESPERADOS ====================
+
   logger.error({
     message: err.message,
     stack: err.stack,
     name: err.name,
-    context: {
-      path: req.path,
-      method: req.method,
-      body: req.body 
-    }
+    path: req.path,
+    method: req.method,
   });
 
-  // Escudo para el usuario: Jamás se entera del stack real del servidor
   return res.status(500).json({
     status: 'error',
     code: 'INTERNAL_SERVER_ERROR',
-    message: 'Hubo un error interno en el servidor. Por favor, inténtalo más tarde.'
+    message: 'Hubo un error interno en el servidor.',
   });
 }
