@@ -3,6 +3,8 @@ import { Pool } from 'pg';
 import { Reservation } from '../../domain/entities/Reservation';
 import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { EventNotFoundError, EventCapacityExceededError } from '../../../event/domain/errors';
+import { ReservationNotFoundError, ReservationOwnershipError } from '../../domain/errors';
 
 export class ReservationTransactionService {
   constructor(private pool: Pool) {}
@@ -15,13 +17,13 @@ export class ReservationTransactionService {
       const resultado = await client.query('SELECT * FROM eventos WHERE id = $1 FOR UPDATE', [reservation.eventoId]);        
         
       if (resultado.rows.length === 0) {
-        throw new Error('Evento no encontrado');
+        throw new EventNotFoundError(reservation.eventoId);
       }
 
       const evento = resultado.rows[0];
       
       if (evento.capacidad_total < evento.reservas_confirmadas + evento.reservas_pendientes + reservation.cantidadTickets) {
-        throw new Error('No hay cupos suficientes');
+        throw new EventCapacityExceededError(reservation.eventoId);
       }
 
       await client.query(
@@ -75,12 +77,12 @@ export class ReservationTransactionService {
       const resultado = await client.query('SELECT * FROM reservas WHERE id = $1 FOR UPDATE', [reservationId]);        
         
       if (resultado.rows.length === 0) {
-        throw new Error('Reserva no encontrada');
+        throw new ReservationNotFoundError(reservationId);
       }
 
       const row = resultado.rows[0];
       if (row.usuario_id !== userId) {
-        throw new Error('No tienes permiso para confirmar esta reserva');
+        throw new ReservationOwnershipError(reservationId, userId);
       }
 
       // Obtenemos el evento para extraer su organizador antes del commit
@@ -143,12 +145,12 @@ export class ReservationTransactionService {
       const resultado = await client.query('SELECT * FROM reservas WHERE id = $1 FOR UPDATE', [reservationId]);
       
       if (resultado.rows.length === 0) {
-        throw new Error('Reserva no encontrada');
+        throw new ReservationNotFoundError(reservationId);
       }
 
       const row = resultado.rows[0];
       if (row.usuario_id !== userId) {
-        throw new Error('No tienes permiso para cancelar esta reserva');
+        throw new ReservationOwnershipError(reservationId, userId);
       }
 
       // Obtenemos el evento para extraer su organizador antes del commit

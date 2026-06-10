@@ -1,5 +1,11 @@
 // src/modules/reservation/domain/entities/Reservation.test.ts
 import { Reservation } from './Reservation';
+import { ValidationError } from '@shared/domain/errors';
+import {
+  ReservationNotPendingError,
+  ReservationAlreadyCancelledError,
+  ReservationCheckedInError
+} from '../errors';
 
 describe('Reservation', () => {
   let reservation: Reservation;
@@ -45,7 +51,7 @@ describe('Reservation', () => {
         -1,
         'PENDIENTE_PAGO',
         'TICKET-12346'
-      )).toThrow('La cantidad de tickets debe ser mayor a 0');
+      )).toThrow(ValidationError);
     });
 
     test('no deberia permitir mas de 4 tickets', () => {
@@ -56,7 +62,7 @@ describe('Reservation', () => {
         5,
         'PENDIENTE_PAGO',
         'TICKET-12347'
-      )).toThrow('No se pueden reservar mas de 4 tickets por persona');
+      )).toThrow(ValidationError);
     });
 
     test('deberia tener código de ticket único', () => {
@@ -116,12 +122,12 @@ describe('Reservation', () => {
 
     test('no deberia confirmar pago si ya esta confirmada', () => {
       reservation.confirmarPago();
-      expect(() => reservation.confirmarPago()).toThrow('Solo se pueden confirmar reservas en estado pendiente');
+      expect(() => reservation.confirmarPago()).toThrow(ReservationNotPendingError);
     });
 
     test('no deberia confirmar pago si esta cancelada', () => {
       reservation.cancelar();
-      expect(() => reservation.confirmarPago()).toThrow('Solo se pueden confirmar reservas en estado pendiente');
+      expect(() => reservation.confirmarPago()).toThrow(ReservationNotPendingError);
     });
 
     test('no deberia confirmar pago si esta expirada', () => {
@@ -133,13 +139,13 @@ describe('Reservation', () => {
         'EXPIRADA',
         'TICKET-12348'
       );
-      expect(() => reservationExpirada.confirmarPago()).toThrow('Solo se pueden confirmar reservas en estado pendiente');
+      expect(() => reservationExpirada.confirmarPago()).toThrow(ReservationNotPendingError);
     });
 
     test('no deberia confirmar pago si ya hizo check-in', () => {
       reservation.confirmarPago();
       reservation.hacerCheckIn();
-      expect(() => reservation.confirmarPago()).toThrow('Solo se pueden confirmar reservas en estado pendiente');
+      expect(() => reservation.confirmarPago()).toThrow(ReservationNotPendingError);
     });
   });
 
@@ -149,17 +155,16 @@ describe('Reservation', () => {
       expect(reservation.estado).toBe('CANCELADA');
     });
 
-    test('deberia permitir cancelar una reserva ya cancelada (idempotencia)', () => {
+    test('deberia lanzar error al intentar cancelar una reserva ya cancelada', () => {
       reservation.cancelar();
-      // No debe lanzar error
-      expect(() => reservation.cancelar()).not.toThrow();
-      expect(reservation.estado).toBe('CANCELADA');
+      // Ajustado a la invariante real implementada: Lanza ReservationAlreadyCancelledError
+      expect(() => reservation.cancelar()).toThrow(ReservationAlreadyCancelledError);
     });
 
     test('no deberia cancelar una reserva con check-in', () => {
       reservation.confirmarPago();
       reservation.hacerCheckIn();
-      expect(() => reservation.cancelar()).toThrow('No se puede cancelar una reserva ya utilizada');
+      expect(() => reservation.cancelar()).toThrow(ReservationCheckedInError);
     });
 
     test('deberia poder cancelar una reserva confirmada', () => {
@@ -201,16 +206,16 @@ describe('Reservation', () => {
     });
 
     test('no deberia hacer check-in sin confirmar pago', () => {
-      expect(() => reservation.hacerCheckIn()).toThrow('Solo se puede hacer check-in de reservas confirmadas');
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
 
     test('no deberia hacer check-in si esta pendiente', () => {
-      expect(() => reservation.hacerCheckIn()).toThrow('Solo se puede hacer check-in de reservas confirmadas');
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
 
     test('no deberia hacer check-in si esta cancelada', () => {
       reservation.cancelar();
-      expect(() => reservation.hacerCheckIn()).toThrow('Solo se puede hacer check-in de reservas confirmadas');
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
     });
 
     test('no deberia hacer check-in si esta expirada', () => {
@@ -222,13 +227,13 @@ describe('Reservation', () => {
         'EXPIRADA',
         'TICKET-12354'
       );
-      expect(() => reservationExpirada.hacerCheckIn()).toThrow('Solo se puede hacer check-in de reservas confirmadas');
+      expect(() => reservationExpirada.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
 
     test('no deberia hacer check-in dos veces', () => {
       reservation.confirmarPago();
       reservation.hacerCheckIn();
-      expect(() => reservation.hacerCheckIn()).toThrow('Solo se puede hacer check-in de reservas confirmadas');
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
   });
 
@@ -250,8 +255,8 @@ describe('Reservation', () => {
       
       reservation.cancelar();
       expect(reservation.estado).toBe('CANCELADA');
-      expect(() => reservation.confirmarPago()).toThrow();
-      expect(() => reservation.hacerCheckIn()).toThrow();
+      expect(() => reservation.confirmarPago()).toThrow(ReservationNotPendingError);
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
     });
 
     test('flujo alternativo: pendiente -> confirmada -> cancelada', () => {
@@ -260,13 +265,13 @@ describe('Reservation', () => {
       
       reservation.cancelar();
       expect(reservation.estado).toBe('CANCELADA');
-      expect(() => reservation.hacerCheckIn()).toThrow();
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
     });
 
     test('no se puede hacer check-in despues de cancelar', () => {
       reservation.confirmarPago();
       reservation.cancelar();
-      expect(() => reservation.hacerCheckIn()).toThrow('Solo se puede hacer check-in de reservas confirmadas');
+      expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
     });
 
     test('estado expirada no permite confirmar pago', () => {
@@ -278,16 +283,15 @@ describe('Reservation', () => {
         'EXPIRADA',
         'TICKET-12355'
       );
-      expect(() => reservationExpirada.confirmarPago()).toThrow();
-      expect(() => reservationExpirada.hacerCheckIn()).toThrow();
+      expect(() => reservationExpirada.confirmarPago()).toThrow(ReservationNotPendingError);
+      expect(() => reservationExpirada.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
 
-    test('cancelar reserva cancelada no cambia el estado', () => {
+    test('cancelar reserva cancelada lanza excepcion de control', () => {
       reservation.cancelar();
       expect(reservation.estado).toBe('CANCELADA');
       
-      reservation.cancelar();
-      expect(reservation.estado).toBe('CANCELADA');
+      expect(() => reservation.cancelar()).toThrow(ReservationAlreadyCancelledError);
     });
   });
 });

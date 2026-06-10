@@ -2,6 +2,7 @@
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { UpdateProfileCommand } from './UpdateProfileCommand';
 import { Email } from '../../domain/value-objects/Email';
+import { UserNotFoundError, EmailAlreadyRegisteredError } from '../../domain/errors'; // Errores específicos vía Barril
 
 export interface UpdateUserResult {
   user: {
@@ -20,7 +21,8 @@ export class UpdateProfilehandler {
     // 1. Recuperamos la entidad completa desde la BD
     const user = await this.userRepository.findById(command.userId);
     if (!user) {
-      throw new Error(`Usuario con id ${command.userId} no encontrado`);
+      // Lanzamos un 404 semántico
+      throw new UserNotFoundError(command.userId);
     }
 
     // Por defecto, mantenemos el Value Object de Email que ya tiene la entidad
@@ -35,7 +37,8 @@ export class UpdateProfilehandler {
         // Validamos disponibilidad en BD usando el string sanitizado (.value)
         const emailTaken = await this.userRepository.emailExists(nuevoEmail.value);
         if (emailTaken) {
-          throw new Error(`El email ${nuevoEmail.value} ya está registrado`);
+          // Lanzamos un 409 semántico pasándole el email duplicado
+          throw new EmailAlreadyRegisteredError(nuevoEmail.value);
         }
         emailFinal = nuevoEmail; 
       }
@@ -51,7 +54,6 @@ export class UpdateProfilehandler {
     const updatedUser = await this.userRepository.save(user);    
 
     // 6. Retornar el DTO estructurado
-    // Como el getter 'email' de tu entidad ya devuelve un string plano, no necesitas mapear nada raro
     return {
       user: {
         id: updatedUser.id,

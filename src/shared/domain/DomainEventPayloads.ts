@@ -53,7 +53,7 @@ export interface EventStatusUpdatedPayload {
   organizerId: string;
 }
 
-// 💡 El Mapa Maestro: Vincula el string del evento con su interfaz real
+// El Mapa Maestro: Vincula el string del evento con su interfaz real
 export type DomainEventPayloadMap = {
   [DomainEventNames.AUTH.USER_ROLE_CHANGED]: UserRoleChangedPayload;
   [DomainEventNames.AUTH.USER_PROFILE_UPDATED]: UserProfileUpdatedPayload;

@@ -7,6 +7,7 @@ import { User } from '../../domain/entities/User';
 import { v4 as uuidv4 } from 'uuid';
 import { userQuantity } from '@shared/infrastructure/monitoring/metrics';
 import { UserRole } from '../../domain/entities/User';
+import { EmailAlreadyRegisteredError } from '../../domain/errors'; // Error semántico específico
 
 export interface RegisterUserResult {
   user: {
@@ -29,7 +30,8 @@ export class RegisterUserHandler {
     // 1. Validación cruzada de infraestructura: Verificar disponibilidad del email
     const emailExists = await this.userRepository.emailExists(command.email);
     if (emailExists) {
-      throw new Error('El email ya está registrado');
+      // Lanzamos 409 semántico pasando el email en conflicto
+      throw new EmailAlreadyRegisteredError(command.email);
     }
 
     // 2. Hashear password usando el servicio abstracto de dominio

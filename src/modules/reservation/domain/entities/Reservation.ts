@@ -1,6 +1,12 @@
 // src/modules/reservation/domain/entities/Reservation.ts
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { ValidationError } from '@shared/domain/errors'; // Error transversal genérico
+import {
+  ReservationNotPendingError,
+  ReservationAlreadyCancelledError,
+  ReservationCheckedInError
+} from '../errors'; 
 
 export type ReservationStatus = 
   | 'PENDIENTE_PAGO'
@@ -19,14 +25,14 @@ export class Reservation {
     public readonly cantidadTickets: number,
     private _estado: ReservationStatus,
     public readonly codigoTicket: string,
-    public readonly reservadoEn: Date = new Date(), // Cambiado a readonly ya que es la fecha de inserción
-    private _pagadoEn?: Date,    // Privatizado para evitar modificaciones anémicas
-    private _checkedInEn?: Date  // Privatizado para evitar modificaciones anémicas
+    public readonly reservadoEn: Date = new Date(),
+    private _pagadoEn?: Date,    
+    private _checkedInEn?: Date  
   ) {
     this.validateQuantity();
   }
 
-    public static create(props: {
+  public static create(props: {
     id: string;
     eventoId: string;
     usuarioId: string;
@@ -54,10 +60,10 @@ export class Reservation {
 
   private validateQuantity(): void {
     if (this.cantidadTickets <= 0) {
-      throw new Error('La cantidad de tickets debe ser mayor a 0');
+      throw new ValidationError('La cantidad de tickets debe ser mayor a 0');
     }
     if (this.cantidadTickets > 4) {
-      throw new Error('No se pueden reservar mas de 4 tickets por persona');
+      throw new ValidationError('No se pueden reservar más de 4 tickets por persona');
     }
   }
 
@@ -88,7 +94,7 @@ export class Reservation {
 
   public confirmarPago(): void {
     if (this._estado !== 'PENDIENTE_PAGO') {
-      throw new Error('Solo se pueden confirmar reservas en estado pendiente');
+      throw new ReservationNotPendingError(this.id);
     }
     this._estado = 'CONFIRMADA';
     this._pagadoEn = new Date();
@@ -102,7 +108,10 @@ export class Reservation {
 
   public cancelar(): void {
     if (this._estado === 'CHECKED_IN') {
-      throw new Error('No se puede cancelar una reserva ya utilizada');
+      throw new ReservationCheckedInError(this.id);
+    }
+    if (this._estado === 'CANCELADA') {
+      throw new ReservationAlreadyCancelledError(this.id);
     }
     
     const estadoAnterior = this._estado;
@@ -118,7 +127,9 @@ export class Reservation {
 
   public hacerCheckIn(): void {
     if (this._estado !== 'CONFIRMADA') {
-      throw new Error('Solo se puede hacer check-in de reservas confirmadas');
+      // Si intentan entrar con una reserva cancelada o expirada
+      if (this._estado === 'CANCELADA') throw new ReservationAlreadyCancelledError(this.id);
+      throw new ReservationNotPendingError(this.id); // O el estado inconsistente actual
     }
     this._estado = 'CHECKED_IN';
     this._checkedInEn = new Date();
@@ -132,7 +143,7 @@ export class Reservation {
   public expirar(): void {
     if (this._estado === 'EXPIRADA') return;
     if (this._estado !== 'PENDIENTE_PAGO') {
-      throw new Error(`Solo las reservas PENDIENTE_PAGO pueden expirar, estado actual: ${this._estado}`);
+      throw new ReservationNotPendingError(this.id);
     }
 
     this._estado = 'EXPIRADA';
