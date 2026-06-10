@@ -2,6 +2,12 @@
 import { Event } from './Event';
 import { Capacity } from '../value-objects/Capacity';
 import { EventDate } from '../value-objects/EventDate';
+import { ValidationError } from '@shared/domain/errors';
+import { 
+  EventNotPublishedError, 
+  EventCapacityExceededError,
+  InvalidReservationQuantityError
+} from '../errors'; // Ajusta la ruta relativa hacia tu barril de errores de Event
 
 describe('Event', () => {
   let event: Event;
@@ -30,13 +36,14 @@ describe('Event', () => {
   });
 
   test('no debería permitir reservar si el evento está en BORRADOR', () => {
+    // CORRECCIÓN: Lanza el error semántico de estado de publicación
     expect(() => {
       event.reservar(2);
-    }).toThrow('No hay suficiente capacidad disponible o el evento no está publicado');
+    }).toThrow(EventNotPublishedError);
   });
 
   test('debería permitir reservar hasta 4 tickets si está publicado', () => {
-    event.publicar(); // Cambiamos el estado a PUBLICADA para permitir operaciones
+    event.publicar(); 
     
     expect(() => event.reservar(4)).not.toThrow();
     expect(event.reservasPendientes).toBe(4);
@@ -45,9 +52,10 @@ describe('Event', () => {
   test('no debería permitir más de 4 tickets por persona', () => {
     event.publicar();
 
+    // CORRECCIÓN: Lanza el error específico por exceder el límite unitario
     expect(() => {
       event.reservar(5);
-    }).toThrow('Máximo 4 tickets por persona');
+    }).toThrow(InvalidReservationQuantityError);
   });
 
   test('debería actualizar cupos disponibles después de reserva', () => {
@@ -67,10 +75,10 @@ describe('Event', () => {
     
     expect(event.cuposDisponibles).toBe(0);
     
-    // El cupo número 101 debe disparar la excepción tajante de negocio
+    // CORRECCIÓN: Al estar publicado pero lleno, arroja la excepción de aforo
     expect(() => {
       event.reservar(1);
-    }).toThrow('No hay suficiente capacidad disponible o el evento no está publicado');
+    }).toThrow(EventCapacityExceededError);
   });
 
   test('debería permitir reservas múltiples y confirmarlas balanceando los estados', () => {
@@ -82,7 +90,6 @@ describe('Event', () => {
     expect(event.reservasPendientes).toBe(5);
     
     event.confirmarReserva(2);
-    // Los cupos disponibles se mantienen igual porque pasaron de pendientes a confirmados
     expect(event.cuposDisponibles).toBe(95); 
     expect(event.reservasPendientes).toBe(3);
     expect(event.reservasConfirmadas).toBe(2);
@@ -92,8 +99,9 @@ describe('Event', () => {
     event.publicar();
     event.reservar(2);
 
+    // CORRECCIÓN: Lanza un ValidationError o la regla semántica correspondiente a la invariante
     expect(() => {
       event.confirmarReserva(3);
-    }).toThrow('No puedes confirmar más reservas de las que están pendientes');
+    }).toThrow(ValidationError);
   });
 });

@@ -3,6 +3,7 @@ import { LoginCommand } from './LoginCommand';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { IPasswordHasher } from '../../domain/services/IPasswordHasher';
 import { IJwtService } from '../../domain/services/IJwtService';
+import { InvalidCredentialsError } from '../../domain/errors'; // Error semántico específico del módulo
 
 export interface LoginResult {
   user: {
@@ -25,7 +26,8 @@ export class LoginHandler {
     // 1. Buscar agregación de Login (Usuario + Credencial) por email
     const authAggregation = await this.userRepository.findByEmailWithPassword(command.email);
     if (!authAggregation) {
-      throw new Error('Email o contraseña incorrectos');
+      // Lanzamos 401 semántico si el correo no existe
+      throw new InvalidCredentialsError();
     }
 
     const { user, passwordHash } = authAggregation;
@@ -33,7 +35,8 @@ export class LoginHandler {
     // 2. Verificar contraseña usando el hash extraído externamente
     const isValid = await this.passwordHasher.compare(command.password, passwordHash);
     if (!isValid) {
-      throw new Error('Email o contraseña incorrectos');
+      // Lanzamos el mismo 401 semántico si la contraseña no coincide
+      throw new InvalidCredentialsError();
     }
 
     // 3. Generar JWT acoplado a las propiedades de la entidad pura

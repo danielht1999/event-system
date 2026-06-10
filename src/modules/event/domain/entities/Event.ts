@@ -3,6 +3,13 @@ import { EventDate } from '../value-objects/EventDate';
 import { Capacity } from '../value-objects/Capacity';
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { ValidationError } from '@shared/domain/errors'; 
+import { 
+  EventNotInDraftError, 
+  EventNotPublishedError, 
+  EventCapacityExceededError,
+  InvalidReservationQuantityError 
+} from '../errors'; 
 
 export type EventStatus = 
   | 'BORRADOR'
@@ -63,7 +70,7 @@ export class Event {
 
   public publicar(): void {
     if (this._estado !== 'BORRADOR') {
-      throw new Error('Solo se pueden publicar eventos en estado BORRADOR');
+      throw new EventNotInDraftError(this.id);
     }
     this._estado = 'PUBLICADA';
     this.recordEvent(DomainEventNames.EVENT.STATUS_UPDATED, { eventId: this.id, organizerId: this.organizadorId });
@@ -91,11 +98,18 @@ export class Event {
    * Provisiona asientos tentativos en el evento. Defiende sus invariantes agresivamente.
    */
   public reservar(cantidad: number): void {
+    // 1. Regla técnica/formativa del caso de uso
     if (cantidad > 4) {
-      throw new Error('Máximo 4 tickets por persona');
+      throw new InvalidReservationQuantityError(cantidad);
     }
-    if (!this.puedeReservar(cantidad)) {
-      throw new Error('No hay suficiente capacidad disponible o el evento no está publicado');
+
+    // 2. Desglosamos las invariantes de negocio para saber EXACTAMENTE qué falló
+    if (this._estado !== 'PUBLICADA') {
+      throw new EventNotPublishedError(this.id);
+    }
+
+    if (this.cuposDisponibles < cantidad) {
+      throw new EventCapacityExceededError(this.id);
     }
     
     this._reservasPendientes += cantidad;
@@ -112,7 +126,7 @@ export class Event {
    */
   public confirmarReserva(cantidad: number): void {
     if (this._reservasPendientes < cantidad) {
-      throw new Error('No puedes confirmar más reservas de las que están pendientes');
+      throw new ValidationError('No puedes confirmar más reservas de las que están pendientes');
     }
     this._reservasPendientes -= cantidad;
     this._reservasConfirmadas += cantidad;

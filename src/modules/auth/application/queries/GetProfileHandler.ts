@@ -1,5 +1,6 @@
 // src/modules/auth/application/queries/GetProfileHandler.ts
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
+import { UserNotFoundError } from '../../domain/errors'; // Error semántico específico vía Barril
 
 export class GetProfileHandler {
   constructor(private userRepository: IUserRepository) {}
@@ -7,10 +8,11 @@ export class GetProfileHandler {
   async execute(userId: string) {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      // Lanzamos el 404 semántico correspondiente
+      throw new UserNotFoundError(userId);
     }
 
-    // No retornamos password_hash
+    // No retornamos password_hash (El DTO se mantiene hermético)
     return {
       id: user.id,
       email: user.email,

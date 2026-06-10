@@ -9,8 +9,10 @@ import { RegisterUserCommand } from '../../../src/modules/auth/application/comma
 import { RegisterUserHandler } from '../../../src/modules/auth/application/commands/RegisterUserHandler';
 import { v4 as uuidv4 } from 'uuid';
 
+// IMPORTAMOS EL ERROR ESPECÍFICO PARA VALIDARLO EN LAS ASERCIONES
+import { InvalidCredentialsError } from '../../../src/modules/auth/domain/errors';
+
 describe('LoginHandler (Integration Test)', () => {
-  //registra el beforeEach del TRUNCATE de entrada(trabajo del setup-framework), esto con el setupFilesAfterEnv del jest
   let loginHandler: LoginHandler;
   let registerUserHandler: RegisterUserHandler;  
   let uniqueEmail: string;
@@ -27,9 +29,9 @@ describe('LoginHandler (Integration Test)', () => {
       jwtService
     );
     registerUserHandler = new RegisterUserHandler(
-          userRepository,
-          passwordHasher,
-          jwtService
+      userRepository,
+      passwordHasher,
+      jwtService
     );
     
     const command = new RegisterUserCommand({
@@ -40,7 +42,8 @@ describe('LoginHandler (Integration Test)', () => {
     });
     await registerUserHandler.execute(command);
   });
-  //login exitoso
+
+  // 1. Login exitoso
   test('debe logearse con datos validos', async () => {  
     const command = new LoginCommand({
       email: uniqueEmail,
@@ -66,16 +69,17 @@ describe('LoginHandler (Integration Test)', () => {
     expect(dbResult.rows[0].email).toBe(uniqueEmail);
   });
   
-  //Password incorrecto (el email existe pero la contraseña es erronea)
+  // 2. Password incorrecto (el email existe pero la contraseña es erronea)
   test('debe mostrar error cuando el email existe y la contrasena es incorrecta', async () => {
-    
     const command = new LoginCommand({
       email: uniqueEmail,
       password: 'Passworderronea'
     });
+
+    // CORRECCIÓN: Comprobamos que lance la clase exacta del dominio
     await expect(loginHandler.execute(command))
       .rejects
-      .toThrow('Email o contraseña incorrectos');
+      .toThrow(InvalidCredentialsError);
 
     const dbResult = await pool.query(
       'SELECT * FROM usuarios WHERE email = $1',
@@ -84,21 +88,22 @@ describe('LoginHandler (Integration Test)', () => {
     expect(dbResult.rows).toHaveLength(1);
   });
 
-  //email no existe en base de datos
+  // 3. Email no existe en base de datos
   test('debe mostrar error cuando el email no existe', async () => {
-    
     const command = new LoginCommand({
       email: 'uniqueEmailErroneo',
       password: 'Passworderronea'
     });
+
+    // CORRECCIÓN: Comprobamos que lance la clase exacta del dominio
     await expect(loginHandler.execute(command))
       .rejects
-      .toThrow('Email o contraseña incorrectos');
+      .toThrow(InvalidCredentialsError);
 
     const dbResult = await pool.query(
       'SELECT * FROM usuarios WHERE email = $1',
-      ['uniqueEmailErroneo']
+      [['uniqueEmailErroneo']]
     );
     expect(dbResult.rows).toHaveLength(0);
   });
-}); 
+});

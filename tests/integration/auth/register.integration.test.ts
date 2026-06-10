@@ -6,6 +6,9 @@ import { BcryptPasswordHasher } from '../../../src/modules/auth/infrastructure/s
 import { JwtService } from '../../../src/modules/auth/infrastructure/services/JwtService';
 import pool from '../../../src/shared/infrastructure/database/connection';
 
+// IMPORTAMOS EL ERROR SEMÁNTICO DEL MÓDULO DE AUTENTICACIÓN
+import { EmailAlreadyRegisteredError } from '../../../src/modules/auth/domain/errors';
+
 describe('RegisterUserHandler (Integration Test)', () => {
   let registerUserHandler: RegisterUserHandler;
 
@@ -20,7 +23,8 @@ describe('RegisterUserHandler (Integration Test)', () => {
       jwtService
     );
   });
-  //Registro exitoso con datos únicos
+
+  // 1. Registro exitoso con datos únicos
   test('debe registrar un nuevo usario y guardar en DB', async () => {
     const uniqueEmail = `integration-${Date.now()}@example.com`;
     
@@ -51,7 +55,7 @@ describe('RegisterUserHandler (Integration Test)', () => {
     expect(dbResult.rows[0].email).toBe(uniqueEmail);
   });
 
-  //Email duplicado - debe fallar
+  // 2. Email duplicado - debe fallar
   test('debe mostrar error cuando el email existe', async () => {
     const uniqueEmail = `duplicate-${Date.now()}@example.com`;
     
@@ -70,9 +74,10 @@ describe('RegisterUserHandler (Integration Test)', () => {
       rol: 'ASISTENTE'
     });
 
+    // CORRECCIÓN: Validamos que falle lanzando la instancia de la clase de dominio correcta
     await expect(registerUserHandler.execute(command2))
       .rejects
-      .toThrow('El email ya está registrado');
+      .toThrow(EmailAlreadyRegisteredError);
 
     const dbResult = await pool.query(
       'SELECT * FROM usuarios WHERE email = $1',
