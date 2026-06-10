@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVENTIFY - Confirmaci&oacute;n de Pago</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#f4f4f4;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f4;padding:20px 0;">
+<tr>
+<td align="center">
+
+    <table width="600" cellpadding="0" cellspacing="0" border="0"
+        style="width:600px;max-width:600px;background-color:#0d1117;
+        border:1px solid #1f2937;font-family:Arial,Helvetica,sans-serif;
+        border-radius:8px;overflow:hidden;">
+
+        <tr>
+            <td style="padding:30px 30px 20px 30px;
+            border-bottom:1px solid #1f2937;">
+
+                <div style="font-size:28px;
+                font-weight:bold;
+                color:#ffffff;
+                letter-spacing:1px;">
+                    EVENTIFY
+                </div>
+
+                <div style="margin-top:8px;
+                color:#00d8ff;
+                font-size:14px;
+                font-weight:bold;">
+                    Confirmaci&oacute;n de pago
+                </div>
+
+            </td>
+        </tr>
+
+        <tr>
+            <td style="padding:30px;">
+
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                    <tr>
+                        <td style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#8b949e;
+                        font-size:12px;
+                        font-weight:bold;">
+                            ASISTENTE
+                        </td>
+
+                        <td align="right"
+                        style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#ffffff;
+                        font-size:14px;">
+                            {{clientName}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#8b949e;
+                        font-size:12px;
+                        font-weight:bold;">
+                            EVENTO
+                        </td>
+
+                        <td align="right"
+                        style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#ffffff;
+                        font-size:14px;">
+                            {{eventName}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#8b949e;
+                        font-size:12px;
+                        font-weight:bold;">
+                            FECHA
+                        </td>
+
+                        <td align="right"
+                        style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#ffffff;
+                        font-size:14px;">
+                            {{eventDate}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#8b949e;
+                        font-size:12px;
+                        font-weight:bold;">
+                            LUGAR
+                        </td>
+
+                        <td align="right"
+                        style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#ffffff;
+                        font-size:14px;">
+                            {{eventLocation}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#8b949e;
+                        font-size:12px;
+                        font-weight:bold;">
+                            TICKETS
+                        </td>
+
+                        <td align="right"
+                        style="padding:12px 0;
+                        border-bottom:1px solid #1f2937;
+                        color:#00d8ff;
+                        font-size:14px;
+                        font-weight:bold;">
+                            {{ticketQuantity}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px 0;
+                        color:#8b949e;
+                        font-size:12px;
+                        font-weight:bold;">
+                            TOTAL PAGADO
+                        </td>
+
+                        <td align="right"
+                        style="padding:12px 0;
+                        color:#00d8ff;
+                        font-size:18px;
+                        font-weight:bold;">
+                            {{totalAmount}} &euro;
+                        </td>
+                    </tr>
+
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="margin-top:30px;
+                background-color:#111827;
+                border:1px solid #1f2937;
+                border-radius:6px;">
+
+                    <tr>
+                        <td align="center"
+                        style="padding:20px;">
+
+                            <div style="color:#00d8ff;
+                            font-size:16px;
+                            font-weight:bold;">
+                                PAGO CONFIRMADO
+                            </div>
+
+                            <div style="margin-top:8px;
+                            color:#8b949e;
+                            font-size:12px;">
+                                Procesado el {{paymentDate}}
+                            </div>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="margin-top:30px;
+                background-color:#000000;
+                border:1px solid #1f2937;">
+
+                    <tr>
+                        <td align="center"
+                        style="padding:20px;">
+
+                            <div style="color:#8b949e;
+                            font-size:11px;
+                            letter-spacing:1px;">
+                                C&Oacute;DIGO DE ACCESO
+                            </div>
+
+                            <div style="margin-top:10px;
+                            color:#00d8ff;
+                            font-size:24px;
+                            font-weight:bold;
+                            font-family:'Courier New', monospace;
+                            letter-spacing:2px;
+                            text-transform:uppercase;
+                            white-space:nowrap;">
+                                {{ticketCode}}
+                            </div>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="margin-top:30px;">
+
+                    <tr>
+                        <td align="center">
+
+                            <div style="color:#8b949e;
+                            font-size:12px;
+                            margin-bottom:15px;">
+                                Escanee este c&oacute;digo en la entrada
+                            </div>
+
+                            <table cellpadding="0" cellspacing="0" border="0"
+                            style="background-color:#ffffff;
+                            padding:15px;
+                            border-radius:8px;">
+
+                                <tr>
+                                    <td>
+                                        <img
+                                            src="cid:ticket-qr-code"
+                                            alt="C&oacute;digo QR"
+                                            width="180"
+                                            height="180"
+                                            style="display:block;border:0;">
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="margin-top:30px;">
+
+                    <tr>
+                        <td align="center"
+                        style="color:#8b949e;
+                        font-size:13px;
+                        line-height:22px;">
+
+                            Presente este c&oacute;digo QR junto con una identificaci&oacute;n oficial.<br>
+                            Si el c&oacute;digo QR no funciona, utilice el c&oacute;digo manual mostrado arriba.<br>
+                            Este acceso es personal e intransferible.
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+
+        <tr>
+            <td align="center"
+            style="padding:25px;
+            border-top:1px solid #1f2937;
+            color:#8b949e;
+            font-size:12px;
+            line-height:20px;">
+
+                &copy; {{currentYear}} EVENTIFY<br>
+                Este es un correo autom&aacute;tico, por favor no responda este mensaje.<br><br>
+
+                <a href="{{termsUrl}}"
+                style="color:#00d8ff;
+                text-decoration:none;">
+                    T&eacute;rminos y condiciones
+                </a>
+
+                &nbsp;|&nbsp;
+
+                <a href="{{privacyUrl}}"
+                style="color:#00d8ff;
+                text-decoration:none;">
+                    Pol&iacute;tica de privacidad
+                </a>
+
+            </td>
+        </tr>
+
+    </table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
