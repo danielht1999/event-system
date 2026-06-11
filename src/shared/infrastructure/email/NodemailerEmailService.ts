@@ -1,20 +1,35 @@
+// src/shared/infrastructure/email/NodemailerEmailService.ts
 import * as nodemailer from 'nodemailer';
 import * as QRCode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
+
 import { logger } from '../logging/winston';
-import { IEmailService, SendTicketData } from '../../domain/services/IEmailService';
+
+import {
+  EmailDeliveryError,
+  QrGenerationError,
+  EmailTemplateNotFoundError
+} from '../errors';
+
+import {
+  IEmailService,
+  SendTicketData
+} from '../../domain/services/IEmailService';
 
 export class NodemailerEmailService implements IEmailService {
-  private transporter: nodemailer.Transporter;
+  private readonly transporter: nodemailer.Transporter;
 
   constructor() {
-    const port = parseInt(process.env.SMTP_PORT || '587', 10);
-    
+    const port = parseInt(
+      process.env.SMTP_PORT || '587',
+      10
+    );
+
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: isNaN(port) ? 587 : port,
-      secure: port === 465, // true para puerto 465, false para otros como 587 o 2525
+      secure: port === 465,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -23,49 +38,79 @@ export class NodemailerEmailService implements IEmailService {
   }
 
   /**
-   * Transforma el código de acceso en un Buffer binario PNG en memoria RAM.
+   * Genera un PNG QR en memoria.
    */
-  private async generateQrBuffer(text: string): Promise<Buffer> {
+  private async generateQrBuffer(
+    ticketCode: string
+  ): Promise<Buffer> {
     try {
-      return await QRCode.toBuffer(text, {
+      return await QRCode.toBuffer(ticketCode, {
         errorCorrectionLevel: 'M',
         margin: 2,
-        width: 300
+        width: 300,
       });
     } catch (error) {
-      logger.error('Error generando el buffer del código QR', { error });
-      throw error;
+      logger.error('Failed generating QR code', {
+        ticketCode,
+        error,
+      });
+
+      throw new QrGenerationError(
+        ticketCode,
+        error
+      );
     }
   }
 
   /**
-   * Lee la plantilla HTML de forma segura e inyecta los placeholders de manera secuencial.
+   * Carga la plantilla HTML e inyecta los placeholders.
    */
-  private getTemplateHtml(data: SendTicketData): string {
-    // Resolvemos la ruta relativa de forma que funcione en desarrollo (src) y producción (dist)
-    const templatePath = path.join(__dirname, 'templates', 'ticket.html');
-    
+  private getTemplateHtml(
+    data: SendTicketData
+  ): string {
+    const templatePath = path.join(
+      __dirname,
+      'templates',
+      'ticket.html'
+    );
+
     if (!fs.existsSync(templatePath)) {
-      throw new Error(`La plantilla de correo no existe en la ruta especificada: ${templatePath}`);
+      throw new EmailTemplateNotFoundError(
+        templatePath
+      );
     }
 
-    let html = fs.readFileSync(templatePath, 'utf8');
+    let html = fs.readFileSync(
+      templatePath,
+      'utf8'
+    );
 
-    // Mapeo dinámico y agnóstico de placeholders agregando las variables globales de entorno
-    const templateVariables: Record<string, string | number> = {
+    const templateVariables: Record<
+      string,
+      string | number
+    > = {
       ...data,
       currentYear: new Date().getFullYear(),
-      termsUrl: process.env.PLATFORM_TERMS_URL || '#',
-      privacyUrl: process.env.PLATFORM_PRIVACY_URL || '#'
+      termsUrl:
+        process.env.PLATFORM_TERMS_URL || '#',
+      privacyUrl:
+        process.env.PLATFORM_PRIVACY_URL || '#',
     };
 
-    // Bucle limpio secuencial para inyectar cada dato en el HTML
     for (const key in templateVariables) {
-      if (Object.prototype.hasOwnProperty.call(templateVariables, key)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          templateVariables,
+          key
+        )
+      ) {
         const placeholder = `{{${key}}}`;
-        const value = String(templateVariables[key]);
-        // Reemplazamos todas las ocurrencias globales del placeholder
-        html = html.split(placeholder).join(value);
+
+        html = html
+          .split(placeholder)
+          .join(
+            String(templateVariables[key])
+          );
       }
     }
 
@@ -73,46 +118,93 @@ export class NodemailerEmailService implements IEmailService {
   }
 
   /**
-   * Orquesta y despacha de forma asíncrona el manifiesto de acceso.
+   * Envía el ticket digital al comprador.
    */
-  public async sendTicketEmail(data: SendTicketData): Promise<void> {
+  public async sendTicketEmail(
+    data: SendTicketData
+  ): Promise<void> {
+    logger.info(
+      `Starting ticket email delivery for reservation ${data.ticketCode}`
+    );
+
     try {
-      logger.info(`Iniciando proceso de envío de ticket para la reserva: ${data.ticketCode}`);
+      const qrBuffer =
+        await this.generateQrBuffer(
+          data.ticketCode
+        );
 
-      // 1. Generamos el QR en memoria
-      const qrBuffer = await this.generateQrBuffer(data.ticketCode);
+      const htmlBody =
+        this.getTemplateHtml(data);
 
-      // 2. Compilamos el HTML estructurado
-      const htmlBody = this.getTemplateHtml(data);
+      const mailOptions: nodemailer.SendMailOptions =
+        {
+          from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
+          to: data.to,
+          subject: `Confirmación de pago - Entrada para ${data.eventName}`,
+          html: htmlBody,
+          attachments: [
+            {
+              filename: `ticket-${data.ticketCode}.png`,
+              content: qrBuffer,
+              cid: 'ticket-qr-code',
+            },
+          ],
+        };
 
-      // 3. Configuramos los parámetros MIME de Nodemailer
-      const mailOptions: nodemailer.SendMailOptions = {
-        from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
-        to: data.to,
-        subject: `Confirmación de pago - Entrada para ${data.eventName}`,
-        html: htmlBody,
-        attachments: [
-          {
-            filename: `ticket-${data.ticketCode}.png`,
-            content: qrBuffer,
-            cid: 'ticket-qr-code', // Mapea exactamente con <img src="cid:ticket-qr-code">
-          },
-        ],
-      };
+      await this.transporter.sendMail(
+        mailOptions
+      );
 
-      // 4. Despachamos al servidor SMTP externo
-      await this.transporter.sendMail(mailOptions);
-      
-      logger.info(`Correo con ticket de acceso enviado con éxito a: ${data.to}`);
+      logger.info(
+        `Ticket email successfully delivered to ${data.to}`
+      );
     } catch (error) {
-      // Registramos el error en Winston de manera controlada para que no tire abajo la aplicación principal
-      logger.error(`Fallo catastrófico al enviar el email del ticket a ${data.to}`, {
-        ticketCode: data.ticketCode,
-        error: error instanceof Error ? error.message : error
-      });
-      
-      // Lanzamos la excepción para que el suscriptor asíncrono pueda decidir si gestiona un reintento
-      throw error;
+      // Si ya es un error de infraestructura conocido,
+      // simplemente lo propagamos.
+      if (
+        error instanceof QrGenerationError ||
+        error instanceof EmailTemplateNotFoundError
+      ) {
+        throw error;
+      }
+
+      logger.error(
+        'Failed sending ticket email',
+        {
+          recipient: data.to,
+          ticketCode: data.ticketCode,
+          error:
+            error instanceof Error
+              ? error.message
+              : error,
+        }
+      );
+
+      throw new EmailDeliveryError(
+        data.to,
+        data.ticketCode,
+        error
+      );
+    }
+  }
+
+  /**
+   * Verifica la conectividad SMTP.
+   * Útil para validar la configuración al arrancar la aplicación.
+   */
+  public async verifyConnection(): Promise<void> {
+    try {
+      await this.transporter.verify();
+
+      logger.info(
+        'SMTP connection verified successfully'
+      );
+    } catch (error) {
+      throw new EmailDeliveryError(
+        'SMTP_CONFIGURATION',
+        'SMTP_VERIFY',
+        error
+      );
     }
   }
 }
