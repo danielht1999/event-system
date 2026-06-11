@@ -3,19 +3,9 @@ import * as nodemailer from 'nodemailer';
 import * as QRCode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
-
 import { logger } from '../logging/winston';
-
-import {
-  EmailDeliveryError,
-  QrGenerationError,
-  EmailTemplateNotFoundError
-} from '../errors';
-
-import {
-  IEmailService,
-  SendTicketData
-} from '../../domain/services/IEmailService';
+import { EmailDeliveryError, QrGenerationError, EmailTemplateNotFoundError} from '../errors';
+import { IEmailService, SendTicketData } from '../../domain/services/IEmailService';
 
 export class NodemailerEmailService implements IEmailService {
   private readonly transporter: nodemailer.Transporter;
