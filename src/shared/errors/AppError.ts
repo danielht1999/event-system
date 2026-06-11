@@ -15,11 +15,9 @@ export abstract class AppError extends Error {
     super(message);
 
     this.name = this.constructor.name;
-
     this.cause = options?.cause;
 
     Object.setPrototypeOf(this, new.target.prototype);
-
     Error.captureStackTrace?.(this, this.constructor);
   }
 }

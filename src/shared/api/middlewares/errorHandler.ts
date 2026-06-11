@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
+import { ValidationError } from '@shared/domain/errors';
+
 import {
-  DomainError,
-  ValidationError,
-  ErrorCategory
-} from '@shared/domain/errors';
+  AppError,
+  ErrorCategory,
+} from '@shared/errors';
 
 import { logger } from '../../infrastructure/logging/winston';
 
@@ -14,26 +15,26 @@ const STATUS_MAP = {
   [ErrorCategory.FORBIDDEN]: 403,
   [ErrorCategory.NOT_FOUND]: 404,
   [ErrorCategory.CONFLICT]: 409,
+  [ErrorCategory.SERVICE_UNAVAILABLE]: 503,
   [ErrorCategory.INTERNAL]: 500,
-};
+} as const;
 
 export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
+  // ==================== 1. ERRORES CONTROLADOS ====================
 
-  // ==================== 1. ERRORES DE DOMINIO CONTROLADOS ====================
-
-  if (err instanceof DomainError) {
-
+  if (err instanceof AppError) {
     logger.warn({
       category: err.category,
       code: err.code,
       message: err.message,
       path: req.path,
       method: req.method,
+      stack: err.stack,
     });
 
     const response: Record<string, unknown> = {
@@ -43,13 +44,15 @@ export function errorHandler(
       message: err.message,
     };
 
-    // Solo ValidationError tiene details
-    if (err instanceof ValidationError && err.details) {
+    if (
+      err instanceof ValidationError &&
+      err.details
+    ) {
       response.details = err.details;
     }
 
     return res
-      .status(STATUS_MAP[err.category] ?? 400)
+      .status(STATUS_MAP[err.category] ?? 500)
       .json(response);
   }
 
@@ -65,6 +68,7 @@ export function errorHandler(
 
   return res.status(500).json({
     status: 'error',
+    category: ErrorCategory.INTERNAL,
     code: 'INTERNAL_SERVER_ERROR',
     message: 'Hubo un error interno en el servidor.',
   });
