@@ -1,5 +1,5 @@
 import { DomainError } from './DomainError';
-import { ErrorCategory } from './ErrorCategory';
+import { ErrorCategory } from '@shared/errors/ErrorCategory';
 
 export class UnauthorizedError extends DomainError {
   readonly category = ErrorCategory.UNAUTHORIZED;
