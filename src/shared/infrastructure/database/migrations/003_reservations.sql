@@ -5,11 +5,20 @@ CREATE TABLE IF NOT EXISTS reservas (
     cantidad_tickets INT NOT NULL,
     estado VARCHAR(20) DEFAULT 'PENDIENTE_PAGO',
     codigo_ticket VARCHAR(50) UNIQUE NOT NULL,
-    reservado_en TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-    pagado_en TIMESTAMPTZ,                              
-    checked_in_en TIMESTAMPTZ,                           
+    reservado_en TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    pagado_en TIMESTAMPTZ,
+    checked_in_en TIMESTAMPTZ,
     CONSTRAINT max_tickets CHECK (cantidad_tickets <= 4)
 );
 
-CREATE INDEX IF NOT EXISTS idx_reservas_evento ON reservas(evento_id);
-CREATE INDEX IF NOT EXISTS idx_reservas_usuario ON reservas(usuario_id);
+-- Consultas por evento
+CREATE INDEX IF NOT EXISTS idx_reservas_evento
+ON reservas(evento_id);
+
+-- Consultas por usuario
+CREATE INDEX IF NOT EXISTS idx_reservas_usuario
+ON reservas(usuario_id);
+
+-- Worker de expiración
+CREATE INDEX IF NOT EXISTS idx_reservas_estado_reservado
+ON reservas(estado, reservado_en);

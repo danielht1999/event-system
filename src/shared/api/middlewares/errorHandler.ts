@@ -1,13 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-
 import { ValidationError } from '@shared/domain/errors';
-
-import {
-  AppError,
-  ErrorCategory,
-} from '@shared/errors';
-
+import { AppError, ErrorCategory } from '@shared/errors';
 import { logger } from '../../infrastructure/logging/winston';
+import { excepcionesGlobales } from '../../infrastructure/monitoring/metrics';
 
 const STATUS_MAP = {
   [ErrorCategory.VALIDATION]: 400,
@@ -25,7 +20,27 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  // ==================== 1. ERRORES CONTROLADOS ====================
+  const currentRoute =
+    req.route?.path || req.path;
+
+  const errorType =
+    err instanceof AppError
+      ? err.code
+      : err.name;
+
+  // ====================================================
+  // MÉTRICAS
+  // ====================================================
+
+  excepcionesGlobales.inc({
+    method: req.method,
+    route: currentRoute,
+    error_type: errorType,
+  });
+
+  // ====================================================
+  // ERRORES CONTROLADOS
+  // ====================================================
 
   if (err instanceof AppError) {
     logger.warn({
@@ -56,7 +71,9 @@ export function errorHandler(
       .json(response);
   }
 
-  // ==================== 2. ERRORES INESPERADOS ====================
+  // ====================================================
+  // ERRORES INESPERADOS
+  // ====================================================
 
   logger.error({
     message: err.message,
@@ -70,6 +87,7 @@ export function errorHandler(
     status: 'error',
     category: ErrorCategory.INTERNAL,
     code: 'INTERNAL_SERVER_ERROR',
-    message: 'Hubo un error interno en el servidor.',
+    message:
+      'Hubo un error interno en el servidor.',
   });
 }

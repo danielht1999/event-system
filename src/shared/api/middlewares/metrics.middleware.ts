@@ -1,20 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import { usedRoutes, responseTime } from '../../infrastructure/monitoring/metrics';
 
-export const metricsMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const inicio = Date.now(); // 1. Anotar tiempo de inicio
-
+export const metricsMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const startTime = Date.now();
   res.on('finish', () => {
-    const duracion = Date.now() - inicio; // 3. Calcular duración
+    const duration = Date.now() - startTime;
     const labels = {
-      method: req.method,        // GET, POST, etc.
-      route: req.path,           // /api/v1/auth/login
-      status: res.statusCode     // 200, 404, 500
+      method: req.method,
+      route: req.route?.path || req.path,
+      status: res.statusCode,
     };
-
-    usedRoutes.inc(labels);               // incrementar contador de rutas
-    responseTime.observe(labels, duracion); // registrar duración
+    usedRoutes.inc(labels);
+    responseTime.observe(labels, duration);
   });
 
-  next(); // 2. Pasar al siguiente middleware
+  next();
 };

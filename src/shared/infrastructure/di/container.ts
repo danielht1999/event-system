@@ -28,7 +28,9 @@ import { PostgresReservationRepository } from '@modules/reservation/infrastructu
 import { CachedEventQueryService } from '@modules/event/infrastructure/queries/CachedEventQueryService';
 
 import { EventCacheSubscriber } from '@modules/event/infrastructure/services/EventCacheSubscriber';
-
+import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
+import { SendTicketEmailOnReservationConfirmed } from '@modules/reservation/infrastructure/subscribers/SendTicketEmailOnReservationConfirmed';
+import { NodemailerEmailService } from '@shared/infrastructure/email/NodemailerEmailService'
 // Repositorios
 const userRepository = new PostgresUserRepository();
 const eventRepository = new PostgresEventRepository();
@@ -38,6 +40,7 @@ const reservationRepository = new PostgresReservationRepository();
 // Servicios
 const passwordHasher = new BcryptPasswordHasher();
 const jwtService = new JwtService();
+const emailService = new  NodemailerEmailService();
 
 // Query Service
 const postgresEventQueryService = new PostgresEventQueryService();
@@ -77,3 +80,8 @@ export const eventController = new EventController(
 export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler, cancelReservationHandler, reservationQueryService); 
 
 new EventCacheSubscriber();
+
+// Instanciamos el listener pasándole sus dos argumentos requeridos
+const ticketEmailListener = new SendTicketEmailOnReservationConfirmed(emailService, reservationQueryService);
+//Le ordenamos a la clase que empiece a escuchar al Bus Global
+ticketEmailListener.listen();

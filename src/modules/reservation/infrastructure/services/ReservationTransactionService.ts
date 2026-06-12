@@ -5,6 +5,7 @@ import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus'
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
 import { EventNotFoundError, EventCapacityExceededError } from '../../../event/domain/errors';
 import { ReservationNotFoundError, ReservationOwnershipError } from '../../domain/errors';
+import { logger } from '@shared/infrastructure/logging/winston';//para medir duracion del lock
 
 export class ReservationTransactionService {
   constructor(private pool: Pool) {}
@@ -14,8 +15,29 @@ export class ReservationTransactionService {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+      // ⏱️ INICIA EL CRONÓMETRO DE ESPERA DEL LOCK
+      const startLock = performance.now();
       const resultado = await client.query('SELECT * FROM eventos WHERE id = $1 FOR UPDATE', [reservation.eventoId]);        
-        
+      // ⏱️ TERMINA EL CRONÓMETRO (En cuanto Postgres da luz verde)
+      const lockDurationMs = performance.now() - startLock;
+
+      //--------------
+      // Si el bloqueo tarda más de 100ms, lo catalogamos como una alerta de contención
+      if (lockDurationMs > 1000) {
+        logger.error('LOCK CRÍTICO', {
+          eventoId: reservation.eventoId,
+          durationMs: lockDurationMs.toFixed(2)
+        });
+      }
+      else if (lockDurationMs > 100) {
+        logger.warn('LOCK LENTO', {
+          eventoId: reservation.eventoId,
+          durationMs: lockDurationMs.toFixed(2)
+        });
+      }
+
+      //--------------
+      
       if (resultado.rows.length === 0) {
         throw new EventNotFoundError(reservation.eventoId);
       }

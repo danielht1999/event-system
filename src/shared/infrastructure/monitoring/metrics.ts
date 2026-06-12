@@ -25,4 +25,9 @@ export const responseTime = new Histogram({
   buckets: [50, 100, 200, 500, 1000, 2000]
 });
 
+export const excepcionesGlobales = new Counter({
+  name: 'api_excepciones_totales',
+  help: 'Conteo de excepciones y errores internos capturados por tipo',
+  labelNames: ['method', 'route', 'error_type']
+});
 export { register };

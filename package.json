@@ -7,17 +7,26 @@
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
     "dev:load-test": "npm run dev -- --isLoadTest",
     "dev:client": "npm run dev --prefix client",
+
     "build": "tsc",
     "start": "node dist/server.js",
+
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --runInBand",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "migrate": "ts-node src/shared/infrastructure/database/migrate.ts",
-    "seed": "ts-node src/shared/infrastructure/database/seed.ts",
+
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:restart": "docker compose restart",
+    "infra:logs": "docker compose logs -f",
+    "infra:ps": "docker compose ps",
+
+    "db:migrate": "ts-node src/shared/infrastructure/database/migrate.ts",
+    "db:seed": "ts-node src/shared/infrastructure/database/seed.ts",
+
     "load:events": "k6 run tests/load/events.load.js",
-    "load:reservations": "k6 run tests/load/reservations.load.js"
+    "load:reservations": "k6 run tests/load/reservations.load.js",
+    "load:mix": "k6 run tests/load/mix.load.js"
   },
   "dependencies": {
     "amqplib": "^0.10.3",

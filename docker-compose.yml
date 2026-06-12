@@ -1,6 +1,18 @@
-﻿version: '3.8'
+﻿services:
 
-services:
+  gateway:
+    image: nginx:alpine
+    container_name: event-system-gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - event-network
+    restart: unless-stopped
+
   postgres:
     image: postgres:15-alpine
     container_name: event-system-db
@@ -12,32 +24,78 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - event-network
     restart: unless-stopped
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus    
+
+  adminer:
+    image: adminer
+    container_name: event-system-adminer
     ports:
-      - "9090:9090"
-    volumes:
-      - type: bind  # Tipo: montaje directo desde el host
-        source: ./docker/prometheus.yml # Ruta en tu computadora (host)
-        target: /etc/prometheus/prometheus.yml # Ruta dentro del contenedor
+      - "8080:8080"  # Puerto para acceder al panel de la Base de Datos desde tu navegador
+    networks:
+      - event-network
     restart: unless-stopped
-  grafana:
-    image: grafana/grafana
-    container_name: grafana    
-    ports:
-      - "3001:3000"
-    restart: unless-stopped
-    depends_on:  
-      - prometheus
+
   redis:
     image: redis:7-alpine
     container_name: event-system-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - event-network
     restart: unless-stopped
 
-  
+  mailpit:
+    image: axllent/mailpit
+    container_name: event-system-mailpit
+    ports:
+      - "1025:1025"  # Puerto SMTP para que tu API de Node envíe los correos
+      - "8025:8025"  # Puerto Web para revisar la bandeja de entrada en tu navegador
+    volumes:
+      - mailpit_data:/data 
+    networks:
+      - event-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus
+    container_name: event-system-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - event-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: event_system_grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      # Inyectar el cargador automático
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      # Inyectar la carpeta que contiene el archivo JSON del dashboard
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - event-network
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+networks:
+  event-network:
+    driver: bridge
+
 volumes:
   postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  mailpit_data: 
