@@ -1,20 +1,36 @@
-﻿node_modules/
+﻿# Dependencias
+node_modules/
 dist/
 coverage/
+
+# Variables de entorno
 .env
 .env.local
 .env.production
+
+# Logs
 *.log
+logs/
+
+# Archivos de sistema
 .DS_Store
+
+# IDEs
 .vscode/
 .idea/
+
+# Archivos de build
 *.tsbuildinfo
-logs/
+
+# Directorios de datos/temporales
 uploads/
 temp/
 *.sqlite
 *.db
+
+# Scripts locales
 Show-ProjectTree.ps1
 scripts/
-logs/
-*.log
+
+# Documentación 
+docs/
