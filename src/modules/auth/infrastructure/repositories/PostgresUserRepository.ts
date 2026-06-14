@@ -82,26 +82,22 @@ export class PostgresUserRepository implements IUserRepository {
       user.creadoEn
     ]);
 
-    const domainEvents = user.pullDomainEvents();
-    domainEvents.forEach((domainEvent) => {
-      domainEventBus.publish(domainEvent.eventName, domainEvent);
-    });
+    this.dispatchEvents(user);
 
     return this.mapToEntity(result.rows[0]);
   }
 
   // =========================================================================
   // CASO DE USO: CORE DOMINIO (Sincronización de Perfil / Roles)
-  // Hace UPSERT protegiendo explícitamente el password_hash existente.
+  // Modifica los datos de un usuario ya existente de forma segura.
   // =========================================================================
   async save(user: User): Promise<User> {
     const query = `
-      INSERT INTO usuarios (id, email, nombre, rol, creado_en)
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (id) DO UPDATE SET
-        email = EXCLUDED.email,
-        nombre = EXCLUDED.nombre,
-        rol = EXCLUDED.rol
+      UPDATE usuarios
+      SET email = $2,
+          nombre = $3,
+          rol = $4
+      WHERE id = $1
       RETURNING id, email, nombre, rol, creado_en
     `;
 
@@ -109,15 +105,26 @@ export class PostgresUserRepository implements IUserRepository {
       user.id,
       user.email,
       user.nombre,
-      user.rol,
-      user.creadoEn
+      user.rol
     ]);
 
+    if (result.rows.length === 0) {
+      throw new Error(`UserWithIdNotFound: ${user.id}`);
+    }
+
+    this.dispatchEvents(user);
+
+    return this.mapToEntity(result.rows[0]);
+  }
+
+  /**
+   * Helper para extraer y despachar los eventos acumulados en la entidad
+   * hacia el bus de eventos global.
+   */
+  private dispatchEvents(user: User): void {
     const domainEvents = user.pullDomainEvents();
     domainEvents.forEach((domainEvent) => {
       domainEventBus.publish(domainEvent.eventName, domainEvent);
     });
-
-    return this.mapToEntity(result.rows[0]);
   }
 }
