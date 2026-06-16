@@ -1,6 +1,9 @@
+// src/modules/event/domain/entities/TicketType.ts
+
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
 import { ValidationError } from '@shared/domain/errors';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { Capacity } from '../value-objects/Capacity';
 
 export type TicketTypeStatus =
   | 'ACTIVO'
@@ -15,7 +18,7 @@ export class TicketType {
     public readonly eventId: string,
     public readonly nombre: string,
     public readonly precio: number,
-    public readonly capacidadMaxima: number,
+    public readonly capacidadMaxima: Capacity,
     private _reservasPendientes: number = 0,
     private _reservasConfirmadas: number = 0,
     private _estado: TicketTypeStatus = 'ACTIVO',
@@ -42,7 +45,7 @@ export class TicketType {
 
   get cuposDisponibles(): number {
     return (
-      this.capacidadMaxima -
+      this.capacidadMaxima.value -
       this._reservasPendientes -
       this._reservasConfirmadas
     );
@@ -56,12 +59,6 @@ export class TicketType {
     if (this.precio < 0) {
       throw new ValidationError(
         'El precio no puede ser negativo'
-      );
-    }
-
-    if (this.capacidadMaxima <= 0) {
-      throw new ValidationError(
-        'La capacidad debe ser mayor a 0'
       );
     }
 
@@ -80,7 +77,7 @@ export class TicketType {
     if (
       this._reservasPendientes +
       this._reservasConfirmadas >
-      this.capacidadMaxima
+      this.capacidadMaxima.value
     ) {
       throw new ValidationError(
         'Las reservas exceden la capacidad máxima'
@@ -117,6 +114,9 @@ export class TicketType {
     return this.cuposDisponibles <= 0;
   }
 
+  /**
+   * Reserva cupos temporalmente mientras el usuario completa el pago.
+   */
   public reservar(cantidad: number): void {
     if (this._estado !== 'ACTIVO') {
       throw new ValidationError(
@@ -143,6 +143,10 @@ export class TicketType {
     }
   }
 
+  /**
+   * Convierte reservas pendientes en reservas confirmadas
+   * una vez aprobado el pago.
+   */
   public confirmarReserva(
     cantidad: number
   ): void {
@@ -164,8 +168,21 @@ export class TicketType {
     if (this.cuposDisponibles === 0) {
       this.marcarComoAgotado();
     }
+
+    this.recordEvent(
+      DomainEventNames.TICKET_TYPE.RESERVATION_CONFIRMED,
+      {
+        ticketTypeId: this.id,
+        eventId: this.eventId,
+        cantidad
+      }
+    );
   }
 
+  /**
+   * Libera reservas pendientes cuando expiran o se cancelan
+   * antes de ser pagadas.
+   */
   public liberarPendientes(
     cantidad: number
   ): void {
@@ -191,6 +208,10 @@ export class TicketType {
     }
   }
 
+  /**
+   * Libera reservas confirmadas cuando se procesa
+   * una cancelación o devolución.
+   */
   public liberarConfirmadas(
     cantidad: number
   ): void {

@@ -1,14 +1,19 @@
 // src/modules/event/application/commands/CreateEventHandler.ts
 import { CreateEventCommand } from './CreateEventCommand';
 import { IEventRepository } from '../../domain/repositories/IEventRepository';
+import { ITicketTypeRepository } from '../../domain/repositories/ITicketTypeRepository';
 import { Event } from '../../domain/entities/Event';
-import { v4 as uuidv4 } from 'uuid';
+import { TicketType } from '../../domain/entities/TicketType';
 import { EventDate } from '../../domain/value-objects/EventDate';
-import { Capacity } from '../../domain/value-objects/Capacity';
+import { Capacity } from '../../domain/value-objects/Capacity'; // Re-incorporado
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { v4 as uuidv4 } from 'uuid';
 
 export class CreateEventHandler {
-  constructor(private eventRepository: IEventRepository) {}
+  constructor(
+    private readonly eventRepository: IEventRepository,
+    private readonly ticketTypeRepository: ITicketTypeRepository
+  ) {}
 
   async execute(command: CreateEventCommand) {
     const event = new Event(
@@ -17,24 +22,39 @@ export class CreateEventHandler {
       command.descripcion,
       EventDate.create(new Date(command.fecha)),
       command.lugar,
-      new Capacity(command.capacidadTotal),
-      command.precio,
-      command.organizadorId,
-      0,  // reservasConfirmadas
-      0   // reservasPendientes
+      command.organizadorId
     );
 
-    // Apuntamos en la entidad que el evento ha sido creado/actualizado.
-    // Esto guardará 'EventStatusUpdated' en la bolsa interna de la entidad.
-    event.recordEvent(DomainEventNames.EVENT.STATUS_UPDATED, {
-      eventId: event.id,
-      organizerId: event.organizadorId
-    });
+    event.recordEvent(
+      DomainEventNames.EVENT.CREATED,
+      {
+        eventId: event.id,
+        organizerId: event.organizadorId
+      }
+    );
 
-    // Guardamos en la base de datos. 
-    // El método save() de PostgresEventRepository se encargará de vaciar la bolsa y avisar al Bus.
-    const result = await this.eventRepository.save(event);
+    const savedEvent = await this.eventRepository.save(event);
+    const generalTicket = new TicketType(
+      uuidv4(),
+      savedEvent.id,
+      'General',
+      command.precio,
+      new Capacity(command.capacidadTotal), 
+      0,
+      0,
+      'ACTIVO'
+    );
 
-    return result;
+    generalTicket.recordEvent(
+      DomainEventNames.TICKET_TYPE.CREATED,
+      {
+        ticketTypeId: generalTicket.id,
+        eventId: savedEvent.id
+      }
+    );
+
+    await this.ticketTypeRepository.save(generalTicket);
+
+    return savedEvent;
   }
 }

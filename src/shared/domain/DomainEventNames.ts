@@ -33,7 +33,8 @@ export const DomainEventNames = {
   // =========================================================================
   TICKET_TYPE: {
     CREATED: 'ticket_type.created',
-    SOLD_OUT: 'ticket_type.sold_out'
+    SOLD_OUT: 'ticket_type.sold_out',
+    RESERVATION_CONFIRMED: 'ticket_type.reservation_confirmed'
   },
 
   // =========================================================================
