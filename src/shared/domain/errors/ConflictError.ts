@@ -1,5 +1,5 @@
 import { DomainError } from './DomainError';
-import { ErrorCategory } from './ErrorCategory';
+import { ErrorCategory } from '@shared/errors/ErrorCategory';
 
 export class ConflictError extends DomainError {
   readonly category = ErrorCategory.CONFLICT;

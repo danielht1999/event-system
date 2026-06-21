@@ -1,4 +1,3 @@
-// src/shared/domain/DomainEventPayloads.ts
 import { DomainEventNames } from './DomainEventNames';
 
 export interface UserRoleChangedPayload {
@@ -42,12 +41,6 @@ export interface EventCancelledPayload {
   organizerId: string;
 }
 
-export interface EventSeatsProvisionedPayload {
-  eventId: string;
-  organizerId: string;
-  cantidad: number;
-}
-
 export interface EventStatusUpdatedPayload {
   eventId: string;
   organizerId: string;
@@ -62,6 +55,5 @@ export type DomainEventPayloadMap = {
   [DomainEventNames.RESERVATION.CHECKED_IN]: ReservationCheckedInPayload;
   [DomainEventNames.RESERVATION.EXPIRED]: ReservationExpiredPayload;
   [DomainEventNames.EVENT.CANCELLED]: EventCancelledPayload;
-  [DomainEventNames.EVENT.SEATS_PROVISIONED]: EventSeatsProvisionedPayload;
   [DomainEventNames.EVENT.STATUS_UPDATED]: EventStatusUpdatedPayload;
 };

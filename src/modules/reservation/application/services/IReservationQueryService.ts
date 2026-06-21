@@ -1,4 +1,6 @@
 // src/modules/reservation/application/services/IReservationQueryService.ts
+import { PaginatedResult } from '@shared/application/query/PaginatedResult';
+import { GetReservationsQuery } from '../queries/GetReservationsQuery';
 
 export interface ReservationDTO {
   id: string
@@ -13,6 +15,18 @@ export interface ReservationDTO {
   pagadoEn?: Date
 }
 
+export interface TicketEmailDTO {
+  to: string;
+  clientName: string;
+  eventName: string;
+  eventDate: Date;
+  eventLocation: string;
+  ticketCode: string;
+  ticketQuantity: number;
+  totalAmount: number;
+}
+
 export interface IReservationQueryService {
-  findByUser(userId: string): Promise<ReservationDTO[]>
+  getReservations(query: GetReservationsQuery): Promise<PaginatedResult<ReservationDTO>>;
+  findTicketEmailData(reservationId: string): Promise<TicketEmailDTO | null>;
 }

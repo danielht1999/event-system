@@ -1,10 +1,7 @@
-// src/modules/event/domain/repositories/IEventRepository.ts
 import { Event } from '../entities/Event';
 
 /**
- * Representa la estructura de datos planos permitidos para la edición
- * de un evento. Al ser un mantenimiento puramente de datos, no dispara
- * lógica de negocio ni eventos de dominio.
+ * DTO para la actualización parcial de datos descriptivos de un evento.
  */
 export interface EventUpdateData {
   titulo?: string;
@@ -14,31 +11,32 @@ export interface EventUpdateData {
 
 export interface IEventRepository {
   /**
-   * Inserta o actualiza un Evento (Upsert). 
-   * Es el ÚNICO método encargado de despachar Eventos de Dominio (ej. EventCancelled).
+   * Persiste el agregado Event completo. 
+   * Acepta un contexto transaccional opcional.
    */
-  save(event: Event): Promise<Event>;
+  save(event: Event, transactionContext?: unknown): Promise<Event>;
 
   /**
-   * Busca un evento por su ID de manera limpia (Lectura).
+   * Lectura simple por ID único.
    */
-  findById(id: string): Promise<Event | null>;
+  findById(id: string, transactionContext?: unknown): Promise<Event | null>;
 
   /**
-   * Bloquea la fila en la Base de Datos (SELECT ... FOR UPDATE).
-   * Crucial para transacciones concurrentes como la reserva y confirmación de tickets.
+   * Lectura con bloqueo pesimista (FOR UPDATE).
+   * REQUIERE contexto transaccional obligatorio.
    */
-  findByIdForUpdate(id: string): Promise<Event | null>;
-
-  findAll(): Promise<Event[]>;
-  findByOrganizerId(organizerId: string): Promise<Event[]>;
+  findByIdForUpdate(id: string, transactionContext: unknown): Promise<Event | null>;
 
   /**
-   * Modificación exclusiva de datos planos (mantenimiento). 
-   * Utiliza una interfaz explícita externa para sortear las propiedades privadas del Dominio.
+   * Actualiza parcialmente campos planos de texto en la base de datos de forma directa.
    */
-  updateData(id: string, data: EventUpdateData): Promise<Event | null>; 
+  updateData(id: string, data: EventUpdateData, transactionContext?: unknown): Promise<Event | null>;
 
-  delete(id: string): Promise<boolean>;
-  exists(id: string): Promise<boolean>;
+  findAll(transactionContext?: unknown): Promise<Event[]>;
+
+  findByOrganizerId(organizerId: string, transactionContext?: unknown): Promise<Event[]>;
+
+  delete(id: string, transactionContext?: unknown): Promise<boolean>;
+
+  exists(id: string, transactionContext?: unknown): Promise<boolean>;
 }

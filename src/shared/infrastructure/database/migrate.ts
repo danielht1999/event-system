@@ -1,47 +1,63 @@
-import pool from './connection'
-import fs from 'fs'
-import path from 'path'
+// src/shared/infrastructure/database/migrate.ts
 
-async function runMigrations() {
-  console.log('Ejecutando migraciones...')
+import pool from './connection';
+import fs from 'fs';
+import path from 'path';
 
-  const migrationsDir = path.resolve(__dirname, './migrations')
+export async function runMigrations(): Promise<void> {
+  console.log('Ejecutando migraciones...');
 
-  console.log('Directorio migrations:', migrationsDir)
+  const migrationsDir = path.resolve(__dirname, './migrations');
 
   if (!fs.existsSync(migrationsDir)) {
-    throw new Error(`No existe directorio: ${migrationsDir}`)
+    throw new Error(`No existe directorio: ${migrationsDir}`);
   }
 
   const files = fs
     .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql'))
-    .sort()
-
-  console.log('Archivos encontrados:', files)
+    .filter(file => file.endsWith('.sql'))
+    .sort();
 
   for (const file of files) {
-    console.log(`Ejecutando: ${file}`)
+    console.log(`Ejecutando: ${file}`);
 
-    const filePath = path.join(migrationsDir, file)
+    const filePath = path.join(migrationsDir, file);
+    const sqlContent = fs.readFileSync(filePath, 'utf8');
 
-    const sql = fs.readFileSync(filePath, 'utf8')
-
-    console.log(`Tamaño SQL: ${sql.length} caracteres`)
+    const statements = sqlContent
+      .split(';')
+      .map(statement => statement.trim())
+      .filter(statement => statement.length > 0);
 
     try {
-      await pool.query(sql)
-      console.log(`Completado: ${file}`)
+      for (const statement of statements) {
+        console.log('--------------------------------');
+        console.log(statement);
+        console.log('--------------------------------');
+
+        await pool.query(statement);
+      }
+
+      console.log(`Completado: ${file}`);
     } catch (error: any) {
-      console.error(`Error en ${file}:`, error.message)
-      throw error
+      console.error(`Error en ${file}:`, error.message);
+      throw error;
     }
   }
 
-  console.log('Migraciones completadas')
-
-  await pool.end()
-  process.exit(0)
+  console.log('Migraciones completadas con éxito 🎉');
 }
 
-runMigrations()
+// Permite ejecutar el archivo directamente
+if (require.main === module) {
+  runMigrations()
+    .then(async () => {
+      await pool.end();
+      process.exit(0);
+    })
+    .catch(async (error) => {
+      console.error(error);
+      await pool.end();
+      process.exit(1);
+    });
+}

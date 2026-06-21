@@ -1,25 +1,28 @@
+//src/server.ts
+// 1. Inicializar y validar el entorno ANTES que cualquier otra cosa
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { validateEnv } from '@shared/infrastructure/config/env.validator';
+validateEnv(); // Si algo falta aquí, ahora sí explotará con tu mensaje personalizado
+
+// 2. Ahora que el entorno existe y es seguro, importamos el resto del sistema
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { errorHandler } from '@shared/api/middlewares/errorHandler';
 import { v1Routes } from '@shared/api/routes/v1';
 import { register } from '@shared/infrastructure/monitoring/metrics';
 import { metricsMiddleware } from '@shared/api/middlewares/metrics.middleware';
 import { startReservationExpiryWorker } from '@shared/workers/reservationExpiry.worker';
 import { expireReservationHandler } from '@shared/infrastructure/di/container';
-import { validateEnv } from '@shared/infrastructure/config/env.validator'
 import { connectRedis } from '@shared/infrastructure/cache/redis.client'
-
-// Cargar variables de entorno desde archivo .env
-dotenv.config();
-//valido las variables de entorno
-validateEnv();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.set('trust proxy', true);// para el load balancer
 
 // ==================== MIDDLEWARES GLOBALES ====================
 

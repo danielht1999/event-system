@@ -1,66 +1,41 @@
-// src/modules/event/infrastructure/queries/CachedEventQueryService.ts
 import { IEventQueryService, EventDTO } from '../../application/services/IEventQueryService';
+import { GetEventsQuery } from '../../application/queries/GetEventsQuery';
 import { cacheService } from '@shared/infrastructure/cache/cache.service';
+import { PaginatedResult } from '@shared/application/query/PaginatedResult';
+import { Pagination } from '@shared/application/query/Pagination';
 
 export class CachedEventQueryService implements IEventQueryService {
-  // Configuración de tiempos de vida (TTL) en segundos
-  private readonly TTL_ALL_EVENTS = 300; // 5 minutos para el catálogo general
-  private readonly TTL_ORGANIZER_EVENTS = 600; // 10 minutos para el catálogo por organizador
+  private readonly TTL_EVENTS = 300; 
 
   constructor(
-    // Inversión de dependencias: recibimos el PostgresEventQueryService real
     private readonly originQueryService: IEventQueryService
   ) {}
 
-  /**
-   * Obtiene todos los eventos de la plataforma utilizando caché (Redis)
-   */
-  async findAll(): Promise<EventDTO[]> {
-    const cacheKey = 'events:all';
-
-    // 1. Intentar recuperar de la caché
-    const cachedEvents = await cacheService.get<EventDTO[]>(cacheKey);
-    if (cachedEvents) {
-      console.log('[Cache Hit] -> Catálogo general recuperado de Redis');
-      return cachedEvents;
-    }
-
-    console.log('[Cache Miss] -> Consultando catálogo general en PostgreSQL...');
+  async find(query: GetEventsQuery): Promise<PaginatedResult<EventDTO>> {
+    const { page, limit } = Pagination.normalize(query);
     
-    // 2. Si no hay caché, delegar en el servicio original de Postgres
-    const events = await this.originQueryService.findAll();
+    // Generación dinámica de la clave de caché basada en TODOS los parámetros de filtro
+    // Serializamos el query para asegurar unicidad
+    const cacheKey = `events:find:${JSON.stringify({ 
+      ...query, 
+      page, 
+      limit 
+    })}`;
 
-    // 3. Guardar en caché el resultado para las próximas solicitudes
-    if (events && events.length > 0) {
-      await cacheService.set(cacheKey, events, this.TTL_ALL_EVENTS);
+    const cachedResult = await cacheService.get<PaginatedResult<EventDTO>>(cacheKey);
+    
+    if (cachedResult) {
+      console.log(`[Cache Hit] -> Resultados recuperados de Redis para filtros: ${cacheKey}`);
+      return cachedResult;
     }
 
-    return events;
-  }
+    console.log(`[Cache Miss] -> Consultando en PostgreSQL para: ${cacheKey}`);
+    const result = await this.originQueryService.find(query);
 
-  /**
-   * Obtiene los eventos filtrados por organizador utilizando caché dinámica
-   */
-  async findByOrganizer(organizerId: string): Promise<EventDTO[]> {
-    const cacheKey = `events:organizer:${organizerId}`;
-
-    // 1. Intentar recuperar de la caché usando la llave segmentada por ID
-    const cachedOrganizerEvents = await cacheService.get<EventDTO[]>(cacheKey);
-    if (cachedOrganizerEvents) {
-      console.log(`[Cache Hit] -> Eventos del organizador [${organizerId}] desde Redis`);
-      return cachedOrganizerEvents;
+    if (result && result.items.length > 0) {
+      await cacheService.set(cacheKey, result, this.TTL_EVENTS);
     }
 
-    console.log(`[Cache Miss] -> Consultando eventos del organizador [${organizerId}] en PostgreSQL...`);
-
-    // 2. Delegar en la base de datos si no existe en caché
-    const events = await this.originQueryService.findByOrganizer(organizerId);
-
-    // 3. Guardar en caché de forma segmentada
-    if (events && events.length > 0) {
-      await cacheService.set(cacheKey, events, this.TTL_ORGANIZER_EVENTS);
-    }
-
-    return events;
+    return result;
   }
 }

@@ -11,7 +11,7 @@ export default async function globalSetup() {
   try {
     // Ejecutas tu script de migraciones para garantizar que la DB tiene el último esquema
     console.log('[Global Setup]: Corriendo migraciones en base de datos de prueba...');
-    execSync('npm run migrate', {
+    execSync('npm run db:migrate', {
       env: { ...process.env, DB_NAME: 'event_system_test' }
     });
   } catch (error) {

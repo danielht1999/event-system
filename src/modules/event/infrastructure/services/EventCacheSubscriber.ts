@@ -1,4 +1,3 @@
-// src/modules/event/infrastructure/services/EventCacheSubscriber.ts
 import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 import { cacheService } from '@shared/infrastructure/cache/cache.service';
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
@@ -10,17 +9,18 @@ export class EventCacheSubscriber {
   }
 
   private setupListeners(): void {
-    // Unificamos todos los eventos que requieren la misma estrategia de invalidación de caché
+    // Unificamos todos los eventos válidos que requieren invalidación de caché de lectura
     const cacheInvalidationEvents = [
-      // Módulo EVENT
+      // Módulo EVENT (Refactorizado)
+      DomainEventNames.EVENT.CREATED,      //Limpia la cartelera al crear el evento + tickets de forma atómica
       DomainEventNames.EVENT.CANCELLED, 
-      DomainEventNames.EVENT.SEATS_PROVISIONED, 
       DomainEventNames.EVENT.STATUS_UPDATED,
       
-      // Módulo RESERVATION (Ahora enriquecidos con organizerId en el payload)
+      // Módulo RESERVATION (Mantienen la invalidación reactiva por movimiento de stock)
       DomainEventNames.RESERVATION.CREATED,
       DomainEventNames.RESERVATION.CANCELLED,
       DomainEventNames.RESERVATION.EXPIRED
+      
     ];
 
     cacheInvalidationEvents.forEach((eventName) => {
@@ -33,6 +33,8 @@ export class EventCacheSubscriber {
             console.warn(`[Cache Subscriber] Advertencia: Se recibió ${eventName} sin organizerId.`);
             return;
           }
+          
+          // Ejecución en paralelo de borrado
           await Promise.all([
             cacheService.delete('events:all'),
             cacheService.delete(`events:organizer:${organizerId}`)
@@ -40,7 +42,7 @@ export class EventCacheSubscriber {
 
           console.log(`[Cache Subscriber] Redis invalidado con éxito ante: ${eventName} (Organizador: ${organizerId})`);
         } catch (error) {
-          // Mantienes tu principio Fail-Safe intacto
+          // Tu principio Fail-Safe intacto: la caída de caché jamás tumba el flujo principal
           console.error(`[Cache Subscriber] Error crítico al limpiar Redis en ${eventName}:`, error);
         }
       });

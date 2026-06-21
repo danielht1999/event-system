@@ -1,77 +1,112 @@
 // src/modules/event/infrastructure/controllers/EventController.ts
 import { Request, Response } from 'express';
 import { AuthRequest } from '@shared/api/middlewares/auth';
-import { CreateEventCommand } from '../../application/commands/CreateEventCommand';
-import { CreateEventHandler } from '../../application/commands/CreateEventHandler';
-import { IEventRepository,EventUpdateData } from '../../domain/repositories/IEventRepository';
-import { GetEventsHandler } from '../../application/queries/GetEventsHandler';
-import { GetEventsByOrganizerHandler } from '../../application/queries/GetEventsByOrganizerHandler';
+import { CreateEventCommand } from '@modules/event/application/commands/CreateEventCommand';
+import { CreateEventHandler } from '@modules/event/application/commands/CreateEventHandler';
+import { UpdateEventCommand } from '@modules/event/application/commands/UpdateEventCommand';
+import { UpdateEventHandler } from '@modules/event/application/commands/UpdateEventHandler';
+import { GetEventsHandler } from '@modules/event/application/queries/GetEventsHandler';
+import { GetEventsQuery } from '@modules/event/application/queries/GetEventsQuery'; 
+import { GetEventByIdHandler } from '@modules/event/application/queries/GetEventByIdHandler';
+import { GetEventAvailabilityHandler } from '@modules/event/application/queries/GetEventAvailabilityHandler';
+import { PublishEventCommand } from '@modules/event/application/commands/PublishEventCommand';
+import { PublishEventHandler } from '@modules/event/application/commands/PublishEventHandler';
+import { CancelEventCommand } from '@modules/event/application/commands/CancelEventCommand';
+import { CancelEventHandler } from '@modules/event/application/commands/CancelEventHandler';
+import { EVENT_QUERY_CAPABILITIES } from '@modules/event/application/queries/EventQueryCapabilities';
 
 export class EventController {
   constructor(
-    private createEventHandler: CreateEventHandler,
-    private eventRepository: IEventRepository,
-    private getEventsHandler: GetEventsHandler,
-    private getEventsByOrganizerHandler: GetEventsByOrganizerHandler
+    private readonly createEventHandler: CreateEventHandler,
+    private readonly updateEventHandler: UpdateEventHandler,
+    private readonly getEventsHandler: GetEventsHandler,
+    private readonly getEventByIdHandler: GetEventByIdHandler,
+    private readonly getEventAvailabilityHandler: GetEventAvailabilityHandler,
+    private readonly publishEventHandler: PublishEventHandler,
+    private readonly cancelEventHandler: CancelEventHandler
   ) {}
 
-  // Listar todos los eventos (público)
-  listar = async (req: Request, res: Response): Promise<void> => {
+  // =========================================================================
+  // CONSULTAS (QUERIES) CON PAGINACIÓN
+  // =========================================================================
+
+  list = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const userId = authReq.user?.id;
+
+    const requestedOwner = req.query.owner as string | undefined;
+    const requestedStatus = req.query.status as string | undefined;
+
+    let ownerFilter = undefined;
+
+    if (EVENT_QUERY_CAPABILITIES.ownerFilter) {
+      if (requestedOwner === 'me') {
+        if (!userId) {
+          res.status(401).json({
+            success: false,
+            message: 'No autorizado'
+          });
+          return;
+        }
+        ownerFilter = userId;
+      } else {
+        ownerFilter = requestedOwner;
+      }
+    }
+
+    const query: GetEventsQuery = {
+      page: req.query.page ? Number(req.query.page) : undefined,
+      limit: req.query.limit ? Number(req.query.limit) : undefined,
+
+      status: EVENT_QUERY_CAPABILITIES.statusFilter
+        ? requestedStatus
+        : undefined,
+
+      owner: ownerFilter
+    };
+
+    const result =
+      await this.getEventsHandler.execute(query);
+
+    res.json({
+      success: true,
+      ...result
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al listar eventos',
+      error: error.message
+    });
+  }
+};
+  // =========================================================================
+  // CONSULTAS (QUERIES)
+  // =========================================================================  
+
+  getById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const result = await this.getEventsHandler.execute();
+      const { id } = req.params;
+      const result = await this.getEventByIdHandler.execute(id);
+      
       res.json({ success: true, data: result });
     } catch (error: any) {
-      res.status(500).json({
+      const status = error.name === 'NotFoundError' || error.message.includes('not found') ? 404 : 500;
+      res.status(status).json({
         success: false,
-        message: 'Error al listar eventos',
-        error: error.message
+        message: error.message
       });
     }
   };
 
-  // Obtener un evento por ID (público)
-  obtener = async (req: Request, res: Response): Promise<void> => {
+  getAvailability = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const event = await this.eventRepository.findById(id);
+      const result = await this.getEventAvailabilityHandler.execute(id);
       
-      if (!event) {
-        res.status(404).json({ success: false, message: 'Evento no encontrado' });
-        return;
-      }
-      
-      res.json({
-        success: true,
-        data: event
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: 'Error al obtener evento',
-        error: error.message
-      });
-    }
-  };
-
-  // Ver disponibilidad de cupos (público)
-  verDisponibilidad = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { id } = req.params;
-      const event = await this.eventRepository.findById(id);
-      
-      if (!event) {
-        res.status(404).json({ success: false, message: 'Evento no encontrado' });
-        return;
-      }
-      
-      res.json({
-        success: true,
-        data: {
-          capacidadTotal: event.capacidadTotal.value,
-          cuposDisponibles: event.cuposDisponibles,
-          estaLleno: event.estaLleno()
-        }
-      });
+      res.json({ success: true, data: result });
     } catch (error: any) {
       res.status(500).json({
         success: false,
@@ -81,11 +116,13 @@ export class EventController {
     }
   };
 
-  // Crear evento (solo ORGANIZADOR)
-  crear = async (req: AuthRequest, res: Response): Promise<void> => {
+  // =========================================================================
+  // MUTACIONES (COMMANDS)
+  // =========================================================================
+
+  create = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const organizerId = req.user?.id;
-      
       if (!organizerId) {
         res.status(401).json({ success: false, message: 'No autorizado' });
         return;
@@ -96,17 +133,49 @@ export class EventController {
         organizadorId: organizerId
       });
 
-      const event = await this.createEventHandler.execute(command);
+      const eventId = await this.createEventHandler.execute(command);
 
       res.status(201).json({
         success: true,
         message: 'Evento creado exitosamente',
-        data: event
+        data: { id: eventId }
       });
     } catch (error: any) {
-      const status = error.message.includes('requerido') || 
-                     error.message.includes('futura') ||
-                     error.message.includes('mayor a 0') ? 400 : 500;
+      const status = error.name === 'ValidationError' || error.message.includes('requerido') ? 400 : 500;
+      res.status(status).json({
+        success: false,
+        message: error.message
+      });
+    }
+  };
+
+  update = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const organizerId = req.user?.id;
+      if (!organizerId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
+      }
+
+      const command = new UpdateEventCommand({
+        eventId: id,
+        organizadorId: organizerId,
+        titulo: req.body.titulo,
+        descripcion: req.body.descripcion,
+        lugar: req.body.lugar,
+        fecha: req.body.fecha
+      });
+
+      await this.updateEventHandler.execute(command);
+      
+      res.json({
+        success: true,
+        message: 'Evento actualizado exitosamente'
+      });
+    } catch (error: any) {
+      const status = error.name === 'ForbiddenError' ? 403 
+                   : error.name === 'NotFoundError' ? 404 : 400;
       
       res.status(status).json({
         success: false,
@@ -115,145 +184,57 @@ export class EventController {
     }
   };
 
-  // Actualizar evento (solo ORGANIZADOR) - Mantiene actualización parcial de textos planos
-  actualizar = async (req: AuthRequest, res: Response): Promise<void> => {
+  publish = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const organizerId = req.user?.id;
-      
-      // 1. Validar la existencia previa del evento
-      const event = await this.eventRepository.findById(id);
-      
-      if (!event) {
-        res.status(404).json({ success: false, message: 'Evento no encontrado' });
-        return;
-      }
-      
-      // 2. Control de autoría/acceso de dominio
-      if (event.organizadorId !== organizerId) {
-        res.status(403).json({ success: false, message: 'No tienes permiso para editar este evento' });
-        return;
-      }
-      
-      // 3. Sanitización y mapeo explícito al DTO plano EventUpdateData
-      // Esto previene mutaciones masivas accidentales o maliciosas desde el cliente HTTP
-      const updateData: EventUpdateData = {
-        titulo: req.body.titulo !== undefined ? String(req.body.titulo).trim() : undefined,
-        descripcion: req.body.descripcion !== undefined ? String(req.body.descripcion).trim() : undefined,
-        lugar: req.body.lugar !== undefined ? String(req.body.lugar).trim() : undefined
-      };
-      
-      // 4. Ejecución del query especializado de infraestructura para datos planos
-      const updatedEvent = await this.eventRepository.updateData(id, updateData);
-      
-      res.json({
-        success: true,
-        message: 'Evento actualizado exitosamente',
-        data: updatedEvent
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: 'Error al actualizar evento',
-        error: error.message
-      });
-    }
-  };
-
-  // REFACTORIZADO: Publicar evento pasando por Dominio
-  publicar = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { id } = req.params;
-      const organizerId = req.user?.id;
-      
-      const event = await this.eventRepository.findById(id);
-      
-      if (!event) {
-        res.status(404).json({ success: false, message: 'Evento no encontrado' });
-        return;
-      }
-      
-      if (event.organizadorId !== organizerId) {
-        res.status(403).json({ success: false, message: 'No tienes permiso para publicar este evento' });
-        return;
-      }
-      
-      // 1. Ejecutamos la validación y cambio de estado dentro de la entidad
-      event.publicar(); 
-      
-      // 2. Guardamos la entidad mutada. Esto dispara automáticamente la invalidación de caché
-      const savedEvent = await this.eventRepository.save(event);
-      
-      res.json({
-        success: true,
-        message: 'Evento publicado exitosamente',
-        data: savedEvent
-      });
-    } catch (error: any) {
-      // Si la entidad tira el error de "Solo se pueden publicar eventos en borrador", respondemos 400
-      const status = error.message.includes('estado BORRADOR') ? 400 : 500;
-      res.status(status).json({
-        success: false,
-        message: 'Error al publicar evento',
-        error: error.message
-      });
-    }
-  };
-  // REFACTORIZADO: Cancelar evento pasando por Dominio (No borra la fila)
-  cancelar = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { id } = req.params;
-      const organizerId = req.user?.id;
-      
-      const event = await this.eventRepository.findById(id);
-      
-      if (!event) {
-        res.status(404).json({ success: false, message: 'Evento no encontrado' });
-        return;
-      }
-      
-      if (event.organizadorId !== organizerId) {
-        res.status(403).json({ success: false, message: 'No tienes permiso para cancelar este evento' });
-        return;
-      }
-      
-      // 1. Transicionamos el estado a CANCELADA en el dominio
-      event.cancelar();
-      
-      // 2. Persistimos los cambios usando save() en lugar de eliminar el registro
-      const savedEvent = await this.eventRepository.save(event);
-      
-      res.json({
-        success: true,
-        message: 'Evento cancelado exitosamente',
-        data: savedEvent
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: 'Error al cancelar evento',
-        error: error.message
-      });
-    }
-  };
-
-  misEventos = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const organizerId = req.user?.id;
-      
       if (!organizerId) {
         res.status(401).json({ success: false, message: 'No autorizado' });
         return;
       }
-      const result = await this.getEventsByOrganizerHandler.execute(organizerId);
-
-      res.json({ success: true, data: result });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: 'Error al listar eventos del organizador',
-        error: error.message
+      
+      const command = new PublishEventCommand({
+        eventId: id,
+        organizerId: organizerId
       });
+
+      await this.publishEventHandler.execute(command);
+
+      res.json({ 
+        success: true, 
+        message: 'Evento publicado exitosamente' 
+      });
+    } catch (error: any) {
+      const status = error.name === 'ForbiddenError' ? 403 
+                   : error.name === 'NotFoundError' ? 404 : 400;
+      res.status(status).json({ success: false, message: error.message });
+    }
+  };
+
+  cancel = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const organizerId = req.user?.id;
+      if (!organizerId) {
+        res.status(401).json({ success: false, message: 'No autorizado' });
+        return;
+      }
+
+      const command = new CancelEventCommand({
+        eventId: id,
+        organizerId: organizerId
+      });
+
+      await this.cancelEventHandler.execute(command);
+
+      res.json({ 
+        success: true, 
+        message: 'Evento cancelado exitosamente' 
+      });
+    } catch (error: any) {
+      const status = error.name === 'ForbiddenError' ? 403 
+                   : error.name === 'NotFoundError' ? 404 : 400;
+      res.status(status).json({ success: false, message: error.message });
     }
   };
 }

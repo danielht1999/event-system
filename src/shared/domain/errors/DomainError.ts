@@ -1,16 +1,5 @@
-import { ErrorCategory } from './ErrorCategory';
+// src/shared/domain/errors/DomainError.ts
+import { AppError} from '@shared/errors';
 
-export abstract class DomainError extends Error {
-  abstract readonly category: ErrorCategory;
-  abstract readonly code: string;
-
-  constructor(message: string) {
-    super(message);
-
-    this.name = this.constructor.name;
-
-    Object.setPrototypeOf(this, new.target.prototype);
-
-    Error.captureStackTrace?.(this, this.constructor);
-  }
+export abstract class DomainError extends AppError {
 }

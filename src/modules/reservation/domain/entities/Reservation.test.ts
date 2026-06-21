@@ -1,6 +1,7 @@
 // src/modules/reservation/domain/entities/Reservation.test.ts
 import { Reservation } from './Reservation';
 import { ValidationError } from '@shared/domain/errors';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
 import {
   ReservationNotPendingError,
   ReservationAlreadyCancelledError,
@@ -11,27 +12,35 @@ describe('Reservation', () => {
   let reservation: Reservation;
 
   beforeEach(() => {
+    // Firma corregida según entidad: 
+    // id, eventId, ticketTypeId, usuarioId, cantidadTickets, _estado, codigoTicket
     reservation = new Reservation(
-      '1',
-      'evento-1',
-      'usuario-1',
-      2,
-      'PENDIENTE_PAGO',
-      'TICKET-12345'
+      'res-1',                        // id
+      'evento-1',                     // eventId
+      'ticket-type-99',               // ticketTypeId (Nueva FK del Contrato Maestro)
+      'usuario-1',                    // usuarioId
+      2,                              // cantidadTickets
+      'PENDIENTE_PAGO',               // _estado
+      'TICKET-12345'                  // codigoTicket
     );
   });
 
+  // =========================================================================
+  // SECCIÓN: CREACIÓN E INVARIANTES
+  // =========================================================================
   describe('creación', () => {
     test('debería crear reserva válida', () => {
       expect(reservation.estado).toBe('PENDIENTE_PAGO');
       expect(reservation.cantidadTickets).toBe(2);
+      expect(reservation.ticketTypeId).toBe('ticket-type-99');
     });
 
     test('deberia asignar fecha de reserva automáticamente', () => {
       const antes = new Date();
       const nuevaReserva = new Reservation(
-        '5',
+        'res-2',
         'evento-1',
+        'ticket-type-99',
         'usuario-1',
         2,
         'PENDIENTE_PAGO',
@@ -43,12 +52,13 @@ describe('Reservation', () => {
       expect(nuevaReserva.reservadoEn.getTime()).toBeLessThanOrEqual(despues.getTime());
     });
 
-    test('no deberia permitir cantidad negativa', () => {
+    test('no deberia permitir cantidad menor o igual a cero', () => {
       expect(() => new Reservation(
-        '2',
+        'res-3',
         'evento-1',
+        'ticket-type-99',
         'usuario-1',
-        -1,
+        0,                            // Cantidad inválida
         'PENDIENTE_PAGO',
         'TICKET-12346'
       )).toThrow(ValidationError);
@@ -56,10 +66,11 @@ describe('Reservation', () => {
 
     test('no deberia permitir mas de 4 tickets', () => {
       expect(() => new Reservation(
-        '3',
+        'res-4',
         'evento-1',
+        'ticket-type-99',
         'usuario-1',
-        5,
+        5,                            // Excede regla unitaria de 4 por persona
         'PENDIENTE_PAGO',
         'TICKET-12347'
       )).toThrow(ValidationError);
@@ -67,20 +78,10 @@ describe('Reservation', () => {
 
     test('deberia tener código de ticket único', () => {
       const reserva1 = new Reservation(
-        '1',
-        'evento-1',
-        'usuario-1',
-        2,
-        'PENDIENTE_PAGO',
-        'TICKET-UNICO-1'
+        'res-5', 'evento-1', 'ticket-type-99', 'usuario-1', 2, 'PENDIENTE_PAGO', 'TICKET-UNICO-1'
       );
       const reserva2 = new Reservation(
-        '2',
-        'evento-1',
-        'usuario-2',
-        1,
-        'PENDIENTE_PAGO',
-        'TICKET-UNICO-2'
+        'res-6', 'evento-1', 'ticket-type-99', 'usuario-2', 1, 'PENDIENTE_PAGO', 'TICKET-UNICO-2'
       );
       
       expect(reserva1.codigoTicket).not.toBe(reserva2.codigoTicket);
@@ -88,22 +89,48 @@ describe('Reservation', () => {
 
     test('deberia mantener la integridad de los datos', () => {
       const reservationOriginal = new Reservation(
-        '8',
+        'res-7',
         'evento-1',
+        'ticket-type-99',
         'usuario-1',
         3,
         'PENDIENTE_PAGO',
         'TICKET-12352'
       );
       
-      expect(reservationOriginal.id).toBe('8');
-      expect(reservationOriginal.eventoId).toBe('evento-1');
+      expect(reservationOriginal.id).toBe('res-7');
+      expect(reservationOriginal.eventId).toBe('evento-1');
+      expect(reservationOriginal.ticketTypeId).toBe('ticket-type-99');
       expect(reservationOriginal.usuarioId).toBe('usuario-1');
       expect(reservationOriginal.cantidadTickets).toBe(3);
       expect(reservationOriginal.codigoTicket).toBe('TICKET-12352');
     });
+
+    test('debería emitir evento RESERVATION.CREATED mediante el Factory .create()', () => {
+      const factoryReserva = Reservation.create({
+        id: 'res-factory',
+        eventId: 'evento-1',
+        ticketTypeId: 'ticket-type-99',
+        usuarioId: 'usuario-1',
+        cantidadTickets: 3,
+        codigoTicket: 'TICKET-FACTORY'
+      });
+
+      const eventos = factoryReserva.pullDomainEvents();
+      expect(eventos).toHaveLength(1);
+      expect(eventos[0].eventName).toBe(DomainEventNames.RESERVATION.CREATED);
+      expect(eventos[0].data).toEqual({
+        reservationId: 'res-factory',
+        eventId: 'evento-1',
+        ticketTypeId: 'ticket-type-99',
+        cantidadTickets: 3
+      });
+    });
   });
 
+  // =========================================================================
+  // SECCIÓN: CONFIRMAR PAGO
+  // =========================================================================
   describe('confirmar pago', () => {
     test('debería confirmar pago', () => {
       reservation.confirmarPago();
@@ -132,12 +159,7 @@ describe('Reservation', () => {
 
     test('no deberia confirmar pago si esta expirada', () => {
       const reservationExpirada = new Reservation(
-        '4',
-        'evento-1',
-        'usuario-1',
-        2,
-        'EXPIRADA',
-        'TICKET-12348'
+        'res-8', 'evento-1', 'ticket-type-99', 'usuario-1', 2, 'EXPIRADA', 'TICKET-12348'
       );
       expect(() => reservationExpirada.confirmarPago()).toThrow(ReservationNotPendingError);
     });
@@ -149,6 +171,9 @@ describe('Reservation', () => {
     });
   });
 
+  // =========================================================================
+  // SECCIÓN: CANCELAR
+  // =========================================================================
   describe('cancelar', () => {
     test('deberia cancelar reserva', () => {
       reservation.cancelar();
@@ -157,7 +182,6 @@ describe('Reservation', () => {
 
     test('deberia lanzar error al intentar cancelar una reserva ya cancelada', () => {
       reservation.cancelar();
-      // Ajustado a la invariante real implementada: Lanza ReservationAlreadyCancelledError
       expect(() => reservation.cancelar()).toThrow(ReservationAlreadyCancelledError);
     });
 
@@ -175,18 +199,16 @@ describe('Reservation', () => {
 
     test('deberia poder cancelar una reserva expirada', () => {
       const reservationExpirada = new Reservation(
-        '9',
-        'evento-1',
-        'usuario-1',
-        2,
-        'EXPIRADA',
-        'TICKET-12353'
+        'res-9', 'evento-1', 'ticket-type-99', 'usuario-1', 2, 'EXPIRADA', 'TICKET-12353'
       );
       reservationExpirada.cancelar();
       expect(reservationExpirada.estado).toBe('CANCELADA');
     });
   });
 
+  // =========================================================================
+  // SECCIÓN: CHECK-IN
+  // =========================================================================
   describe('hacer check-in', () => {
     test('deberia hacer check-in', () => {
       reservation.confirmarPago();
@@ -205,11 +227,7 @@ describe('Reservation', () => {
       expect(reservation.checkedInEn!.getTime()).toBeLessThanOrEqual(despues.getTime());
     });
 
-    test('no deberia hacer check-in sin confirmar pago', () => {
-      expect(() => reservation.hacerCheckIn()).toThrow(ReservationNotPendingError);
-    });
-
-    test('no deberia hacer check-in si esta pendiente', () => {
+    test('no deberia hacer check-in sin confirmar pago (si está pendiente)', () => {
       expect(() => reservation.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
 
@@ -220,12 +238,7 @@ describe('Reservation', () => {
 
     test('no deberia hacer check-in si esta expirada', () => {
       const reservationExpirada = new Reservation(
-        '10',
-        'evento-1',
-        'usuario-1',
-        2,
-        'EXPIRADA',
-        'TICKET-12354'
+        'res-10', 'evento-1', 'ticket-type-99', 'usuario-1', 2, 'EXPIRADA', 'TICKET-12354'
       );
       expect(() => reservationExpirada.hacerCheckIn()).toThrow(ReservationNotPendingError);
     });
@@ -237,6 +250,9 @@ describe('Reservation', () => {
     });
   });
 
+  // =========================================================================
+  // SECCIÓN: TRANSICIONES Y EVENTOS DE DOMINIO TOTALES
+  // =========================================================================
   describe('transiciones de estado', () => {
     test('flujo completo: pendiente -> confirmada -> check-in', () => {
       expect(reservation.estado).toBe('PENDIENTE_PAGO');
@@ -259,39 +275,13 @@ describe('Reservation', () => {
       expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
     });
 
-    test('flujo alternativo: pendiente -> confirmada -> cancelada', () => {
-      reservation.confirmarPago();
-      expect(reservation.estado).toBe('CONFIRMADA');
+    test('debería calcular correctamente la bandera `debeLiberarCupos` en el evento de cancelación', () => {
+      reservation.cancelar();
       
-      reservation.cancelar();
-      expect(reservation.estado).toBe('CANCELADA');
-      expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
-    });
-
-    test('no se puede hacer check-in despues de cancelar', () => {
-      reservation.confirmarPago();
-      reservation.cancelar();
-      expect(() => reservation.hacerCheckIn()).toThrow(ReservationAlreadyCancelledError);
-    });
-
-    test('estado expirada no permite confirmar pago', () => {
-      const reservationExpirada = new Reservation(
-        '11',
-        'evento-1',
-        'usuario-1',
-        2,
-        'EXPIRADA',
-        'TICKET-12355'
-      );
-      expect(() => reservationExpirada.confirmarPago()).toThrow(ReservationNotPendingError);
-      expect(() => reservationExpirada.hacerCheckIn()).toThrow(ReservationNotPendingError);
-    });
-
-    test('cancelar reserva cancelada lanza excepcion de control', () => {
-      reservation.cancelar();
-      expect(reservation.estado).toBe('CANCELADA');
-      
-      expect(() => reservation.cancelar()).toThrow(ReservationAlreadyCancelledError);
+      const eventos = reservation.pullDomainEvents();
+      expect(eventos).toHaveLength(1);
+      expect(eventos[0].eventName).toBe(DomainEventNames.RESERVATION.CANCELLED);
+      expect(eventos[0].data.debeLiberarCupos).toBe(true); 
     });
   });
 });

@@ -1,15 +1,17 @@
-// src/modules/auth/infrastructure/repositories/PostgresUserRepository.ts
 import pool from '@shared/infrastructure/database/connection';
+import { PoolClient, Pool } from 'pg';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { User } from '../../domain/entities/User';
-import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
 
 export class PostgresUserRepository implements IUserRepository {
-  
+
   /**
-   * Mapeador interno para transformar los datos relacionales de la BD 
-   * en una instancia de la entidad rica de dominio User.
+   * Helper para obtener el cliente de transacción o el pool global.
    */
+  private getExecutor(transactionContext?: unknown): PoolClient | Pool {
+    return (transactionContext as PoolClient) || pool;
+  }
+
   private mapToEntity(row: any): User {
     return new User(
       row.id,
@@ -20,8 +22,9 @@ export class PostgresUserRepository implements IUserRepository {
     );
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    const result = await pool.query(
+  async findByEmail(email: string, transactionContext?: unknown): Promise<User | null> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(
       'SELECT id, email, nombre, rol, creado_en FROM usuarios WHERE email = $1',
       [email]
     );
@@ -29,8 +32,9 @@ export class PostgresUserRepository implements IUserRepository {
     return this.mapToEntity(result.rows[0]);
   }
 
-  async findById(id: string): Promise<User | null> {
-    const result = await pool.query(
+  async findById(id: string, transactionContext?: unknown): Promise<User | null> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(
       'SELECT id, email, nombre, rol, creado_en FROM usuarios WHERE id = $1',
       [id]
     );
@@ -38,17 +42,15 @@ export class PostgresUserRepository implements IUserRepository {
     return this.mapToEntity(result.rows[0]);
   }
 
-  async emailExists(email: string): Promise<boolean> {
-    const result = await pool.query('SELECT 1 FROM usuarios WHERE email = $1 LIMIT 1', [email]);
+  async emailExists(email: string, transactionContext?: unknown): Promise<boolean> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query('SELECT 1 FROM usuarios WHERE email = $1 LIMIT 1', [email]);
     return result.rows.length > 0;
   }
 
-  // =========================================================================
-  // CASO DE USO: AUTENTICACIÓN (LOGIN)
-  // Recupera de forma aislada el hash para el Handler de Login.
-  // =========================================================================
-  async findByEmailWithPassword(email: string): Promise<{ user: User; passwordHash: string } | null> {
-    const result = await pool.query(
+  async findByEmailWithPassword(email: string, transactionContext?: unknown): Promise<{ user: User; passwordHash: string } | null> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(
       'SELECT id, email, nombre, password_hash, rol, creado_en FROM usuarios WHERE email = $1',
       [email]
     );
@@ -62,18 +64,15 @@ export class PostgresUserRepository implements IUserRepository {
     };
   }
 
-  // =========================================================================
-  // CASO DE USO: REGISTRO
-  // Persiste el usuario nuevo inyectando su hash por primera vez.
-  // =========================================================================
-  async create(user: User, passwordHash: string): Promise<User> {
+  async create(user: User, passwordHash: string, transactionContext?: unknown): Promise<User> {
+    const executor = this.getExecutor(transactionContext);
     const query = `
       INSERT INTO usuarios (id, email, nombre, rol, password_hash, creado_en)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, email, nombre, rol, creado_en
     `;
 
-    const result = await pool.query(query, [
+    const result = await executor.query(query, [
       user.id,
       user.email,
       user.nombre,
@@ -82,41 +81,30 @@ export class PostgresUserRepository implements IUserRepository {
       user.creadoEn
     ]);
 
-    const domainEvents = user.pullDomainEvents();
-    domainEvents.forEach((domainEvent) => {
-      domainEventBus.publish(domainEvent.eventName, domainEvent);
-    });
-
     return this.mapToEntity(result.rows[0]);
   }
 
-  // =========================================================================
-  // CASO DE USO: CORE DOMINIO (Sincronización de Perfil / Roles)
-  // Hace UPSERT protegiendo explícitamente el password_hash existente.
-  // =========================================================================
-  async save(user: User): Promise<User> {
+  async save(user: User, transactionContext?: unknown): Promise<User> {
+    const executor = this.getExecutor(transactionContext);
     const query = `
-      INSERT INTO usuarios (id, email, nombre, rol, creado_en)
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (id) DO UPDATE SET
-        email = EXCLUDED.email,
-        nombre = EXCLUDED.nombre,
-        rol = EXCLUDED.rol
+      UPDATE usuarios
+      SET email = $2,
+          nombre = $3,
+          rol = $4
+      WHERE id = $1
       RETURNING id, email, nombre, rol, creado_en
     `;
 
-    const result = await pool.query(query, [
+    const result = await executor.query(query, [
       user.id,
       user.email,
       user.nombre,
-      user.rol,
-      user.creadoEn
+      user.rol
     ]);
 
-    const domainEvents = user.pullDomainEvents();
-    domainEvents.forEach((domainEvent) => {
-      domainEventBus.publish(domainEvent.eventName, domainEvent);
-    });
+    if (result.rows.length === 0) {
+      throw new Error(`UserWithIdNotFound: ${user.id}`);
+    }
 
     return this.mapToEntity(result.rows[0]);
   }

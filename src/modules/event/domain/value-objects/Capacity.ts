@@ -1,13 +1,14 @@
 // src/modules/event/domain/value-objects/Capacity.ts
+import { ValidationError } from '@shared/domain/errors';
 
 export class Capacity {
   // Usamos 'public readonly' en el constructor para ahorrarnos la propiedad privada y el getter plano
   constructor(public readonly value: number) {
     if (value <= 0) {
-      throw new Error('La capacidad debe ser mayor a 0');
+      throw new ValidationError('La capacidad debe ser mayor a 0');
     }
     if (value > 10000) {
-      throw new Error('La capacidad no puede superar 10,000 personas');
+      throw new ValidationError('La capacidad no puede superar 10,000 personas');
     }
   }
 

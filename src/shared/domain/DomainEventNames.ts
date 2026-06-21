@@ -1,14 +1,16 @@
-// src/shared/domain/DomainEventNames.ts
-
 export const DomainEventNames = {
+  // =========================================================================
   // Módulo de Autenticación / Usuarios
+  // =========================================================================
   AUTH: {
     USER_REGISTERED: 'auth.user_registered',
     USER_ROLE_CHANGED: 'auth.user_role_changed',
     USER_PROFILE_UPDATED: 'auth.user_profile_updated',
   },
 
+  // =========================================================================
   // Módulo de Reservas
+  // =========================================================================
   RESERVATION: {
     CREATED: 'reservation.created',
     CONFIRMED: 'reservation.confirmed',
@@ -17,18 +19,38 @@ export const DomainEventNames = {
     CHECKED_IN: 'reservation.checked_in',
   },
 
-  // Módulo de Eventos (Cartelera)
+  // =========================================================================
+  // Módulo de Eventos
+  // =========================================================================
   EVENT: {
     CREATED: 'event.created',
-    STATUS_UPDATED: 'event.status_updated',         
-    CANCELLED: 'event.cancelled',                   
-    SEATS_PROVISIONED: 'event.seats_provisioned',   
-    RESERVATION_CONFIRMED: 'event.reservation_confirmed'
-  }
-} as const; //"as const" hace que los strings sean tipos de lectura estrictos en TypeScript
+    STATUS_UPDATED: 'event.status_updated',
+    CANCELLED: 'event.cancelled',
+    UPDATED: 'event.updated'
+  },
 
-// Tipo utilitario para cuando necesites tipar una variable que acepte cualquier nombre de evento válido
-export type DomainEventName = 
+  // =========================================================================  
+  // Tipos de Ticket
+  // =========================================================================
+  TICKET_TYPE: {
+    CREATED: 'ticket_type.created',
+    SOLD_OUT: 'ticket_type.sold_out',
+    RESERVATION_CONFIRMED: 'ticket_type.reservation_confirmed',
+    UPDATED: 'ticket_type.updated'
+  },
+
+  // =========================================================================
+  // Pagos
+  // =========================================================================
+  PAYMENT: {
+    APPROVED: 'payment.approved',
+    REFUNDED: 'payment.refunded'
+  }
+} as const;
+
+export type DomainEventName =
   | typeof DomainEventNames.AUTH[keyof typeof DomainEventNames.AUTH]
   | typeof DomainEventNames.RESERVATION[keyof typeof DomainEventNames.RESERVATION]
-  | typeof DomainEventNames.EVENT[keyof typeof DomainEventNames.EVENT];
+  | typeof DomainEventNames.EVENT[keyof typeof DomainEventNames.EVENT]
+  | typeof DomainEventNames.TICKET_TYPE[keyof typeof DomainEventNames.TICKET_TYPE]
+  | typeof DomainEventNames.PAYMENT[keyof typeof DomainEventNames.PAYMENT];

@@ -1,31 +1,30 @@
-// src/modules/reservation/domain/repositories/IReservationRepository.ts
 import { Reservation } from '../entities/Reservation';
 
 export interface IReservationRepository {
   /**
-   * Sincroniza el estado de la reserva (Upsert). 
-   * Devuelve la entidad actualizada y procesa de forma obligatoria los Eventos de Dominio.
+   * Sincroniza el estado de una reservación individual (Upsert).
+   * Puede participar en una transacción si se provee el contexto.
    */
-  save(reservation: Reservation): Promise<Reservation>; 
-
-  findById(id: string): Promise<Reservation | null>;
+  save(reservation: Reservation, transactionContext?: unknown): Promise<Reservation>; 
 
   /**
-   * Bloquea el registro de la reservación. Evita colisiones entre el usuario pagando
-   * y el Worker de expiración corriendo en paralelo.
+   * Busca una reservación por su ID.
    */
-  findByIdForUpdate(id: string): Promise<Reservation | null>; 
-
-  findByEvent(eventId: string): Promise<Reservation[]>;
-  findByUser(userId: string): Promise<Reservation[]>;
-  findByTicketCode(code: string): Promise<Reservation | null>;
-
-  delete(id: string): Promise<void>;
+  findById(id: string, transactionContext?: unknown): Promise<Reservation | null>;
 
   /**
-   * Caso de uso especializado para el Worker. 
-   * Cambia masivamente a 'EXPIRADA' las reservas que superaron el tiempo límite de pago.
-   * Devuelve las entidades Reservation modificadas para procesar sus eventos.
+   * Bloquea de forma pesimista (FOR UPDATE) una reservación dentro de una transacción.
    */
-  expireObsoleteReservations(): Promise<Reservation[]>;
+  findByIdForUpdate(id: string, transactionContext: unknown): Promise<Reservation | null>; 
+
+  /**
+   * Recupera todas las reservaciones en estado 'PENDIENTE_PAGO' que han superado el límite de 15 minutos.
+   * Este método es de solo lectura; la expiración real se procesa en el Handler en memoria.
+   */
+  findObsoleteReservations(transactionContext?: unknown): Promise<Reservation[]>;
+
+  findByEvent(eventId: string, transactionContext?: unknown): Promise<Reservation[]>;
+  findByUser(userId: string, transactionContext?: unknown): Promise<Reservation[]>;
+  findByTicketCode(code: string, transactionContext?: unknown): Promise<Reservation | null>;
+  delete(id: string, transactionContext?: unknown): Promise<void>;
 }

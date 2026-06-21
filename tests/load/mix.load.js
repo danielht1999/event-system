@@ -1,6 +1,8 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { vu } from 'k6/execution';
+import { Counter } from 'k6/metrics';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.4/index.js';
 
 // =========================================================================
 // 1. CONFIGURACIÓN DE PRUEBA DE RUPTURA (BREAKPOINT TESTING)
@@ -30,6 +32,13 @@ export const options = {
 };
 
 const BASE_URL = 'http://localhost:3000/api/v1';
+
+// =========================================================================
+// MÉTRICAS PERSONALIZADAS
+// =========================================================================
+const errores500 = new Counter('errores_500');
+const errores429 = new Counter('errores_429');
+const errores400 = new Counter('errores_400');
 
 // =========================================================================
 // DATOS PARA ROTACIÓN REAL
@@ -101,48 +110,107 @@ export function setup() {
 }
 
 // =========================================================================
-// 3. CÓDIGO DE EJECUCIÓN PARA COMPRADORES (PRUEBA DE RUPTURA)
+// 3. CÓDIGO DE EJECUCIÓN PARA COMPRADORES (PRUEBA DE RUPTURA + FORENSES)
 // =========================================================================
 export function escenarioEscritura(data) {
   // 1. Asignar un usuario con su token real usando la aritmética de VUs
   const usuarioIndex = (vu.idInTest - 1) % data.poolUsuarios.length;
-  const miUsuarioAutenticado = data.poolUsuarios[usuarioIndex];
+  const usuario = data.poolUsuarios[usuarioIndex];
 
   // 2. Rotación de eventos y cantidad de tickets
-  const eventoAleatorio = EVENTOS_CARGA[Math.floor(Math.random() * EVENTOS_CARGA.length)];
+  const evento = EVENTOS_CARGA[Math.floor(Math.random() * EVENTOS_CARGA.length)];
   const cantidadTickets = Math.floor(Math.random() * 5) + 1;
   
   // 3. El PAYLOAD ES LIMPIO (No viajan emails ni IDs clonados, tal como en producción)
   const payload = JSON.stringify({
-    eventoId: eventoAleatorio.id,
+    eventoId: evento.id,
     cantidadTickets: cantidadTickets
   });
 
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${miUsuarioAutenticado.token}`, // 👈 CADA UNO FIRMA CON SU LLAVE
+      'Authorization': `Bearer ${usuario.token}`,
     },
+    timeout: '15s'
   };
 
-  // 4. PASO CRÍTICO: Intentar la reserva bajo presión extrema
+  // 4. Medir duración exacta de la petición
+  const inicio = Date.now();
   const res = http.post(`${BASE_URL}/reservas`, payload, params);
+  const duracion = Date.now() - inicio;
 
-  // 5. Logs SOLO para fallos críticos (para no saturar la salida durante el ataque)
+  // ==================================================
+  // LOGS FORENSES - EVIDENCIA ESTRUCTURADA
+  // ==================================================
+
+  // ERRORES 500 (Críticos - el servidor explotó)
   if (res.status >= 500) {
-    console.log(`💀 CRÍTICO - Usuario: ${miUsuarioAutenticado.email} | Evento: ${eventoAleatorio.nombre} | Status: ${res.status} | El sistema está fallando!`);
-  } else if (res.status === 429) {
-    console.log(`⏱️ RATE LIMIT - Usuario: ${miUsuarioAutenticado.email} | Evento: ${eventoAleatorio.nombre} | Status: 429`);
+    errores500.add(1);
+    
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      tipo: 'SERVER_ERROR',
+      status: res.status,
+      usuario: usuario.email,
+      evento: evento.nombre,
+      cantidadTickets: cantidadTickets,
+      duracionMs: duracion,
+      body: res.body?.substring(0, 500)
+    }));
   }
+
+  // RATE LIMIT 429 (Demasiadas peticiones)
+  if (res.status === 429) {
+    errores429.add(1);
+    
+    console.warn(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      tipo: 'RATE_LIMIT',
+      status: res.status,
+      usuario: usuario.email,
+      evento: evento.nombre,
+      cantidadTickets: cantidadTickets,
+      duracionMs: duracion
+    }));
+  }
+
+  // ERRORES CLIENTE 4xx (excepto 429)
+  if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+    errores400.add(1);
+    
+    console.warn(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      tipo: 'CLIENT_ERROR',
+      status: res.status,
+      usuario: usuario.email,
+      evento: evento.nombre,
+      cantidadTickets: cantidadTickets,
+      duracionMs: duracion,
+      body: res.body?.substring(0, 500)
+    }));
+  }
+
+  // Log de éxito opcional (descomentar si necesitas trazabilidad completa)
+  // if (res.status === 200 || res.status === 201) {
+  //   console.log(JSON.stringify({
+  //     timestamp: new Date().toISOString(),
+  //     tipo: 'SUCCESS',
+  //     status: res.status,
+  //     usuario: usuario.email,
+  //     evento: evento.nombre,
+  //     cantidadTickets: cantidadTickets,
+  //     duracionMs: duracion
+  //   }));
+  // }
 
   // 6. Verificación de métricas (sin thresholds estrictos para no abortar)
   check(res, { 
-    'POST /reservas - status aceptable (2xx, 4xx o 5xx)': (r) => r.status !== 0 
+    'request completed': (r) => r.status !== 0 
   });
   
   // 7. Tiempo de pensamiento MÍNIMO para no auto-protegernos
-  // En breakpoint testing, queremos máxima presión, no simular humanos
-  sleep(0.1); // Solo 100ms entre peticiones
+  sleep(0.1);
 }
 
 // =========================================================================
@@ -162,4 +230,14 @@ export function teardown(data) {
   console.log('   2. La latencia p95 cuando superó los 1000ms');
   console.log('   3. El momento donde la CPU/RAM de tu servidor se disparó');
   console.log('='.repeat(70));
+}
+
+// =========================================================================
+// 5. RESUMEN JSON AUTOMÁTICO (k6 lo ejecuta al finalizar)
+// =========================================================================
+export function handleSummary(data) {
+  return {
+    'logs/k6-summary.json': JSON.stringify(data, null, 2),
+    stdout: textSummary(data, { indent: ' ', enableColors: true }),
+  };
 }
