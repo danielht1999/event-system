@@ -1,19 +1,10 @@
 import pool from '@shared/infrastructure/database/connection';
-import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
-
 import { PostgresTicketTypeRepository } from './PostgresTicketTypeRepository';
 import { TicketType } from '../../domain/entities/TicketType';
 import { Capacity } from '../../domain/value-objects/Capacity';
-import { DomainEventNames } from '@shared/domain/DomainEventNames';
 
 jest.mock('@shared/infrastructure/database/connection', () => ({
   query: jest.fn()
-}));
-
-jest.mock('@shared/infrastructure/messaging/DomainEventBus', () => ({
-  domainEventBus: {
-    publish: jest.fn()
-  }
 }));
 
 describe('PostgresTicketTypeRepository', () => {
@@ -21,18 +12,22 @@ describe('PostgresTicketTypeRepository', () => {
 
   beforeEach(() => {
     repository = new PostgresTicketTypeRepository();
-
     jest.clearAllMocks();
   });
 
   describe('save()', () => {
-    it('debería guardar un TicketType', async () => {
-      const ticketType = new TicketType(
+    it('debería guardar un TicketType pasando los parámetros completos', async () => {
+      // CORRECCIÓN: Usamos reconstruct para instancias ya persistidas
+      const ticketType = TicketType.reconstruct(
         'ticket-1',
         'event-1',
         'VIP',
         150,
-        new Capacity(100)
+        new Capacity(100),
+        0,
+        0,
+        'ACTIVO',
+        new Date()
       );
 
       (pool.query as jest.Mock).mockResolvedValue({
@@ -54,45 +49,9 @@ describe('PostgresTicketTypeRepository', () => {
       const result = await repository.save(ticketType);
 
       expect(pool.query).toHaveBeenCalled();
-
       expect(result.id).toBe(ticketType.id);
       expect(result.eventId).toBe(ticketType.eventId);
       expect(result.nombre).toBe(ticketType.nombre);
-    });
-
-    it('debería despachar eventos acumulados', async () => {
-      const ticketType = new TicketType(
-        'ticket-1',
-        'event-1',
-        'VIP',
-        150,
-        new Capacity(1)
-      );
-
-      ticketType.reservar(1);
-
-      (pool.query as jest.Mock).mockResolvedValue({
-        rows: [
-          {
-            id: 'ticket-1',
-            evento_id: 'event-1',
-            nombre: 'VIP',
-            precio: '150',
-            capacidad_maxima: 1,
-            reservas_pendientes: 1,
-            reservas_confirmadas: 0,
-            estado: 'AGOTADO',
-            creado_en: new Date()
-          }
-        ]
-      });
-
-      await repository.save(ticketType);
-
-      expect(domainEventBus.publish).toHaveBeenCalledWith(
-        DomainEventNames.TICKET_TYPE.SOLD_OUT,
-        expect.any(Object)
-      );
     });
   });
 
@@ -114,8 +73,7 @@ describe('PostgresTicketTypeRepository', () => {
         ]
       });
 
-      const result =
-        await repository.findById('ticket-1');
+      const result = await repository.findById('ticket-1');
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe('ticket-1');
@@ -126,8 +84,7 @@ describe('PostgresTicketTypeRepository', () => {
         rows: []
       });
 
-      const result =
-        await repository.findById('missing');
+      const result = await repository.findById('missing');
 
       expect(result).toBeNull();
     });
@@ -151,8 +108,7 @@ describe('PostgresTicketTypeRepository', () => {
         ]
       });
 
-      const result =
-        await repository.findByEventId('event-1');
+      const result = await repository.findByEventId('event-1');
 
       expect(result).toHaveLength(1);
     });

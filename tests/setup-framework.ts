@@ -5,7 +5,7 @@ import pool from '../src/shared/infrastructure/database/connection';
 beforeEach(async () => {
   // Truncamos las tablas críticas de forma masiva para limpiar el estado
   // Usar TRUNCATE con CASCADE limpia dependencias de llaves foráneas de golpe
-  await pool.query('TRUNCATE TABLE usuarios, eventos, reservas CASCADE');
+  await pool.query('TRUNCATE TABLE usuarios, eventos, ticket_types, reservas CASCADE');
 });
 
 // Se ejecuta al finalizar cada archivo de test de integración

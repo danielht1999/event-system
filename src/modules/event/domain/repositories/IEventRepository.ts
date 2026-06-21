@@ -1,31 +1,42 @@
-// src/modules/event/domain/repositories/IEventRepository.ts
-
 import { Event } from '../entities/Event';
+
+/**
+ * DTO para la actualización parcial de datos descriptivos de un evento.
+ */
+export interface EventUpdateData {
+  titulo?: string;
+  descripcion?: string;
+  lugar?: string;
+}
 
 export interface IEventRepository {
   /**
-   * Persiste el agregado Event y publica
-   * los Domain Events acumulados.
+   * Persiste el agregado Event completo. 
+   * Acepta un contexto transaccional opcional.
    */
-  save(event: Event): Promise<Event>;
+  save(event: Event, transactionContext?: unknown): Promise<Event>;
 
   /**
-   * Lectura simple.
+   * Lectura simple por ID único.
    */
-  findById(id: string): Promise<Event | null>;
+  findById(id: string, transactionContext?: unknown): Promise<Event | null>;
 
   /**
-   * Lectura con bloqueo pesimista.
+   * Lectura con bloqueo pesimista (FOR UPDATE).
+   * REQUIERE contexto transaccional obligatorio.
    */
-  findByIdForUpdate(id: string): Promise<Event | null>;
+  findByIdForUpdate(id: string, transactionContext: unknown): Promise<Event | null>;
 
-  findAll(): Promise<Event[]>;
+  /**
+   * Actualiza parcialmente campos planos de texto en la base de datos de forma directa.
+   */
+  updateData(id: string, data: EventUpdateData, transactionContext?: unknown): Promise<Event | null>;
 
-  findByOrganizerId(
-    organizerId: string
-  ): Promise<Event[]>;
+  findAll(transactionContext?: unknown): Promise<Event[]>;
 
-  delete(id: string): Promise<boolean>;
+  findByOrganizerId(organizerId: string, transactionContext?: unknown): Promise<Event[]>;
 
-  exists(id: string): Promise<boolean>;
+  delete(id: string, transactionContext?: unknown): Promise<boolean>;
+
+  exists(id: string, transactionContext?: unknown): Promise<boolean>;
 }

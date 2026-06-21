@@ -1,29 +1,26 @@
-// src/modules/event/infrastructure/repositories/PostgresEventRepository.ts
-
 import pool from '@shared/infrastructure/database/connection';
-import { IEventRepository } from '../../domain/repositories/IEventRepository';
-import { Event } from '../../domain/entities/Event';
-import { EventDate } from '../../domain/value-objects/EventDate';
-import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
-import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { PoolClient, Pool } from 'pg'; 
+import { IEventRepository, EventUpdateData } from '../../domain/repositories/IEventRepository'; 
+import { Event, EventStatus } from '../../domain/entities/Event';
 
-export class PostgresEventRepository
-  implements IEventRepository
-{
-  async save(event: Event): Promise<Event> {
+export class PostgresEventRepository implements IEventRepository {
+
+  // Método ayudante centralizado para obtener el ejecutor
+  private getExecutor(transactionContext?: unknown): PoolClient | Pool {
+    return (transactionContext as PoolClient) || pool;
+  }
+
+  // =========================================================================
+  // PERSISTENCIA (UPSERT)
+  // =========================================================================
+  async save(event: Event, transactionContext?: unknown): Promise<Event> {
+    const executor = this.getExecutor(transactionContext);
+
     const query = `
       INSERT INTO eventos (
-        id,
-        titulo,
-        descripcion,
-        fecha,
-        lugar,
-        organizador_id,
-        estado
+        id, titulo, descripcion, fecha, lugar, organizador_id, estado
       )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,$7
-      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (id) DO UPDATE SET
         titulo = EXCLUDED.titulo,
         descripcion = EXCLUDED.descripcion,
@@ -33,7 +30,7 @@ export class PostgresEventRepository
       RETURNING *
     `;
 
-    const result = await pool.query(query, [
+    const result = await executor.query(query, [
       event.id,
       event.titulo,
       event.descripcion,
@@ -42,125 +39,117 @@ export class PostgresEventRepository
       event.organizadorId,
       event.estado
     ]);
+    return this.mapToEntity(result.rows[0]);
+  }
 
-    const domainEvents: IDomainEvent[] =
-      event.pullDomainEvents();
+  // =========================================================================
+  // IMPLEMENTACIÓN: UPDATE PARCIAL DINÁMICO (EventUpdateData)
+  // =========================================================================
+  async updateData(id: string, data: EventUpdateData, transactionContext?: unknown): Promise<Event | null> { 
+    const executor = this.getExecutor(transactionContext);
 
-    domainEvents.forEach(domainEvent => {
-      domainEventBus.publish(
-        domainEvent.eventName,
-        domainEvent
-      );
-    });
+    const fields: string[] = [];
+    const values: any[] = [];
+    let queryIndex = 1;
+
+    if (data.titulo !== undefined) {
+      fields.push(`titulo = $${queryIndex++}`);
+      values.push(data.titulo);
+    }
+    if (data.descripcion !== undefined) {
+      fields.push(`descripcion = $${queryIndex++}`);
+      values.push(data.descripcion);
+    }
+    if (data.lugar !== undefined) {
+      fields.push(`lugar = $${queryIndex++}`);
+      values.push(data.lugar);
+    }
+
+    if (fields.length === 0) {
+      return await this.findById(id, transactionContext); // Cambia el throw por el retorno directo
+    }
+
+    values.push(id);
+    const query = `
+      UPDATE eventos 
+      SET ${fields.join(', ')} 
+      WHERE id = $${queryIndex} 
+      RETURNING *
+    `;
+
+    const result = await executor.query(query, values);
+    if (result.rows.length === 0) {
+      return null; 
+    }
 
     return this.mapToEntity(result.rows[0]);
   }
 
-  async findById(
-    id: string
-  ): Promise<Event | null> {
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM eventos
-      WHERE id = $1
-      `,
+  // =========================================================================
+  // BÚSQUEDAS
+  // =========================================================================
+  async findById(id: string, transactionContext?: unknown): Promise<Event | null> {
+    const executor = this.getExecutor(transactionContext);
+
+    const result = await executor.query(
+      `SELECT * FROM eventos WHERE id = $1`,
       [id]
     );
 
-    return result.rows[0]
-      ? this.mapToEntity(result.rows[0])
-      : null;
+    return result.rows[0] ? this.mapToEntity(result.rows[0]) : null;
   }
 
-  async findByIdForUpdate(
-    id: string
-  ): Promise<Event | null> {
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM eventos
-      WHERE id = $1
-      FOR UPDATE
-      `,
+  async findByIdForUpdate(id: string, transactionContext: unknown): Promise<Event | null> {
+    const executor = transactionContext as PoolClient;
+
+    const result = await executor.query(
+      `SELECT * FROM eventos WHERE id = $1 FOR UPDATE`,
       [id]
     );
 
-    return result.rows[0]
-      ? this.mapToEntity(result.rows[0])
-      : null;
+    return result.rows[0] ? this.mapToEntity(result.rows[0]) : null;
   }
 
-  async findAll(): Promise<Event[]> {
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM eventos
-      ORDER BY fecha ASC
-      `
-    );
-
-    return result.rows.map(row =>
-      this.mapToEntity(row)
-    );
+  async findAll(transactionContext?: unknown): Promise<Event[]> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(`SELECT * FROM eventos ORDER BY fecha ASC`);
+    return result.rows.map(row => this.mapToEntity(row));
   }
 
-  async findByOrganizerId(
-    organizerId: string
-  ): Promise<Event[]> {
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM eventos
-      WHERE organizador_id = $1
-      ORDER BY fecha ASC
-      `,
+  async findByOrganizerId(organizerId: string, transactionContext?: unknown): Promise<Event[]> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(
+      `SELECT * FROM eventos WHERE organizador_id = $1 ORDER BY fecha ASC`,
       [organizerId]
     );
-
-    return result.rows.map(row =>
-      this.mapToEntity(row)
-    );
+    return result.rows.map(row => this.mapToEntity(row));
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await pool.query(
-      `
-      DELETE FROM eventos
-      WHERE id = $1
-      `,
-      [id]
-    );
-
+  // =========================================================================
+  // COMANDOS AUXILIARES
+  // =========================================================================
+  async delete(id: string, transactionContext?: unknown): Promise<boolean> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(`DELETE FROM eventos WHERE id = $1`, [id]);
     return (result.rowCount ?? 0) > 0;
   }
 
-  async exists(id: string): Promise<boolean> {
-    const result = await pool.query(
-      `
-      SELECT 1
-      FROM eventos
-      WHERE id = $1
-      LIMIT 1
-      `,
-      [id]
-    );
-
+  async exists(id: string, transactionContext?: unknown): Promise<boolean> {
+    const executor = this.getExecutor(transactionContext);
+    const result = await executor.query(`SELECT 1 FROM eventos WHERE id = $1 LIMIT 1`, [id]);
     return result.rows.length > 0;
   }
 
-  private mapToEntity(row: any): Event {
-    return new Event(
-      row.id,
-      row.titulo,
-      row.descripcion,
-      EventDate.reconstruct(
-        new Date(row.fecha)
-      ),
-      row.lugar,
-      row.organizador_id,
-      row.estado,
-      new Date(row.creado_en)
-    );
-  }
-}
+ private mapToEntity(row: any): Event {
+  // El dominio (Event.reconstruct) se encargará de envolverlo en su Value Object internamente.
+  return Event.reconstruct(
+    row.id,
+    row.titulo,
+    row.descripcion,
+    new Date(row.fecha), // Mandamos el Date nativo directamente
+    row.lugar,
+    row.organizador_id,
+    row.estado as EventStatus,
+    new Date(row.creado_en)
+  );
+}}

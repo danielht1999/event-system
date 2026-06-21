@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { PostgresEventRepository } from '../../../src/modules/event/infrastructure/repositories/PostgresEventRepository';
 import { Event } from '../../../src/modules/event/domain/entities/Event';
 import { EventDate } from '../../../src/modules/event/domain/value-objects/EventDate';
-import { Capacity } from '../../../src/modules/event/domain/value-objects/Capacity';
 
 import { RegisterUserHandler } from '../../../src/modules/auth/application/commands/RegisterUserHandler';
 import { RegisterUserCommand } from '../../../src/modules/auth/application/commands/RegisterUserCommand';
@@ -41,16 +40,14 @@ describe('PostgresEventRepository (Integration Test)', () => {
   });
 
   function buildEvent(): Event {
-    return new Event(
+    // CORRECCIÓN: Usamos el factory method 'create' del dominio
+    // conforme a: Event.create(id, titulo, descripcion, fechaRaw, lugar, organizadorId)
+    return Event.create(
       uuidv4(),
       'Evento Test',
       'Descripcion Test',
-      EventDate.create(
-        new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-      ),
+      new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
       'CDMX',
-      new Capacity(100),
-      500,
       organizerId
     );
   }
@@ -58,7 +55,6 @@ describe('PostgresEventRepository (Integration Test)', () => {
   describe('save()', () => {
     test('debe guardar un evento nuevo', async () => {
       const event = buildEvent();
-
       const saved = await repository.save(event);
 
       expect(saved).not.toBeNull();
@@ -69,13 +65,11 @@ describe('PostgresEventRepository (Integration Test)', () => {
 
     test('debe actualizar un evento existente', async () => {
       const event = buildEvent();
-
       await repository.save(event);
 
       event.publicar();
 
       const updated = await repository.save(event);
-
       expect(updated.estado).toBe('PUBLICADA');
     });
   });
@@ -83,7 +77,6 @@ describe('PostgresEventRepository (Integration Test)', () => {
   describe('findById()', () => {
     test('debe encontrar un evento existente', async () => {
       const event = buildEvent();
-
       await repository.save(event);
 
       const found = await repository.findById(event.id);
@@ -95,7 +88,6 @@ describe('PostgresEventRepository (Integration Test)', () => {
 
     test('debe retornar null si no existe', async () => {
       const found = await repository.findById(uuidv4());
-
       expect(found).toBeNull();
     });
   });

@@ -1,3 +1,4 @@
+//src/server.ts
 // 1. Inicializar y validar el entorno ANTES que cualquier otra cosa
 import dotenv from 'dotenv';
 dotenv.config();

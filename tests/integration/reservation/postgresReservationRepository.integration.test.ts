@@ -5,8 +5,9 @@ import { Reservation } from '../../../src/modules/reservation/domain/entities/Re
 
 import { PostgresEventRepository } from '../../../src/modules/event/infrastructure/repositories/PostgresEventRepository';
 import { Event } from '../../../src/modules/event/domain/entities/Event';
-import { EventDate } from '../../../src/modules/event/domain/value-objects/EventDate';
+import { TicketType } from '../../../src/modules/event/domain/entities/TicketType';
 import { Capacity } from '../../../src/modules/event/domain/value-objects/Capacity';
+import { PostgresTicketTypeRepository } from '../../../src/modules/event/infrastructure/repositories/PostgresTicketTypeRepository';
 
 import { RegisterUserHandler } from '../../../src/modules/auth/application/commands/RegisterUserHandler';
 import { RegisterUserCommand } from '../../../src/modules/auth/application/commands/RegisterUserCommand';
@@ -22,6 +23,7 @@ describe('PostgresReservationRepository (Integration Test)', () => {
   let attendeeId: string;
 
   let eventId: string;
+  let ticketTypeId: string;
 
   beforeEach(async () => {
     repository = new PostgresReservationRepository();
@@ -60,28 +62,36 @@ describe('PostgresReservationRepository (Integration Test)', () => {
 
     const eventRepository = new PostgresEventRepository();
 
-    const event = new Event(
+    const event = Event.create(
       uuidv4(),
       'Evento Test',
       'Descripcion',
-      EventDate.create(
-        new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-      ),
+      new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
       'CDMX',
-      new Capacity(100),
-      500,
       organizerId
     );
 
     const savedEvent = await eventRepository.save(event);
-
     eventId = savedEvent.id;
+
+    // CREAR UN TIPO DE TICKET REAL en la DB
+    const ticketTypeRepo = new PostgresTicketTypeRepository();
+    const ticketType = TicketType.create(
+      uuidv4(),
+      eventId,
+      'General',
+      100,
+      50 // Capacity se crea internamente
+    );
+    await ticketTypeRepo.save(ticketType);
+    ticketTypeId = ticketType.id;
   });
 
   function buildReservation(): Reservation {
     return Reservation.create({
       id: uuidv4(),
-      eventoId: eventId,
+      eventId: eventId,
+      ticketTypeId: ticketTypeId,
       usuarioId: attendeeId,
       cantidadTickets: 2,
       codigoTicket: `TK-${uuidv4()}`
@@ -136,8 +146,8 @@ describe('PostgresReservationRepository (Integration Test)', () => {
         reservation.id
       );
 
-      expect(found?.eventoId).toBe(
-        reservation.eventoId
+      expect(found?.eventId).toBe(
+        reservation.eventId
       );
     });
 
@@ -165,7 +175,7 @@ describe('PostgresReservationRepository (Integration Test)', () => {
       ).toBe(2);
 
       reservations.forEach(r => {
-        expect(r.eventoId).toBe(
+        expect(r.eventId).toBe(
           eventId
         );
       });

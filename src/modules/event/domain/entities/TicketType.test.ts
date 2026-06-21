@@ -1,24 +1,19 @@
 // src/modules/event/domain/entities/TicketType.test.ts
 import { TicketType } from './TicketType';
+import { Capacity } from '../value-objects/Capacity';
 import { ValidationError } from '@shared/domain/errors';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
-// Nota: Si creas errores específicos en tu barril de errores, puedes importarlos aquí. 
-// Por ahora usamos ValidationError según el comportamiento de la entidad provista.
 
 describe('TicketType', () => {
   let ticketType: TicketType;
 
   beforeEach(() => {
-    ticketType = new TicketType(
-      'ticket-123',                 // id
-      'event-456',                 // eventId
-      'Entrada General',           // nombre
-      150,                         // precio
-      100,                         // capacidadMaxima
-      0,                           // reservasPendientes
-      0,                           // reservasConfirmadas
-      'ACTIVO',                    // estado
-      new Date()                   // creadoEn
+    ticketType = TicketType.create(
+      'ticket-123',
+      'event-456',
+      'Entrada General',
+      150,
+      100
     );
   });
 
@@ -30,41 +25,80 @@ describe('TicketType', () => {
 
   test('no debería permitir un precio negativo', () => {
     expect(() => {
-      new TicketType('1', 'e-1', 'Test', -50, 100);
+      TicketType.create('1', 'e-1', 'Test', -50, 100);
     }).toThrow(ValidationError);
   });
 
   test('no debería permitir una capacidad máxima igual o menor a cero', () => {
     expect(() => {
-      new TicketType('1', 'e-1', 'Test', 50, 0);
+      TicketType.create('1', 'e-1', 'Test', 50, 0);
     }).toThrow(ValidationError);
   });
 
-  test('no debería permitir reservas pendientes negativas', () => {
+  test('no debería permitir reservas pendientes negativas al reconstruir', () => {
     expect(() => {
-      new TicketType('1', 'e-1', 'Test', 50, 100, -1);
+      const capacidad = new Capacity(100);
+      TicketType.reconstruct(
+        '1',
+        'e-1',
+        'Test',
+        50,
+        capacidad,
+        -1, // reservas pendientes negativas
+        0,
+        'ACTIVO',
+        new Date()
+      );
     }).toThrow(ValidationError);
   });
 
-  test('no debería permitir reservas confirmadas negativas', () => {
+  test('no debería permitir reservas confirmadas negativas al reconstruir', () => {
     expect(() => {
-      new TicketType('1', 'e-1', 'Test', 50, 100, 0, -1);
+      const capacidad = new Capacity(100);
+      TicketType.reconstruct(
+        '1',
+        'e-1',
+        'Test',
+        50,
+        capacidad,
+        0,
+        -1, // reservas confirmadas negativas
+        'ACTIVO',
+        new Date()
+      );
     }).toThrow(ValidationError);
   });
 
-  test('no debería permitir que la suma de reservas exceda la capacidad máxima', () => {
+  test('no debería permitir que la suma de reservas exceda la capacidad máxima al reconstruir', () => {
     expect(() => {
-      new TicketType(
-        '1', 'e-1', 'Test', 50, 
-        10,                        // capacidad máxima
-        6,                         // reservasPendientes
-        5                          // reservasConfirmadas (6 + 5 = 11 > 10)
+      const capacidad = new Capacity(10);
+      TicketType.reconstruct(
+        '1',
+        'e-1',
+        'Test',
+        50,
+        capacidad,
+        6, // reservas pendientes
+        5, // reservas confirmadas (6 + 5 = 11 > 10)
+        'ACTIVO',
+        new Date()
       );
     }).toThrow(ValidationError);
   });
 
   test('debería calcular correctamente los cupos disponibles de forma dinámica', () => {
-    const ticketDinamico = new TicketType('1', 'e-1', 'Test', 50, 100, 20, 30);
+    const capacidad = new Capacity(100);
+    const ticketDinamico = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      20,
+      30,
+      'ACTIVO',
+      new Date()
+    );
     expect(ticketDinamico.cuposDisponibles).toBe(50);
   });
 
@@ -89,7 +123,18 @@ describe('TicketType', () => {
 
   test('no debería permitir reservar si la cantidad supera los cupos disponibles', () => {
     // Dejamos solo 2 cupos disponibles
-    const ticketAjustado = new TicketType('1', 'e-1', 'Test', 50, 10, 8, 0);
+    const capacidad = new Capacity(10);
+    const ticketAjustado = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      8,
+      0,
+      'ACTIVO',
+      new Date()
+    );
     
     expect(() => {
       ticketAjustado.reservar(3);
@@ -97,17 +142,38 @@ describe('TicketType', () => {
   });
 
   test('debería transferir cupos de pendientes a confirmadas al confirmar una reserva', () => {
-    // Iniciamos con 10 pendientes
-    const ticketConPendientes = new TicketType('1', 'e-1', 'Test', 50, 100, 10, 0);
+    const capacidad = new Capacity(100);
+    const ticketConPendientes = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      10,
+      0,
+      'ACTIVO',
+      new Date()
+    );
     
     ticketConPendientes.confirmarReserva(4);
     expect(ticketConPendientes.reservasPendientes).toBe(6);
     expect(ticketConPendientes.reservasConfirmadas).toBe(4);
-    expect(ticketConPendientes.cuposDisponibles).toBe(90); // El aforo total ocupado sigue siendo 10
+    expect(ticketConPendientes.cuposDisponibles).toBe(90);
   });
 
   test('no debería permitir confirmar más reservas de las pendientes existentes', () => {
-    const ticketConPendientes = new TicketType('1', 'e-1', 'Test', 50, 100, 5, 0);
+    const capacidad = new Capacity(100);
+    const ticketConPendientes = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      5,
+      0,
+      'ACTIVO',
+      new Date()
+    );
     
     expect(() => {
       ticketConPendientes.confirmarReserva(6);
@@ -115,7 +181,18 @@ describe('TicketType', () => {
   });
 
   test('debería restar del inventario pendiente al liberar cupos no pagados', () => {
-    const ticketConPendientes = new TicketType('1', 'e-1', 'Test', 50, 100, 10, 0);
+    const capacidad = new Capacity(100);
+    const ticketConPendientes = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      10,
+      0,
+      'ACTIVO',
+      new Date()
+    );
     
     ticketConPendientes.liberarPendientes(4);
     expect(ticketConPendientes.reservasPendientes).toBe(6);
@@ -123,7 +200,18 @@ describe('TicketType', () => {
   });
 
   test('debería restar del inventario confirmado al procesar devoluciones o cancelaciones', () => {
-    const ticketConConfirmadas = new TicketType('1', 'e-1', 'Test', 50, 100, 0, 10);
+    const capacidad = new Capacity(100);
+    const ticketConConfirmadas = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      0,
+      10,
+      'ACTIVO',
+      new Date()
+    );
     
     ticketConConfirmadas.liberarConfirmadas(4);
     expect(ticketConConfirmadas.reservasConfirmadas).toBe(6);
@@ -131,7 +219,13 @@ describe('TicketType', () => {
   });
 
   test('debería transicionar a AGOTADO y disparar evento de dominio cuando el aforo se llena', () => {
-    const ticketPequeño = new TicketType('ticket-123', 'event-456', 'VIP', 50, 5);
+    const ticketPequeño = TicketType.create(
+      'ticket-123',
+      'event-456',
+      'VIP',
+      50,
+      5
+    );
     
     ticketPequeño.reservar(5);
     
@@ -139,17 +233,30 @@ describe('TicketType', () => {
     expect(ticketPequeño.estaLleno()).toBe(true);
 
     const eventos = ticketPequeño.pullDomainEvents();
-    expect(eventos).toHaveLength(1);
-    expect(eventos[0].eventName).toBe(DomainEventNames.TICKET_TYPE.SOLD_OUT);
-    expect(eventos[0].data).toEqual({
+    // Debería tener el evento de creación y el de sold out
+    expect(eventos.length).toBeGreaterThanOrEqual(1);
+    
+    const soldOutEvent = eventos.find(e => e.eventName === DomainEventNames.TICKET_TYPE.SOLD_OUT);
+    expect(soldOutEvent).toBeDefined();
+    expect(soldOutEvent?.data).toEqual({
       ticketTypeId: 'ticket-123',
       eventId: 'event-456'
     });
   });
 
   test('debería regresar automáticamente a ACTIVO si el estado era AGOTADO y se liberan cupos', () => {
-    // Instanciamos un ticket al límite de su capacidad
-    const ticketAgotado = new TicketType('1', 'e-1', 'Test', 50, 10, 10, 0, 'AGOTADO');
+    const capacidad = new Capacity(10);
+    const ticketAgotado = TicketType.reconstruct(
+      '1',
+      'e-1',
+      'Test',
+      50,
+      capacidad,
+      10,
+      0,
+      'AGOTADO',
+      new Date()
+    );
     
     expect(ticketAgotado.estado).toBe('AGOTADO');
     

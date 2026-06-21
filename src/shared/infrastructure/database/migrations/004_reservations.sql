@@ -1,5 +1,9 @@
 CREATE TABLE IF NOT EXISTS reservas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- Añadimos la columna para denormalización estratégica del dominio
+    evento_id UUID NOT NULL 
+        REFERENCES eventos(id) 
+        ON DELETE CASCADE,
     ticket_type_id UUID NOT NULL
         REFERENCES ticket_types(id)
         ON DELETE CASCADE,
@@ -27,11 +31,9 @@ CREATE TABLE IF NOT EXISTS reservas (
     checked_in_en TIMESTAMPTZ
 );
 
--- Reservas por ticket type
+-- Índices optimizados para las consultas de negocio comunes
+CREATE INDEX IF NOT EXISTS idx_reservas_evento ON reservas(evento_id);
 CREATE INDEX IF NOT EXISTS idx_reservas_ticket_type ON reservas(ticket_type_id);
--- Reservas por usuario
 CREATE INDEX IF NOT EXISTS idx_reservas_usuario ON reservas(usuario_id);
--- Worker de expiración
 CREATE INDEX IF NOT EXISTS idx_reservas_estado_reservado ON reservas(estado, reservado_en);
--- Consultas de tickets
 CREATE INDEX IF NOT EXISTS idx_reservas_codigo_ticket ON reservas(codigo_ticket);

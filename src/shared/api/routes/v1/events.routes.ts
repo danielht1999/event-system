@@ -7,16 +7,18 @@ import { eventController } from '@shared/infrastructure/di/container';
 
 const router = Router();
 
-/// Rutas públicas
-router.get('/', eventController.listar);
-router.get('/mis-eventos', authenticate, organizadorMiddleware, eventController.misEventos); 
-router.get('/:id', eventController.obtener);
-router.get('/:id/disponibilidad', eventController.verDisponibilidad);
+// Public routes
+// Regla 3: Se unifican todos los eventos en GET /
+// Para 'mis-eventos', el cliente usará GET /?owner=me
+router.get('/', eventController.list); 
+router.get('/:id', eventController.getById);
+router.get('/:id/availability', eventController.getAvailability);
 
-// Rutas protegidas
-router.post('/', authenticate, organizadorMiddleware, validate(createEventSchema), eventController.crear);
-router.put('/:id', authenticate, organizadorMiddleware, validate(updateEventSchema), eventController.actualizar);
-router.patch('/:id/publicar', authenticate, organizadorMiddleware, eventController.publicar);
-router.delete('/:id', authenticate, organizadorMiddleware, eventController.cancelar);
+// Protected routes
+// Regla 4 y 10: Comandos explícitos y nombres en inglés
+router.post('/', authenticate, organizadorMiddleware, validate(createEventSchema), eventController.create);
+router.put('/:id', authenticate, organizadorMiddleware, validate(updateEventSchema), eventController.update);
+router.patch('/:id/publish', authenticate, organizadorMiddleware, eventController.publish);
+router.delete('/:id', authenticate, organizadorMiddleware, eventController.cancel);
 
 export default router;

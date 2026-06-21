@@ -22,6 +22,7 @@
     "infra:ps": "docker compose ps",
 
     "db:migrate": "ts-node src/shared/infrastructure/database/migrate.ts",
+    "db:reset": "ts-node src/shared/infrastructure/database/reset-and-migrate.ts",
     "db:seed": "ts-node src/shared/infrastructure/database/seed.ts",
 
     "load:events": "k6 run tests/load/events.load.js",

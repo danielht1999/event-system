@@ -1,26 +1,23 @@
-// src/modules/event/domain/repositories/ITicketTypeRepository.ts
-
 import { TicketType } from '../entities/TicketType';
 
 export interface ITicketTypeRepository {
   /**
-   * Persiste o sincroniza un TicketType.
+   * Persiste o actualiza un TicketType. Soporta contexto transaccional opcional.
    */
-  save(ticketType: TicketType): Promise<TicketType>;
+  save(ticketType: TicketType, transactionContext?: unknown): Promise<TicketType>;
 
   /**
-   * Recupera un TicketType por su identificador.
+   * Busca un TicketType aplicando un bloqueo pesimista (FOR UPDATE). Requiere transacción mandatoria.
    */
-  findById(id: string): Promise<TicketType | null>;
+  findByIdForUpdate(id: string, transactionContext: unknown): Promise<TicketType | null>;
 
   /**
-   * Recupera un TicketType aplicando bloqueo FOR UPDATE.
-   * Utilizado durante procesos de reserva concurrente.
+   * Busca un TicketType por su ID único.
    */
-  findByIdForUpdate(id: string): Promise<TicketType | null>;
+  findById(id: string, transactionContext?: unknown): Promise<TicketType | null>;
 
   /**
-   * Obtiene todos los TicketTypes pertenecientes a un evento.
+   * Obtiene todos los tipos de tickets configurados para un evento específico.
    */
-  findByEventId(eventId: string): Promise<TicketType[]>;
+  findByEventId(eventId: string, transactionContext?: unknown): Promise<TicketType[]>;
 }

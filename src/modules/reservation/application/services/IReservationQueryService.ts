@@ -1,4 +1,6 @@
 // src/modules/reservation/application/services/IReservationQueryService.ts
+import { PaginatedResult } from '@shared/application/query/PaginatedResult';
+import { GetReservationsQuery } from '../queries/GetReservationsQuery';
 
 export interface ReservationDTO {
   id: string
@@ -25,6 +27,6 @@ export interface TicketEmailDTO {
 }
 
 export interface IReservationQueryService {
-  findByUser(userId: string): Promise<ReservationDTO[]>;
+  getReservations(query: GetReservationsQuery): Promise<PaginatedResult<ReservationDTO>>;
   findTicketEmailData(reservationId: string): Promise<TicketEmailDTO | null>;
 }

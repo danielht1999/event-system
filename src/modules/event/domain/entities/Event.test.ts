@@ -1,107 +1,102 @@
 ﻿// src/modules/event/domain/entities/Event.test.ts
-import { Event } from './Event';
-import { Capacity } from '../value-objects/Capacity';
-import { EventDate } from '../value-objects/EventDate';
-import { ValidationError } from '@shared/domain/errors';
-import { 
-  EventNotPublishedError, 
-  EventCapacityExceededError,
-  InvalidReservationQuantityError
-} from '../errors'; // Ajusta la ruta relativa hacia tu barril de errores de Event
 
-describe('Event', () => {
+import { Event } from './Event';
+import { EventNotInDraftError } from '../errors';
+import { DomainError } from '../../../../shared/domain/errors/DomainError';
+
+describe('Event Aggregate', () => {
   let event: Event;
-  const fechaFutura = new Date();
-  fechaFutura.setDate(fechaFutura.getDate() + 30);
+  let fechaFutura: Date;
 
   beforeEach(() => {
-    event = new Event(
-      '1',                                          // id
-      'Conferencia DevOps',                         // titulo
-      'La mejor conferencia de DevOps',             // descripcion
-      EventDate.create(fechaFutura),                // fecha 
-      'Centro de Convenciones',                     // lugar
-      new Capacity(100),                            // capacidad
-      50,                                           // precio
-      'org-123',                                    // organizadorId
-      0,                                            // reservasConfirmadas
-      0,                                            // reservasPendientes
-      'BORRADOR'                                    // estado 
+    fechaFutura = new Date();
+    fechaFutura.setDate(fechaFutura.getDate() + 30);
+
+    event = Event.create(
+      'event-123',
+      'Conferencia DevOps 2026',
+      'La mejor conferencia de DevOps de la región',
+      fechaFutura,
+      'Centro de Convenciones',
+      'organizador-999'
     );
   });
 
-  test('debería cambiar de estado al publicarse con éxito', () => {
+  test('debería crearse correctamente en estado BORRADOR', () => {
+    expect(event.id).toBe('event-123');
+    expect(event.estado).toBe('BORRADOR');
+    expect(event.titulo).toBe('Conferencia DevOps 2026');
+    expect(event.organizadorId).toBe('organizador-999');
+    
+    const domainEvents = event.pullDomainEvents();
+    expect(domainEvents).toHaveLength(1);
+    expect(domainEvents[0].eventName).toBe('event.created');
+  });
+
+  test('debería reconstruirse correctamente desde el estado histórico sin registrar eventos', () => {
+    const eventoReconstruido = Event.reconstruct(
+      'historial-1',
+      'Evento Pasado',
+      'Descripción antigua',
+      fechaFutura,
+      'Teatro Principal',
+      'organizador-999',
+      'PUBLICADA',
+      new Date()
+    );
+
+    expect(eventoReconstruido.estado).toBe('PUBLICADA');
+    expect(eventoReconstruido.pullDomainEvents()).toHaveLength(0);
+  });
+
+  test('debería cambiar de estado a PUBLICADA con éxito', () => {
     event.publicar();
     expect(event.estado).toBe('PUBLICADA');
+    
+    const domainEvents = event.pullDomainEvents();
+    expect(domainEvents.some(e => e.eventName === 'event.status_updated')).toBe(true);
   });
 
-  test('no debería permitir reservar si el evento está en BORRADOR', () => {
-    // CORRECCIÓN: Lanza el error semántico de estado de publicación
+  test('debería permitir cancelarse desde cualquier estado', () => {
+    event.cancelar();
+    expect(event.estado).toBe('CANCELADA');
+  });
+
+  test('no debería fallar si se intenta cancelar un evento que ya está CANCELADO', () => {
+    event.cancelar();
+    expect(() => event.cancelar()).not.toThrow();
+  });
+
+  test('debería permitir modificar sus detalles si está en estado BORRADOR', () => {
+    event.cambiarDetalles({
+      titulo: 'Nuevo Título DevOps',
+      lugar: 'Hotel Hilton'
+    });
+
+    expect(event.titulo).toBe('Nuevo Título DevOps');
+    expect(event.lugar).toBe('Hotel Hilton');
+    
+    const domainEvents = event.pullDomainEvents();
+    expect(domainEvents.some(e => e.eventName === 'event.updated')).toBe(true);
+  });
+
+  test('no debería permitir modificar sus detalles si ya no está en BORRADOR', () => {
+    event.publicar();
+
     expect(() => {
-      event.reservar(2);
-    }).toThrow(EventNotPublishedError);
+      event.cambiarDetalles({ titulo: 'Hackeo de título' });
+    }).toThrow(EventNotInDraftError);
   });
 
-  test('debería permitir reservar hasta 4 tickets si está publicado', () => {
-    event.publicar(); 
-    
-    expect(() => event.reservar(4)).not.toThrow();
-    expect(event.reservasPendientes).toBe(4);
-  });
-
-  test('no debería permitir más de 4 tickets por persona', () => {
-    event.publicar();
-
-    // CORRECCIÓN: Lanza el error específico por exceder el límite unitario
+  test('debería validar con éxito si la suma de aforos de los tickets no rompe el Value Object Capacity', () => {
     expect(() => {
-      event.reservar(5);
-    }).toThrow(InvalidReservationQuantityError);
+      event.validarAforoTotal([500, 400], 100);
+    }).not.toThrow();
   });
 
-  test('debería actualizar cupos disponibles después de reserva', () => {
-    event.publicar();
-    
-    event.reservar(2);
-    expect(event.cuposDisponibles).toBe(98);
-  });
-
-  test('no debería permitir reserva cuando no hay cupo disponible', () => {
-    event.publicar();
-
-    // Llenamos la capacidad total (25 iteraciones * 4 tickets = 100 cupos)
-    for (let i = 0; i < 25; i++) {
-      event.reservar(4);
-    }
-    
-    expect(event.cuposDisponibles).toBe(0);
-    
-    // CORRECCIÓN: Al estar publicado pero lleno, arroja la excepción de aforo
-    expect(() => {
-      event.reservar(1);
-    }).toThrow(EventCapacityExceededError);
-  });
-
-  test('debería permitir reservas múltiples y confirmarlas balanceando los estados', () => {
-    event.publicar();
-
-    event.reservar(2);
-    event.reservar(3);
-    expect(event.cuposDisponibles).toBe(95);
-    expect(event.reservasPendientes).toBe(5);
-    
-    event.confirmarReserva(2);
-    expect(event.cuposDisponibles).toBe(95); 
-    expect(event.reservasPendientes).toBe(3);
-    expect(event.reservasConfirmadas).toBe(2);
-  });
-
-  test('no debería permitir confirmar más reservas de las que están pendientes', () => {
-    event.publicar();
-    event.reservar(2);
-
-    // CORRECCIÓN: Lanza un ValidationError o la regla semántica correspondiente a la invariante
-    expect(() => {
-      event.confirmarReserva(3);
-    }).toThrow(ValidationError);
-  });
+  test('debería explotar si la suma acumulada de aforos viola los límites de Capacity', () => {
+  expect(() => {
+    event.validarAforoTotal([9500], 600);
+  }).toThrow(); // Jest simplemente confirmará que algo falló
+});
 });

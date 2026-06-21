@@ -25,16 +25,18 @@ export const DomainEventNames = {
   EVENT: {
     CREATED: 'event.created',
     STATUS_UPDATED: 'event.status_updated',
-    CANCELLED: 'event.cancelled'
+    CANCELLED: 'event.cancelled',
+    UPDATED: 'event.updated'
   },
 
-  // =========================================================================
+  // =========================================================================  
   // Tipos de Ticket
   // =========================================================================
   TICKET_TYPE: {
     CREATED: 'ticket_type.created',
     SOLD_OUT: 'ticket_type.sold_out',
-    RESERVATION_CONFIRMED: 'ticket_type.reservation_confirmed'
+    RESERVATION_CONFIRMED: 'ticket_type.reservation_confirmed',
+    UPDATED: 'ticket_type.updated'
   },
 
   // =========================================================================
@@ -45,10 +47,6 @@ export const DomainEventNames = {
     REFUNDED: 'payment.refunded'
   }
 } as const;
-
-// =========================================================================
-// Union Type de todos los eventos válidos del sistema
-// =========================================================================
 
 export type DomainEventName =
   | typeof DomainEventNames.AUTH[keyof typeof DomainEventNames.AUTH]
