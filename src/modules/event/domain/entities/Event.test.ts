@@ -2,7 +2,6 @@
 
 import { Event } from './Event';
 import { EventNotInDraftError } from '../errors';
-import { DomainError } from '../../../../shared/domain/errors/DomainError';
 
 describe('Event Aggregate', () => {
   let event: Event;
@@ -18,6 +17,7 @@ describe('Event Aggregate', () => {
       'La mejor conferencia de DevOps de la región',
       fechaFutura,
       'Centro de Convenciones',
+      500, // capacidadTotal
       'organizador-999'
     );
   });
@@ -27,6 +27,7 @@ describe('Event Aggregate', () => {
     expect(event.estado).toBe('BORRADOR');
     expect(event.titulo).toBe('Conferencia DevOps 2026');
     expect(event.organizadorId).toBe('organizador-999');
+    expect(event.capacidadTotal).toBe(500);
     
     const domainEvents = event.pullDomainEvents();
     expect(domainEvents).toHaveLength(1);
@@ -40,6 +41,7 @@ describe('Event Aggregate', () => {
       'Descripción antigua',
       fechaFutura,
       'Teatro Principal',
+      300,
       'organizador-999',
       'PUBLICADA',
       new Date()
@@ -89,14 +91,17 @@ describe('Event Aggregate', () => {
   });
 
   test('debería validar con éxito si la suma de aforos de los tickets no rompe el Value Object Capacity', () => {
+    // ✅ CORREGIDO: 200 + 100 + 100 = 400 ≤ 500 (capacidadTotal)
     expect(() => {
-      event.validarAforoTotal([500, 400], 100);
+      event.validarAforoTotal([200, 100], 100);
     }).not.toThrow();
   });
 
   test('debería explotar si la suma acumulada de aforos viola los límites de Capacity', () => {
-  expect(() => {
-    event.validarAforoTotal([9500], 600);
-  }).toThrow(); // Jest simplemente confirmará que algo falló
-});
+    // ✅ CORREGIDO: 9500 + 600 = 10100 > 500 (capacidadTotal)
+    // O usar valores que realmente excedan la capacidad
+    expect(() => {
+      event.validarAforoTotal([400, 200], 100);
+    }).toThrow();
+  });
 });

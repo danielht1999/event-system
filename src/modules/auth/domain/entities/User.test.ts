@@ -1,15 +1,18 @@
+// src/modules/auth/domain/entities/User.test.ts
+
 import { User } from './User';
 import { Email } from '../value-objects/Email';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
 
 describe('User', () => {
   function buildUser() {
-    return new User(
-      'user-1',
-      'test@example.com',
-      'Daniel',
-      'ASISTENTE'
-    );
+    return User.create({
+      id: 'user-1',
+      email: 'test@example.com',
+      nombre: 'Daniel',
+      rol: 'ASISTENTE',
+      passwordHash: 'hashed_password'
+    });
   }
 
   describe('creación', () => {
@@ -23,28 +26,22 @@ describe('User', () => {
     });
 
     test('debe normalizar email automáticamente', () => {
-      const user = new User(
-        'user-1',
-        '  TEST@EXAMPLE.COM ',
-        'Daniel',
-        'ASISTENTE'
-      );
+      const user = User.create({
+        id: 'user-1',
+        email: '  TEST@EXAMPLE.COM ',
+        nombre: 'Daniel',
+        rol: 'ASISTENTE',
+        passwordHash: 'hashed_password'
+      });
 
-      expect(user.email).toBe(
-        'test@example.com'
-      );
+      expect(user.email).toBe('test@example.com');
     });
 
     test('debe exponer el Email Value Object', () => {
       const user = buildUser();
 
-      expect(user.emailVO).toBeInstanceOf(
-        Email
-      );
-
-      expect(user.emailVO.value).toBe(
-        'test@example.com'
-      );
+      expect(user.emailVO).toBeInstanceOf(Email);
+      expect(user.emailVO.value).toBe('test@example.com');
     });
   });
 
@@ -57,12 +54,13 @@ describe('User', () => {
     });
 
     test('debe reconocer un organizador', () => {
-      const user = new User(
-        'user-1',
-        'test@example.com',
-        'Daniel',
-        'ORGANIZADOR'
-      );
+      const user = User.create({
+        id: 'user-1',
+        email: 'test@example.com',
+        nombre: 'Daniel',
+        rol: 'ORGANIZADOR',
+        passwordHash: 'hashed_password'
+      });
 
       expect(user.esOrganizador()).toBe(true);
       expect(user.esAsistente()).toBe(false);
@@ -73,15 +71,19 @@ describe('User', () => {
     test('debe cambiar de ASISTENTE a ORGANIZADOR', () => {
       const user = buildUser();
 
+      // ✅ Limpiar eventos de creación antes de probar
+      user.pullDomainEvents();
+
       user.cambiarRol('ORGANIZADOR');
 
-      expect(user.rol).toBe(
-        'ORGANIZADOR'
-      );
+      expect(user.rol).toBe('ORGANIZADOR');
     });
 
     test('debe registrar evento de dominio', () => {
       const user = buildUser();
+
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
 
       user.cambiarRol('ORGANIZADOR');
 
@@ -103,6 +105,9 @@ describe('User', () => {
     test('no debe generar evento si el rol es el mismo', () => {
       const user = buildUser();
 
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
+
       user.cambiarRol('ASISTENTE');
 
       const events = user.pullDomainEvents();
@@ -115,31 +120,36 @@ describe('User', () => {
     test('debe actualizar nombre', () => {
       const user = buildUser();
 
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
+
       user.actualizarPerfil(
         'Nuevo Nombre',
         new Email('test@example.com')
       );
 
-      expect(user.nombre).toBe(
-        'Nuevo Nombre'
-      );
+      expect(user.nombre).toBe('Nuevo Nombre');
     });
 
     test('debe actualizar email', () => {
       const user = buildUser();
+
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
 
       user.actualizarPerfil(
         'Daniel',
         new Email('nuevo@example.com')
       );
 
-      expect(user.email).toBe(
-        'nuevo@example.com'
-      );
+      expect(user.email).toBe('nuevo@example.com');
     });
 
     test('debe registrar evento de dominio', () => {
       const user = buildUser();
+
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
 
       user.actualizarPerfil(
         'Nuevo Nombre',
@@ -166,32 +176,27 @@ describe('User', () => {
     test('pullDomainEvents debe vaciar la colección', () => {
       const user = buildUser();
 
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
+
       user.cambiarRol('ORGANIZADOR');
 
-      expect(
-        user.pullDomainEvents()
-      ).toHaveLength(1);
-
-      expect(
-        user.pullDomainEvents()
-      ).toHaveLength(0);
+      expect(user.pullDomainEvents()).toHaveLength(1);
+      expect(user.pullDomainEvents()).toHaveLength(0);
     });
 
     test('recordEvent debe agregar eventos manualmente', () => {
       const user = buildUser();
 
-      user.recordEvent(
-        'CustomEvent',
-        { test: true }
-      );
+      // ✅ Limpiar eventos de creación
+      user.pullDomainEvents();
+
+      user.recordEvent('CustomEvent', { test: true });
 
       const events = user.pullDomainEvents();
 
       expect(events).toHaveLength(1);
-
-      expect(events[0].eventName).toBe(
-        'CustomEvent'
-      );
+      expect(events[0].eventName).toBe('CustomEvent');
     });
   });
 });

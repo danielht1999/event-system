@@ -1,3 +1,5 @@
+// tests/integration/reservation/createReservation.integration.test.ts
+
 import pool from '../../../src/shared/infrastructure/database/connection';
 import { RegisterUserHandler } from '../../../src/modules/auth/application/commands/RegisterUserHandler';
 import { RegisterUserCommand } from '../../../src/modules/auth/application/commands/RegisterUserCommand';
@@ -9,9 +11,8 @@ import { CreateReservationCommand } from '../../../src/modules/reservation/appli
 import { PostgresUserRepository } from '../../../src/modules/auth/infrastructure/repositories/PostgresUserRepository';
 import { BcryptPasswordHasher } from '../../../src/modules/auth/infrastructure/services/BcryptPasswordHasher';
 import { JwtService } from '../../../src/modules/auth/infrastructure/services/JwtService';
-import { EventCapacityExceededError, EventNotFoundError } from '../../../src/modules/event/domain/errors';
+import { TicketTypeNotFoundError } from '../../../src/modules/event/domain/errors';
 
-// Nuevas dependencias necesarias tras la refactorización
 import { PostgresReservationRepository } from '../../../src/modules/reservation/infrastructure/repositories/PostgresReservationRepository';
 import { PostgresTicketTypeRepository } from '../../../src/modules/event/infrastructure/repositories/PostgresTicketTypeRepository';
 import { PostgresPaymentRepository } from '../../../src/modules/payment/infrastructure/repositories/PostgresPaymentRepository';
@@ -29,23 +30,26 @@ describe('CreateReservationHandler (Integration Test)', () => {
     const eventDispatcher = new InMemoryDomainEventDispatcher();
     const uow = new PostgresUnitOfWork(pool, eventDispatcher);
     const userRepository = new PostgresUserRepository();
-    const eventRepository = new PostgresEventRepository(); // Este es el que necesitamos
+    const eventRepository = new PostgresEventRepository();
     const ticketTypeRepository = new PostgresTicketTypeRepository();
     const reservationRepository = new PostgresReservationRepository();
     const paymentRepository = new PostgresPaymentRepository();
 
-    // 2. Instanciar Handler (AQUÍ ESTÁ EL CAMBIO CRÍTICO)
-    // Pasamos eventRepository como tercer argumento ahora
+    // 2. Handler con 4 argumentos
     handler = new CreateReservationHandler(
-        uow, 
-        reservationRepository, 
-        eventRepository, // <-- AGREGADO
-        ticketTypeRepository, 
-        paymentRepository
+      uow,
+      reservationRepository,
+      ticketTypeRepository,
+      paymentRepository
     );
 
-    // 3. Setup de datos (resto igual...)
-    const registerUserHandler = new RegisterUserHandler(userRepository, new BcryptPasswordHasher(), new JwtService());
+    // 3. Setup de datos
+    const registerUserHandler = new RegisterUserHandler(
+      userRepository,
+      new BcryptPasswordHasher(),
+      new JwtService()
+    );
+    
     const user = await registerUserHandler.execute(new RegisterUserCommand({
       email: `reservation-${Date.now()}@test.com`,
       password: 'Password123',
@@ -54,33 +58,43 @@ describe('CreateReservationHandler (Integration Test)', () => {
     }));
     userId = user.user.id;
 
-    const createEventHandler = new CreateEventHandler(uow, eventRepository, ticketTypeRepository);
+    const createEventHandler = new CreateEventHandler(
+      uow,
+      eventRepository,
+      ticketTypeRepository
+    );
+    
     const event = await createEventHandler.execute(
       new CreateEventCommand({
         titulo: 'Evento Integracion',
         descripcion: 'Evento para pruebas',
         fecha: new Date(Date.now() + 86400000).toISOString(),
         lugar: 'Oaxaca',
+        capacidadTotal: 150,
         organizadorId: userId,
         tickets: [
           {
             nombre: 'General',
             precio: 100,
-            capacidadTotal: 100
+            capacidad: 100
           }
         ]
       })
     );
-    eventId = event.id;
+    
+    eventId = event.eventId;
 
-    const ticketResult = await pool.query('SELECT id FROM ticket_types WHERE evento_id = $1 LIMIT 1', [eventId]);
+    const ticketResult = await pool.query(
+      'SELECT id FROM ticket_types WHERE evento_id = $1 LIMIT 1',
+      [eventId]
+    );
     ticketTypeId = ticketResult.rows[0].id;
   });
 
   test('debe crear una reserva y actualizar reservas_pendientes', async () => {
     const result = await handler.execute(new CreateReservationCommand({
       eventoId: eventId,
-      ticketTypeId: ticketTypeId, // Ahora requerido
+      ticketTypeId: ticketTypeId,
       usuarioId: userId,
       cantidadTickets: 2
     }));
@@ -89,7 +103,7 @@ describe('CreateReservationHandler (Integration Test)', () => {
     expect(result.estado).toBe('PENDIENTE_PAGO');
   });
 
-  test('debe lanzar EventNotFoundError si el evento no existe', async () => {
+  test('debe lanzar TicketTypeNotFoundError si el ticket type no existe', async () => {
     await expect(
       handler.execute(new CreateReservationCommand({
         eventoId: '11111111-1111-1111-1111-111111111111',
@@ -97,6 +111,6 @@ describe('CreateReservationHandler (Integration Test)', () => {
         usuarioId: userId,
         cantidadTickets: 1
       }))
-    ).rejects.toThrow(EventNotFoundError);
+    ).rejects.toThrow(TicketTypeNotFoundError);
   });
 });

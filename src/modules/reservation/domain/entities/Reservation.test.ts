@@ -1,4 +1,5 @@
 // src/modules/reservation/domain/entities/Reservation.test.ts
+
 import { Reservation } from './Reservation';
 import { ValidationError } from '@shared/domain/errors';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
@@ -12,16 +13,14 @@ describe('Reservation', () => {
   let reservation: Reservation;
 
   beforeEach(() => {
-    // Firma corregida según entidad: 
-    // id, eventId, ticketTypeId, usuarioId, cantidadTickets, _estado, codigoTicket
     reservation = new Reservation(
-      'res-1',                        // id
-      'evento-1',                     // eventId
-      'ticket-type-99',               // ticketTypeId (Nueva FK del Contrato Maestro)
-      'usuario-1',                    // usuarioId
-      2,                              // cantidadTickets
-      'PENDIENTE_PAGO',               // _estado
-      'TICKET-12345'                  // codigoTicket
+      'res-1',
+      'evento-1',
+      'ticket-type-99',
+      'usuario-1',
+      2,
+      'PENDIENTE_PAGO',
+      'TICKET-12345'
     );
   });
 
@@ -58,7 +57,7 @@ describe('Reservation', () => {
         'evento-1',
         'ticket-type-99',
         'usuario-1',
-        0,                            // Cantidad inválida
+        0,
         'PENDIENTE_PAGO',
         'TICKET-12346'
       )).toThrow(ValidationError);
@@ -70,7 +69,7 @@ describe('Reservation', () => {
         'evento-1',
         'ticket-type-99',
         'usuario-1',
-        5,                            // Excede regla unitaria de 4 por persona
+        5,
         'PENDIENTE_PAGO',
         'TICKET-12347'
       )).toThrow(ValidationError);
@@ -197,12 +196,12 @@ describe('Reservation', () => {
       expect(reservation.estado).toBe('CANCELADA');
     });
 
-    test('deberia poder cancelar una reserva expirada', () => {
+    // ✅ CORREGIDO: Una reserva expirada NO se puede cancelar
+    test('NO deberia poder cancelar una reserva expirada', () => {
       const reservationExpirada = new Reservation(
         'res-9', 'evento-1', 'ticket-type-99', 'usuario-1', 2, 'EXPIRADA', 'TICKET-12353'
       );
-      reservationExpirada.cancelar();
-      expect(reservationExpirada.estado).toBe('CANCELADA');
+      expect(() => reservationExpirada.cancelar()).toThrow(ReservationAlreadyCancelledError);
     });
   });
 
@@ -251,7 +250,7 @@ describe('Reservation', () => {
   });
 
   // =========================================================================
-  // SECCIÓN: TRANSICIONES Y EVENTOS DE DOMINIO TOTALES
+  // SECCIÓN: TRANSICIONES Y EVENTOS DE DOMINIO
   // =========================================================================
   describe('transiciones de estado', () => {
     test('flujo completo: pendiente -> confirmada -> check-in', () => {

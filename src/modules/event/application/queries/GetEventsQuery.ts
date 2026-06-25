@@ -1,18 +1,11 @@
-import { PaginationOptions }
-from '@shared/application/query/PaginationOptions';
+// src/modules/event/application/queries/GetEventsQuery.ts
 
-import { SortOptions }
-from '@shared/application/query/SortOptions';
+import { PaginationOptions } from '@shared/application/query/PaginationOptions';
 
-import { EventSortField }
-from './EventSortField';
-
-export interface GetEventsQuery
-  extends PaginationOptions,
-          SortOptions<EventSortField> {
-
+export interface GetEventsQuery extends PaginationOptions {
   owner?: string;
-
+  search?: string;
   status?: string;
-
+  sortBy?: 'date' | 'title' | 'price' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
 }

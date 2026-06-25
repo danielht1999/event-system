@@ -3,17 +3,67 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validation';
-import { createReservationSchema } from '../../middlewares/reservation.validator';
+import { 
+  createReservationSchema,
+  listReservationsSchema,
+  confirmPaymentSchema,
+  cancelReservationSchema
+} from '../../middlewares/reservation.validator';
 import { reservationController } from '@shared/infrastructure/di/container';
 
 const router = Router();
 
-// Protected routes
+// ============================================
+// TODAS LAS RUTAS REQUIEREN AUTENTICACIÓN
+// ============================================
 router.use(authenticate);
 
-router.get('/', reservationController.list);
-router.post('/', validate(createReservationSchema), reservationController.createReservation);
-router.post('/:id/confirm', reservationController.confirmPayment);
-router.delete('/:id', reservationController.cancelReservation);
+// ============================================
+// RUTAS EXISTENTES CON VALIDACIÓN
+// ============================================
+
+/**
+ * GET /reservations
+ * Lista reservas con paginación y filtros
+ */
+router.get(
+  '/', 
+  validate({ query: listReservationsSchema }),  
+  reservationController.list
+);
+
+/**
+ * POST /reservations
+ * Crea una nueva reserva
+ */
+router.post(
+  '/', 
+  validate({ body: createReservationSchema }), 
+  reservationController.createReservation
+);
+
+/**
+ * POST /reservations/:id/confirm
+ * Confirma el pago de una reserva
+ */
+router.post(
+  '/:id/confirm', 
+  validate({ 
+    params: confirmPaymentSchema   
+  }), 
+  reservationController.confirmPayment
+);
+
+/**
+ * DELETE /reservations/:id
+ * Cancela una reserva
+ */
+router.delete(
+  '/:id', 
+  validate({ 
+    params: cancelReservationSchema   
+  }), 
+  reservationController.cancelReservation
+);
 
 export default router;

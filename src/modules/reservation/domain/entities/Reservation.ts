@@ -143,6 +143,9 @@ export class Reservation {
     if (this._estado === 'CANCELADA') {
       throw new ReservationAlreadyCancelledError(this.id);
     }
+    if (this._estado === 'EXPIRADA'){
+      throw new ReservationAlreadyCancelledError(this.id);
+    }
     const estadoAnterior = this._estado;
     this._estado = 'CANCELADA';
     this.recordEvent(

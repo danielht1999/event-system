@@ -9,7 +9,7 @@ export class PostgresUnitOfWork implements IUnitOfWork {
 
   constructor(
     private readonly pool: Pool,
-    private readonly dispatcher: IDomainEventDispatcher //Inyectamos la abstracción de mensajería
+    private readonly dispatcher: IDomainEventDispatcher
   ) {}
 
   async begin(): Promise<void> {
@@ -22,12 +22,12 @@ export class PostgresUnitOfWork implements IUnitOfWork {
       throw new Error('UnitOfWork no iniciado');
     }
 
-    await this.client.query('COMMIT');
-
-    //Delegamos de forma asíncrona la publicación al dispatcher independiente
-    await this.dispatcher.dispatch(this.pendingEvents);
-
-    this.cleanup();
+    try {
+      await this.client.query('COMMIT');
+      await this.dispatcher.dispatch(this.pendingEvents);
+    } finally {
+      this.cleanup();
+    }
   }
 
   async rollback(): Promise<void> {

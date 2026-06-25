@@ -1,7 +1,12 @@
-import pool from '@shared/infrastructure/database/connection'; // Inyectamos el pool para la orquestación transaccional
+// src/modules/reservation/application/commands/ExpireReservationsHandler.ts
+
+import pool from '@shared/infrastructure/database/connection';
 import { IReservationRepository } from '../../domain/repositories/IReservationRepository';
 import { ExpireReservationsCommand } from './ExpireReservationsCommand';
 import { domainEventBus } from '@shared/infrastructure/messaging/DomainEventBus';
+import { DomainEventName } from '@shared/domain/DomainEventNames';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
+import { DomainEventPayloadMap } from '@shared/domain/DomainEventPayloads';
 
 export class ExpireReservationsHandler {
   constructor(private reservationRepository: IReservationRepository) {}
@@ -9,13 +14,11 @@ export class ExpireReservationsHandler {
   async execute(command: ExpireReservationsCommand): Promise<number> {
     console.log('[Handler] Iniciando escaneo de reservaciones obsoletas...');
 
-    // 1. Tomamos una conexión exclusiva del pool para asegurar la atomicidad del lote
     const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
 
-      // 2. Traemos las entidades reales en estado 'PENDIENTE_PAGO' que ya expiraron
       const obsoleteReservations = await this.reservationRepository.findObsoleteReservations(client);
 
       if (obsoleteReservations.length === 0) {
@@ -26,62 +29,64 @@ export class ExpireReservationsHandler {
       console.log(`[Handler] Procesando ${obsoleteReservations.length} reservaciones obsoletas en memoria...`);
 
       const expiredIds: string[] = [];
-      const ticketTypeUpdates: { [ticketTypeId: string]: number } = {};
+      const ticketTypeUpdates: Record<string, number> = {};
 
-      // 3. Pipelining / Batching en Memoria RAM (DDD Puro)
       for (const reservation of obsoleteReservations) {
-        // Ejecuta la regla de negocio y acumula internamente 'DomainEventNames.RESERVATION.EXPIRED'
         reservation.expirar();
-
-        // Agrupamos el ID para la query masiva de actualización de estado
         expiredIds.push(reservation.id);
 
-        // Consolidamos cuántos cupos acumulados hay que devolver a cada tipo de ticket específico
-        ticketTypeUpdates[reservation.ticketTypeId] = 
-          (ticketTypeUpdates[reservation.ticketTypeId] || 0) + reservation.cantidadTickets;
+        const key = `${reservation.eventId}:${reservation.ticketTypeId}`;
+        ticketTypeUpdates[key] =
+          (ticketTypeUpdates[key] || 0) + reservation.cantidadTickets;
       }
 
-      // 4. PERSISTENCIA EN LOTE (Mínimos viajes de red hacia PostgreSQL)
-      
-      // Query 1: Actualización masiva de estados de reservaciones
       await client.query(
         "UPDATE reservas SET estado = 'EXPIRADA' WHERE id = ANY($1)",
         [expiredIds]
       );
 
-      // Query 2: Devolución masiva de stock a la tabla ticket_types (una query por tipo de entrada afectado)
-      for (const [ticketTypeId, cantidadALiberar] of Object.entries(ticketTypeUpdates)) {
+      for (const [key, cantidadALiberar] of Object.entries(ticketTypeUpdates)) {
+        const [eventoId, ticketTypeId] = key.split(':');
         await client.query(
           `UPDATE ticket_types 
            SET reservas_pendientes = reservas_pendientes - $1 
-           WHERE id = $2`,
-          [cantidadALiberar, ticketTypeId]
+           WHERE id = $2 
+           AND evento_id = $3`,
+          [cantidadALiberar, ticketTypeId, eventoId]
         );
       }
 
-      // 5. Consolidamos la transacción de forma segura en la base de datos
       await client.query('COMMIT');
       console.log('[Handler] Transacción consolidada con éxito en la Base de Datos.');
 
-      // 6. FLUJO REACTIVO SEGURO (Post-Commit)
-      // Ahora que la BD es consistente, disparamos los eventos legítimos acumulados en las entidades
-      obsoleteReservations.forEach(reservation => {
-        const events = reservation.pullDomainEvents();
-        events.forEach(event => {
-          domainEventBus.publish(event.eventName, event);
-        });
-      });
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const typedEvents: IDomainEvent<any>[] = [];
 
-      console.log(`[Handler] Éxito: Se despacharon eventos reactivos para ${obsoleteReservations.length} reservaciones.`);
+      for (const reservation of obsoleteReservations) {
+        const rawEvents = reservation.pullDomainEvents();
+        for (const event of rawEvents) {
+          typedEvents.push(event);
+        }
+      }
+
+      // ✅ Emitir eventos con tipado seguro
+      for (const event of typedEvents) {
+        // ✅ Cast a DomainEventName (los eventos válidos están en el mapa)
+        domainEventBus.publish(
+          event.eventName as DomainEventName,
+          event as IDomainEvent<any>
+        );
+      }
+
+      console.log(
+        `[Handler] Éxito: Se despacharon eventos reactivos para ${obsoleteReservations.length} reservaciones.`
+      );
       return obsoleteReservations.length;
-
     } catch (error) {
-      // Si algo falla, revertimos todo el lote para evitar desincronizaciones de aforo
       await client.query('ROLLBACK');
       console.error('[Handler] Error crítico en lote de expiración. Rollback ejecutado:', error);
       throw error;
     } finally {
-      // Liberamos la conexión para que regrese de inmediato al pool de la app
       client.release();
     }
   }

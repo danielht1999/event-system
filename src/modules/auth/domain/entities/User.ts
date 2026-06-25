@@ -1,39 +1,136 @@
 // src/modules/auth/domain/entities/User.ts
+
 import { IDomainEvent } from '@shared/domain/IDomainEvent';
 import { Email } from '../value-objects/Email';
 import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { ValidationError } from '@shared/domain/errors';
 
 export type UserRole = 'ORGANIZADOR' | 'ASISTENTE';
 
+export interface UserProps {
+  id: string;
+  email: string;
+  nombre: string;
+  rol: UserRole;
+  creadoEn?: Date;
+  passwordHash?: string;
+}
+
 export class User {
   private _domainEvents: IDomainEvent[] = [];
-  private _email: Email; 
+  private _email: Email;
+  private _nombre: string;
+  private _rol: UserRole;
+  private _passwordHash?: string;
 
-  constructor(
+  private constructor(
     public readonly id: string,
-    emailInicial: string,           
-    private _nombre: string,       
-    private _rol: UserRole,        
-    public readonly creadoEn: Date = new Date()
+    email: string,
+    nombre: string,
+    rol: UserRole,
+    public readonly creadoEn: Date = new Date(),
+    passwordHash?: string
   ) {
-    // El Value Object se encarga de validar, limpiar espacios y pasar a minúsculas al nacer
-    this._email = new Email(emailInicial);
+    this.validateNombre(nombre);
+    this.validateRol(rol);
+    
+    this._email = new Email(email);
+    this._nombre = nombre.trim();
+    this._rol = rol;
+    this._passwordHash = passwordHash;
   }
 
   // =========================================================================
-  // GETTERS (Lecturas seguras)
+  // FACTORY METHODS
   // =========================================================================
-  // Mantenemos el retorno como string plano para no romper la compatibilidad externa
+
+  /**
+   * ✅ Para CREAR un nuevo usuario (registro)
+   * Emite evento USER_CREATED
+   */
+  public static create(props: {
+    id: string;
+    email: string;
+    nombre: string;
+    rol: UserRole;
+    passwordHash: string;
+  }): User {
+    const user = new User(
+      props.id,
+      props.email,
+      props.nombre,
+      props.rol,
+      new Date(),
+      props.passwordHash
+    );
+    
+    // ✅ La entidad emite su propio evento de creación
+    user.recordEvent(DomainEventNames.AUTH.USER_CREATED, {
+      userId: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      rol: user.rol
+    });
+
+    return user;
+  }
+
+  /**
+   * ✅ Para RECONSTRUIR un usuario desde la DB
+   * NO emite eventos (ya ocurrieron)
+   */
+  public static reconstitute(props: {
+    id: string;
+    email: string;
+    nombre: string;
+    rol: UserRole;
+    creadoEn: Date;
+    passwordHash?: string;
+  }): User {
+    return new User(
+      props.id,
+      props.email,
+      props.nombre,
+      props.rol,
+      props.creadoEn,
+      props.passwordHash
+    );
+  }
+
+  // =========================================================================
+  // VALIDACIONES PRIVADAS
+  // =========================================================================
+
+  private validateNombre(nombre: string): void {
+    if (!nombre || nombre.trim().length < 2) {
+      throw new ValidationError('El nombre debe tener al menos 2 caracteres');
+    }
+    if (nombre.trim().length > 50) {
+      throw new ValidationError('El nombre no puede tener más de 50 caracteres');
+    }
+  }
+
+  private validateRol(rol: UserRole): void {
+    const validRoles: UserRole[] = ['ORGANIZADOR', 'ASISTENTE'];
+    if (!validRoles.includes(rol)) {
+      throw new ValidationError('El rol debe ser ORGANIZADOR o ASISTENTE');
+    }
+  }
+
+  // =========================================================================
+  // GETTERS
+  // =========================================================================
+
   get email(): string { return this._email.value; }
   get nombre(): string { return this._nombre; }
   get rol(): UserRole { return this._rol; }
-
-  // Obtenemos el objeto Value Object si el sistema lo requiere en algún punto de dominio
   get emailVO(): Email { return this._email; }
+  get passwordHash(): string | undefined { return this._passwordHash; }
 
   // =========================================================================
-  // CONTROL DE EVENTOS DE DOMINIO
+  // EVENTOS DE DOMINIO
   // =========================================================================
+
   public recordEvent(name: string, data: any): void {
     this._domainEvents.push({
       eventName: name,
@@ -49,8 +146,9 @@ export class User {
   }
 
   // =========================================================================
-  // NÚCLEO DDD: ACCIONES EXPLICITAS Y VALIDACIONES
+  // MÉTODOS DE NEGOCIO
   // =========================================================================
+
   esOrganizador(): boolean {
     return this._rol === 'ORGANIZADOR';
   }
@@ -60,6 +158,8 @@ export class User {
   }
 
   cambiarRol(nuevoRol: UserRole): void {
+    this.validateRol(nuevoRol);
+    
     if (this._rol === nuevoRol) return;
     
     const rolAnterior = this._rol;
@@ -72,15 +172,16 @@ export class User {
     });
   }
 
-  // Ahora aceptamos el Value Object rico directamente desde el Handler
   actualizarPerfil(nuevoNombre: string, nuevoEmail: Email): void {
-    this._nombre = nuevoNombre;
-    this._email = nuevoEmail; // Guardamos el objeto ya validado
+    this.validateNombre(nuevoNombre);
+    
+    this._nombre = nuevoNombre.trim();
+    this._email = nuevoEmail;
 
     this.recordEvent(DomainEventNames.AUTH.USER_PROFILE_UPDATED, {
       userId: this.id,
       nombre: this._nombre,
-      email: this._email.value // Publicamos el string limpio en el evento
+      email: this._email.value
     });
   }
 }

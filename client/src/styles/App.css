@@ -1,0 +1,234 @@
+/* ============================================ */
+/* EVENTIFY - ESTILOS SCI-FI TECH               */
+/* ============================================ */
+/*
+MANEJO: Archivo principal que importa todos los CSS
+
+CONTENIDO:
+- 11 imports de todos los módulos CSS
+- Responsive global (900px y 600px)
+  - Hero: grid a 1 columna
+  - Navbar: padding reducido
+  - Grids a 1 columna
+  - Footer: 1 columna en móvil
+  - Form rows a 1 columna
+  - Botones a width 100%
+
+MODIFICAR AQUÍ: Agregar nuevos imports, responsive global
+*/
+/* 1. Variables Globales */
+@import './variables.css';
+
+/* 2. Estilos Base */
+@import './base.css';
+
+/* 3. Navbar */
+@import './navbar.css';
+
+/* 4. Hero Banner */
+@import './hero.css';
+
+/* 5. Formularios y Botones */
+@import './forms.css';
+
+/* 6. Eventos */
+@import './events.css';
+
+/* 7. Reservas */
+@import './reservations.css';
+
+/* 8. Perfil */
+@import './profile.css';
+
+/* 9. Modal */
+@import './modal.css';
+
+/* 10. Footer */
+@import './footer.css';
+
+/* 11. Utilidades */
+@import './utilities.css';
+
+/* ============================================ */
+/* RESPONSIVE                                   */
+/* ============================================ */
+
+@media (max-width: 900px) {
+    .hero-banner {
+        grid-template-columns: 1fr;
+        padding: 30px;
+    }
+    
+    .navbar {
+        padding: 0 20px;
+    }
+    
+    .nav-menu {
+        margin-left: 20px;
+    }
+    
+    .nav-links {
+        gap: 15px;
+    }
+    
+    .panel-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .reservas-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-container {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        text-align: center;
+    }
+    
+    .footer-brand p {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero-text h2 {
+        font-size: 1.5rem;
+    }
+    
+    .eventos-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .reserva-meta-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .btn-edit-profile {
+        align-self: flex-end;
+    }
+    
+    .edit-mode {
+        flex-direction: column;
+    }
+    
+    .edit-mode .btn-save,
+    .edit-mode .btn-cancel {
+        width: 100%;
+    }
+    
+    .nav-links {
+        display: none;
+    }
+    
+    .main-panel,
+    .panel-box {
+        padding: 20px;
+    }
+    
+    .event-form .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-form .form-actions {
+        flex-direction: column;
+    }
+    
+    .reservation-filters {
+        flex-direction: column;
+    }
+    
+    .reservation-filters .filter-group select {
+        width: 100%;
+    }
+    
+    .event-filters {
+        flex-direction: column;
+    }
+    
+    .event-filters select {
+        width: 100%;
+    }
+}
+
+/* ============================================ */
+/* LAYOUT GLOBAL - Footer siempre abajo        */
+/* ============================================ */
+
+/* Wrapper que envuelve toda la aplicación */
+.app-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Contenido principal - ocupa todo el espacio disponible */
+.main-content {
+    flex: 1;
+    padding: 20px 0;
+}
+
+/* ============================================ */
+/* PÁGINA 404                                   */
+/* ============================================ */
+
+.not-found-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.not-found-page h1 {
+    font-size: 6rem;
+    color: var(--text-accent, #8f94fb);
+    margin: 0;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(143, 148, 251, 0.3);
+}
+
+.not-found-page h2 {
+    font-size: 2rem;
+    color: var(--text-main, #ffffff);
+    margin: 10px 0;
+}
+
+.not-found-page p {
+    color: var(--text-muted, #8b949e);
+    margin: 10px 0 30px;
+    font-size: 1.1rem;
+}
+
+.not-found-page .btn {
+    display: inline-block;
+    padding: 12px 30px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--text-accent);
+    color: var(--text-main);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.not-found-page .btn:hover {
+    background: var(--text-accent);
+    color: var(--bg-card-solid);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(143, 148, 251, 0.3);
+}
+

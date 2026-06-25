@@ -1,0 +1,138 @@
+/* ============================================ */
+/* NAVBAR                                       */
+/* ============================================ */
+/*
+MANEJO: Barra de navegación superior
+
+CONTENIDO:
+- Fondo semi-transparente con blur (backdrop-filter: blur)
+- Altura fija: 70px
+- Borde inferior con glow (border-glow)
+- Posición sticky en la parte superior
+- Logo con gradiente de texto
+- Enlaces de navegación con hover y active
+- Indicador de active (línea inferior con glow)
+- Zona de usuario (rol pill, nombre, botón logout)
+- LED animado para el rol
+- Botón logout con borde rojo
+
+MODIFICAR AQUÍ: Altura del navbar, colores, padding, tamaños de fuente, animación del LED
+*/
+.navbar {
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-glow);
+    padding: 0 40px;
+    height: 70px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, #ffffff, var(--text-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-grow: 1;
+    margin-left: 40px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+}
+
+.nav-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: color 0.2s;
+    position: relative;
+    padding: 6px 0;
+    cursor: pointer;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--text-main);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -22px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--success-color);
+    box-shadow: 0 0 8px var(--success-color);
+}
+
+.nav-user-zone {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--success-gradient);
+    color: var(--text-main);
+    border: 1px solid var(--success-color);
+}
+
+.nav-role-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success-led);
+    animation: led-pulse 2s infinite ease-in-out;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.btn-logout {
+    background: transparent;
+    border: 1px solid rgba(255, 23, 68, 0.4);
+    color: #ff4d6d;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: var(--error-gradient);
+    border-color: var(--error-color);
+    box-shadow: 0 0 10px rgba(255, 23, 68, 0.15);
+}

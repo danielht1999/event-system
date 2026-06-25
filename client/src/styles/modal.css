@@ -1,0 +1,161 @@
+/* ============================================ */
+/* MODAL DE COMPRA                              */
+/* ============================================ */
+/*
+MANEJO: Modal para compra de tickets
+
+CONTENIDO:
+- Overlay: position fixed, fondo oscuro con blur
+- Modal content: max-width 450px, animación slideIn
+- Header: flex con título y botón close
+- Cuerpo: padding 24px, inputs
+- Footer: flex con botones confirmar/cerrar
+- Animación: modalSlideIn desde arriba
+- Botones con gradientes (success/error)
+
+MODIFICAR AQUÍ: Tamaño del modal, colores de overlay, animación, padding
+*/
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 16px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-glow);
+}
+
+.modal-header h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--error-color);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-body .form-group {
+    margin-top: 15px;
+}
+
+.modal-body .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.modal-body .form-group input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.modal-body .form-group input:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-glow);
+}
+
+.btn-confirmar {
+    flex: 1;
+    background: var(--success-gradient);
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-confirmar:hover:not(:disabled) {
+    background: rgba(0, 229, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-confirmar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-cerrar-modal {
+    flex: 1;
+    background: var(--error-gradient);
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cerrar-modal:hover:not(:disabled) {
+    background: rgba(255, 23, 68, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-cerrar-modal:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

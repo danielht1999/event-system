@@ -1,0 +1,250 @@
+/* ============================================ */
+/* EVENTOS GRID Y CARDS                         */
+/* ============================================ */
+/*
+MANEJO: Listado y visualización de eventos
+
+CONTENIDO:
+- Grid de eventos: auto-fill con min-width 320px
+- Cards: fondo con blur, borde left 4px acento
+- Hover: translateY(-4px), shadow más fuerte
+- Títulos, metas, precios con colores
+- Selector de tipo de ticket
+- Panel layout: grid 0.8fr/1.2fr para gestión
+- Data grid: 2 columnas para info de eventos
+- Event actions: botones publicar/eliminar
+- Managed event cards para organizadores
+
+MODIFICAR AQUÍ: Tamaño de grid, padding de cards, colores de precios, botones de acción
+*/
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    letter-spacing: -0.3px;
+}
+
+.eventos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+.evento-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glow);
+    border-left: 4px solid var(--text-accent);
+    border-radius: 12px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.evento-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--text-accent);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+.evento-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.evento-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.evento-precio {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--success-color);
+    margin-top: 5px;
+}
+
+.evento-cupos {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.ticket-type-selector {
+    margin: 8px 0;
+}
+
+.ticket-type-selector label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #8b949e;
+}
+
+.ticket-type-selector select {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-glow);
+    font-size: 0.9rem;
+    background-color: var(--bg-input);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.ticket-type-selector select:focus {
+    outline: none;
+    border-color: var(--text-accent);
+}
+
+.panel-layout {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.panel-box {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glow);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.panel-box-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-glow);
+    padding-bottom: 12px;
+}
+
+.eventos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.managed-event-card {
+    background: var(--bg-card-solid);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 4px solid var(--text-accent);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.managed-event-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+}
+
+.data-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+}
+
+.data-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.data-item .icon-wrapper {
+    position: static;
+    left: auto;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.data-label {
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    min-width: 80px;
+}
+
+.data-value {
+    color: var(--text-main);
+}
+
+.event-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.btn-publicar {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.btn-publicar:hover {
+    background: var(--success-gradient);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-eliminar {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.btn-eliminar:hover {
+    background: var(--error-gradient);
+    box-shadow: 0 0 10px rgba(255, 23, 68, 0.2);
+    transform: translateY(-1px);
+}

@@ -1,3 +1,5 @@
+// tests/integration/event/postgresTicketTypeRepository.integration.test.ts
+
 import pool from '../../../src/shared/infrastructure/database/connection';
 import { PostgresTicketTypeRepository } from '../../../src/modules/event/infrastructure/repositories/PostgresTicketTypeRepository';
 import { TicketType } from '../../../src/modules/event/domain/entities/TicketType';
@@ -20,7 +22,7 @@ describe('PostgresTicketTypeRepository (Integration)', () => {
     ticketId1 = uuidv4();
     ticketId2 = uuidv4();
 
-    // Vaciado de tablas respetando escrupulosamente las claves foráneas (FK)
+    // Vaciado de tablas respetando claves foráneas
     await pool.query('DELETE FROM payments');
     await pool.query('DELETE FROM reservas');
     await pool.query('DELETE FROM ticket_types');
@@ -35,18 +37,25 @@ describe('PostgresTicketTypeRepository (Integration)', () => {
       [userId, 'organizer@test.com', 'Organizer', 'hash', 'ORGANIZADOR']
     );
 
+    // ✅ CORREGIDO: agregar capacidad_total
     await pool.query(
       `
-      INSERT INTO eventos (id, organizador_id, titulo, descripcion, lugar, fecha, estado)
-      VALUES ($1, $2, $3, $4, $5, NOW(), $6)
+      INSERT INTO eventos (id, organizador_id, titulo, descripcion, lugar, fecha, capacidad_total, estado)
+      VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7)
       `,
-      [eventId, userId, 'Evento Test', 'Descripción Test', 'CDMX', 'PUBLICADA']
+      [eventId, userId, 'Evento Test', 'Descripción Test', 'CDMX', 100, 'PUBLICADA']
     );
+  });
+
+  afterEach(async () => {
+    // Limpiar datos después de cada test
+    await pool.query('DELETE FROM ticket_types WHERE evento_id = $1', [eventId]);
+    await pool.query('DELETE FROM eventos WHERE id = $1', [eventId]);
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [userId]);
   });
 
   describe('save()', () => {
     it('debería persistir ticket type', async () => {
-      // ✅ Usamos reconstruct en lugar de new
       const ticket = TicketType.reconstruct(
         ticketId1,
         eventId,
@@ -69,7 +78,8 @@ describe('PostgresTicketTypeRepository (Integration)', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].nombre).toBe('VIP');
       expect(Number(result.rows[0].precio)).toBe(300);
-      expect(Number(result.rows[0].capacidad_maxima)).toBe(50);
+      // ✅ CORREGIDO: usar 'capacidad' en lugar de 'capacidad_maxima'
+      expect(Number(result.rows[0].capacidad)).toBe(50);
     });
   });
 

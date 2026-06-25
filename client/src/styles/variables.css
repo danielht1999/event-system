@@ -1,0 +1,45 @@
+/* ============================================ */
+/* VARIABLES GLOBALES                           */
+/* ============================================ */
+/*
+MANEJO: Variables globales de diseño
+
+CONTENIDO:
+- Gradientes de fondo (gradient-body)
+- Colores de tarjetas y bordes (bg-card, bg-card-solid, border-glow)
+- Colores de texto (text-main, text-muted, text-accent)
+- Sistema de estados (success, error, warning)
+  - Cada estado tiene: color principal, gradiente y LED
+- Colores de inputs (bg-input)
+
+MODIFICAR AQUÍ: Colores principales, acentos, gradientes, sistema de estados
+*/
+:root {
+    --gradient-body: linear-gradient(135deg, #4e54c8 0%, #764ba2 100%);
+    
+    /* Contenedores Base */
+    --bg-card: rgba(13, 17, 23, 0.75);
+    --bg-card-solid: #0d1117;
+    --border-glow: rgba(110, 142, 251, 0.2);
+    --text-accent: #8f94fb;
+    
+    /* Textos */
+    --text-main: #ffffff;
+    --text-muted: #8b949e;
+
+    /* Sistema de Estados Sincronizado (LED + Gradientes) */
+    --success-color: #00e5ff;
+    --success-gradient: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 131, 176, 0.02) 100%);
+    --success-led: radial-gradient(circle at 35% 35%, #ffffff, #00e5ff);
+    
+    --error-color: #ff1744;
+    --error-gradient: linear-gradient(135deg, rgba(255, 23, 68, 0.15) 0%, rgba(203, 45, 62, 0.02) 100%);
+    --error-led: radial-gradient(circle at 35% 35%, #ffffff, #ff1744);
+    
+    --warning-color: #ffaa00;
+    --warning-gradient: linear-gradient(135deg, rgba(255, 170, 0, 0.15) 0%, rgba(255, 170, 0, 0.02) 100%);
+    --warning-led: radial-gradient(circle at 35% 35%, #ffffff, #ffaa00);
+    
+    /* Inputs */
+    --bg-input: rgba(0, 0, 0, 0.4);
+}
