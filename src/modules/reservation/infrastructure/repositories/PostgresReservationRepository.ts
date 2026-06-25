@@ -71,9 +71,10 @@ async save(reservation: Reservation, transactionContext?: unknown): Promise<Rese
   async findByEvent(eventId: string, transactionContext?: unknown): Promise<Reservation[]> {
     const executor = this.getExecutor(transactionContext);
     const query = `
-      SELECT r.* FROM reservas r
-      JOIN ticket_types t ON r.ticket_type_id = t.id
-      WHERE t.evento_id = $1 ORDER BY r.reservado_en DESC
+      SELECT *
+      FROM reservas
+      WHERE evento_id = $1
+      ORDER BY reservado_en DESC
     `;
     const result = await executor.query(query, [eventId]);
     return result.rows.map(row => this.mapToEntity(row));

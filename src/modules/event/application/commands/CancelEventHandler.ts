@@ -6,6 +6,8 @@ import { IEventRepository } from '../../domain/repositories/IEventRepository';
 import { EventNotFoundError } from '../../domain/errors'; 
 import { ForbiddenError } from '@shared/domain/errors'; 
 import { logger } from '@shared/infrastructure/logging/winston';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { EventCancelledPayload } from '@shared/domain/DomainEventPayloads';
 
 export interface EventResult {
   eventId: string;
@@ -24,7 +26,6 @@ export class CancelEventHandler {
     try {
       const tx = this.uow.getTransactionContext();
 
-      // 1. Obtener y bloquear de forma pesimista con telemetría
       const startLock = performance.now();
       const event = await this.eventRepository.findByIdForUpdate(command.eventId, tx);
       const lockDurationMs = performance.now() - startLock;
@@ -37,21 +38,24 @@ export class CancelEventHandler {
 
       if (!event) throw new EventNotFoundError(command.eventId);
 
-      // 2. Validar propiedad
       if (event.organizadorId !== command.organizerId) {
         throw new ForbiddenError('No tienes permisos para cancelar este evento');
       }
 
-      // 3. Ejecutar comportamiento del dominio
       event.cancelar();
 
-      // 4. Guardar cambios
       await this.eventRepository.save(event, tx);
 
-      // 5. Recolección explícita de eventos de dominio
-      const events = [...event.pullDomainEvents()];
-      this.uow.collectEvents(events);
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const rawEvents = [...event.pullDomainEvents()];
+      const typedEvents = rawEvents.map(e => {
+        if (e.eventName === DomainEventNames.EVENT.CANCELLED) {
+          return { ...e, data: e.data as EventCancelledPayload };
+        }
+        return e;
+      });
 
+      this.uow.collectEvents(typedEvents);
       await this.uow.commit();
 
       return {

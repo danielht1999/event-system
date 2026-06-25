@@ -1,25 +1,26 @@
 // src/shared/application/query/Pagination.ts
 import { PaginationOptions } from './PaginationOptions';
 
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_LIMIT = 10;
+export const MAX_LIMIT = 100;
+
 export class Pagination {
   static normalize(options?: PaginationOptions) {
-
     const page = Math.max(
-      1,
-      options?.page ?? 1
+      DEFAULT_PAGE,
+      options?.page ?? DEFAULT_PAGE
     );
 
     const limit = Math.min(
-      100,
-      Math.max(1, options?.limit ?? 20)
+      MAX_LIMIT,
+      Math.max(1, options?.limit ?? DEFAULT_LIMIT)
     );
-
-    const offset = (page - 1) * limit;
 
     return {
       page,
       limit,
-      offset
+      offset: (page - 1) * limit
     };
   }
 }

@@ -7,6 +7,8 @@ import { ITicketTypeRepository } from '../../domain/repositories/ITicketTypeRepo
 import { EventNotFoundError, TicketTypeNotFoundError } from '../../domain/errors';
 import { ForbiddenError } from '@shared/domain/errors';
 import { logger } from '@shared/infrastructure/logging/winston';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { TicketTypeUpdatedPayload } from '@shared/domain/DomainEventPayloads';
 
 export class IncreaseTicketCapacityHandler {
   constructor(
@@ -21,7 +23,6 @@ export class IncreaseTicketCapacityHandler {
     try {
       const tx = this.uow.getTransactionContext();
 
-      // 1. Bloquear agregados/entidades involucradas para evitar carrera de aforos
       const startLock = performance.now();
       const event = await this.eventRepository.findByIdForUpdate(command.eventId, tx);
       if (!event) throw new EventNotFoundError(command.eventId);
@@ -43,22 +44,27 @@ export class IncreaseTicketCapacityHandler {
         throw new TicketTypeNotFoundError(command.ticketTypeId);
       }
 
-      // 2. Recuperar el resto de tickets para validar la invariante macro en Event
       const todosLosTickets = await this.ticketTypeRepository.findByEventId(event.id, tx);
       const aforosOtrosTickets = todosLosTickets
         .filter(t => t.id !== ticketType.id)
         .map(t => t.capacidadMaxima.value);
 
-      // 3. Validar aforo total en el agregado raíz (Tope de tu Capacity)
       event.validarAforoTotal(aforosOtrosTickets, command.nuevaCapacidad);
 
-      // 4. Modificar el TicketType con su método semántico de dominio
       ticketType.incrementarCapacidad(command.nuevaCapacidad);
 
-      // 5. Persistir, recolectar y hacer commit
       await this.ticketTypeRepository.save(ticketType, tx);
       
-      this.uow.collectEvents(ticketType.pullDomainEvents());
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const rawEvents = ticketType.pullDomainEvents();
+      const typedEvents = rawEvents.map(e => {
+        if (e.eventName === DomainEventNames.TICKET_TYPE.UPDATED) {
+          return { ...e, data: e.data as TicketTypeUpdatedPayload };
+        }
+        return e;
+      });
+
+      this.uow.collectEvents(typedEvents);
       await this.uow.commit();
 
       return { ticketTypeId: ticketType.id };

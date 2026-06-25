@@ -1,3 +1,5 @@
+// src/modules/auth/domain/repositories/IUserRepository.ts
+
 import { User } from '../entities/User';
 
 export interface IUserRepository {
@@ -18,13 +20,15 @@ export interface IUserRepository {
   emailExists(email: string, transactionContext?: unknown): Promise<boolean>;
 
   /**
-   * Registra un usuario nuevo en el sistema inyectando su hash de seguridad de forma aislada.
+   * ✅ Registra un usuario nuevo en el sistema.
+   * El passwordHash ya está contenido dentro de la entidad User.
    * Diseñado específicamente para el caso de uso de Registro.
    */
-  create(user: User, passwordHash: string, transactionContext?: unknown): Promise<User>;
+  create(user: User, transactionContext?: unknown): Promise<User>;
 
   /**
    * Sincroniza las mutaciones de estado de la entidad (perfil, roles) en la persistencia.
+   * También actualiza el password_hash si cambió.
    */
   save(user: User, transactionContext?: unknown): Promise<User>;
 

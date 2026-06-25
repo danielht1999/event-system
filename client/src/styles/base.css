@@ -1,0 +1,29 @@
+/* ============================================ */
+/* ESTILOS BASE                                 */
+/* ============================================ */
+/*
+MANEJO: Estilos base y reseteo
+
+CONTENIDO:
+- Reseteo de márgenes y paddings (margin: 0, padding: 0)
+- Box-sizing: border-box para todos los elementos
+- Fuente base: 'Segoe UI', system-ui, sans-serif
+- Fondo con gradiente fijo (background-attachment: fixed)
+- Altura mínima de 100vh en body
+- Color de texto principal
+
+MODIFICAR AQUÍ: Fuente base, fondo del body, color de texto por defecto
+*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--gradient-body);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--text-main);
+}

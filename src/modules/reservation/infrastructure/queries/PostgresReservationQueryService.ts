@@ -21,8 +21,7 @@ export class PostgresReservationQueryService
 
     const { owner, status, sortBy, sortOrder = 'desc' } = query;
 
-    const { page, limit, offset } =
-      Pagination.normalize(query);
+    const { page, limit, offset } = Pagination.normalize(query);
 
     const whereClauses: string[] = [];
     const params: unknown[] = [];
@@ -51,8 +50,7 @@ export class PostgresReservationQueryService
       params
     );
 
-    const totalItems =
-      Number(countResult.rows[0].count);
+    const totalItems = Number(countResult.rows[0].count);
 
     const sortFieldMap: Record<string, string> = {
       createdAt: 'r.reservado_en',
@@ -116,6 +114,7 @@ export class PostgresReservationQueryService
     reservationId: string
   ): Promise<TicketEmailDTO | null> {
 
+    // ✅ CORREGIDO: Agregar INNER JOIN con ticket_types y usar tt.precio
     const query = `
       SELECT
         u.email AS to,
@@ -128,8 +127,7 @@ export class PostgresReservationQueryService
         r.codigo_ticket AS ticket_code,
         r.cantidad_tickets AS ticket_quantity,
 
-        (r.cantidad_tickets * e.precio)
-          AS total_amount
+        (r.cantidad_tickets * tt.precio) AS total_amount
 
       FROM reservas r
 
@@ -139,13 +137,15 @@ export class PostgresReservationQueryService
       INNER JOIN eventos e
         ON e.id = r.evento_id
 
+      INNER JOIN ticket_types tt
+        ON tt.id = r.ticket_type_id
+
       WHERE r.id = $1
 
       LIMIT 1
     `;
 
-    const result =
-      await pool.query(query, [reservationId]);
+    const result = await pool.query(query, [reservationId]);
 
     if (result.rows.length === 0) {
       return null;

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
 
     reservation_id UUID NOT NULL UNIQUE
         REFERENCES reservas(id)

@@ -1,4 +1,5 @@
 // src/modules/reservation/application/commands/CancelReservationHandler.ts
+
 import { CancelReservationCommand } from './CancelReservationCommand';
 import { IUnitOfWork } from '@shared/domain/IUnitOfWork';
 import { IReservationRepository } from '../../domain/repositories/IReservationRepository';
@@ -6,6 +7,11 @@ import { ITicketTypeRepository } from '../../../event/domain/repositories/ITicke
 import { ReservationNotFoundError, ReservationOwnershipError } from '../../domain/errors';
 import { TicketTypeNotFoundError } from '../../../event/domain/errors';
 import { logger } from '@shared/infrastructure/logging/winston';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import {
+  ReservationCancelledPayload,
+  TicketTypeUpdatedPayload
+} from '@shared/domain/DomainEventPayloads';
 
 export interface ReservationResult {
   reservationId: string;
@@ -66,13 +72,23 @@ export class CancelReservationHandler {
       await this.reservationRepository.save(reservation, tx);
       await this.ticketTypeRepository.save(ticketType, tx);
 
-      // Recolección pasiva explícita (Mutan 2 entidades)
-      const events = [
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const rawEvents = [
         ...reservation.pullDomainEvents(),
         ...ticketType.pullDomainEvents()
       ];
-      this.uow.collectEvents(events);
 
+      const typedEvents = rawEvents.map(e => {
+        if (e.eventName === DomainEventNames.RESERVATION.CANCELLED) {
+          return { ...e, data: e.data as ReservationCancelledPayload };
+        }
+        if (e.eventName === DomainEventNames.TICKET_TYPE.UPDATED) {
+          return { ...e, data: e.data as TicketTypeUpdatedPayload };
+        }
+        return e;
+      });
+
+      this.uow.collectEvents(typedEvents);
       await this.uow.commit();
 
       return {

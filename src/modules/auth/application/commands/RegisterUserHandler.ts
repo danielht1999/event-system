@@ -1,13 +1,20 @@
 // src/modules/auth/application/commands/RegisterUserHandler.ts
+
 import { RegisterUserCommand } from './RegisterUserCommand';
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { IPasswordHasher } from '../../domain/services/IPasswordHasher';
 import { IJwtService } from '../../domain/services/IJwtService';
-import { User } from '../../domain/entities/User';
+import { User, UserRole } from '../../domain/entities/User';
 import { v4 as uuidv4 } from 'uuid';
 import { userQuantity } from '@shared/infrastructure/monitoring/metrics';
-import { UserRole } from '../../domain/entities/User';
-import { EmailAlreadyRegisteredError } from '../../domain/errors'; // Error semántico específico
+import { EmailAlreadyRegisteredError } from '../../domain/errors';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { 
+  UserCreatedPayload, 
+  UserRoleChangedPayload,
+  UserProfileUpdatedPayload 
+} from '@shared/domain/DomainEventPayloads';
+import { IDomainEvent } from '@shared/domain/IDomainEvent';
 
 export interface RegisterUserResult {
   user: {
@@ -27,42 +34,64 @@ export class RegisterUserHandler {
   ) {}
 
   async execute(command: RegisterUserCommand): Promise<RegisterUserResult> {
-    // 1. Validación cruzada de infraestructura: Verificar disponibilidad del email
+    // 1. Validar email disponible
     const emailExists = await this.userRepository.emailExists(command.email);
     if (emailExists) {
-      // Lanzamos 409 semántico pasando el email en conflicto
       throw new EmailAlreadyRegisteredError(command.email);
     }
 
-    // 2. Hashear password usando el servicio abstracto de dominio
+    // 2. Hashear password
     const passwordHash = await this.passwordHasher.hash(command.password);
 
-    // 3. DOMINIO: Instanciar la entidad rica de dominio User
+    // 3. Crear usuario (la entidad emite USER_CREATED internamente)
     const userId = uuidv4();
-    const newUser = new User(
-      userId,
-      command.email,
-      command.nombre,
-      command.rol as UserRole
-    );
+    const newUser = User.create({
+      id: userId,
+      email: command.email,
+      nombre: command.nombre,
+      rol: command.rol as UserRole,
+      passwordHash 
+    });
 
-    // Opcional: Registramos el hecho histórico dentro de la bolsa de eventos si lo deseas
-    newUser.recordEvent('UserRegistered', { userId: newUser.id, email: newUser.email });
-
-    // 4. PERSISTENCIA: Delegamos el almacenamiento y despacho de eventos usando el método explícito
-    const savedUser = await this.userRepository.create(newUser, passwordHash);
-    
-    // Incremento de métricas para monitoreo técnico
+    // 4. Persistir
+    const savedUser = await this.userRepository.create(newUser);
     userQuantity.inc();
 
-    // 5. INFRAESTRUCTURA: Generar JWT usando los datos devueltos por el dominio
+    // 5. ✅ RECOLECTAR Y TIPAR EVENTOS DE LA ENTIDAD
+    const rawEvents = savedUser.pullDomainEvents();
+    
+    const typedEvents = rawEvents.map(e => {
+      if (e.eventName === DomainEventNames.AUTH.USER_CREATED) {
+        return {
+          ...e,
+          data: e.data as UserCreatedPayload
+        };
+      }
+      if (e.eventName === DomainEventNames.AUTH.USER_ROLE_CHANGED) {
+        return {
+          ...e,
+          data: e.data as UserRoleChangedPayload
+        };
+      }
+      if (e.eventName === DomainEventNames.AUTH.USER_PROFILE_UPDATED) {
+        return {
+          ...e,
+          data: e.data as UserProfileUpdatedPayload
+        };
+      }
+      return e;
+    });
+
+    // ✅ Emitir eventos tipados (depende de tu infraestructura)
+    // this.eventDispatcher.dispatch(typedEvents);
+
+    // 6. Generar JWT
     const token = this.jwtService.sign({
       id: savedUser.id,
       email: savedUser.email,
       rol: savedUser.rol
     });
 
-    // 6. Retornar resultado estructurado (El DTO nunca expone secretos)
     return {
       user: {
         id: savedUser.id,

@@ -34,39 +34,43 @@ export class TicketType {
   // FACTORIES
   // =========================================================================
 
- public static create(
-  id: string,
-  eventId: string,
-  nombre: string,
-  precio: number,
-  capacidadMaximaRaw: number 
-): TicketType {
-  // El dominio se encarga de fabricar y validar el Value Object internamente
-  const capacidad = new Capacity(capacidadMaximaRaw);
+  public static create(
+    id: string,
+    eventId: string,
+    nombre: string,
+    precio: number,
+    capacidadMaximaRaw: number
+  ): TicketType {
+    const capacidad = new Capacity(capacidadMaximaRaw);
 
-  const ticketType = new TicketType(
-    id,
-    eventId,
-    nombre,
-    precio,
-    capacidad, 
-    0,
-    0,
-    'ACTIVO',
-    new Date()
-  );
+    const ticketType = new TicketType(
+      id,
+      eventId,
+      nombre,
+      precio,
+      capacidad,
+      0,
+      0,
+      'ACTIVO',
+      new Date()
+    );
 
-  ticketType.recordEvent(
-    DomainEventNames.TICKET_TYPE.CREATED,
-    {
-      ticketTypeId: ticketType.id,
-      eventId: ticketType.eventId,
-      nombre: ticketType.nombre
-    }
-  );
+    ticketType.recordEvent(
+      DomainEventNames.TICKET_TYPE.CREATED,
+      {
+        ticketTypeId: ticketType.id,
+        eventId: ticketType.eventId,
+        nombre: ticketType.nombre,
+        precio: ticketType.precio,
+        capacidadMaxima: ticketType.capacidadMaxima.value,
+        reservasPendientes: ticketType._reservasPendientes,
+        reservasConfirmadas: ticketType._reservasConfirmadas,
+        estado: ticketType._estado
+      }
+    );
 
-  return ticketType;
-}
+    return ticketType;
+  }
 
   public static reconstruct(
     id: string,
@@ -166,7 +170,12 @@ export class TicketType {
       {
         ticketTypeId: this.id,
         eventId: this.eventId,
-        cantidad
+        nombre: this.nombre,
+        precio: this.precio,
+        capacidadMaxima: this.capacidadMaxima.value,
+        reservasPendientes: this._reservasPendientes,
+        reservasConfirmadas: this._reservasConfirmadas,
+        estado: this._estado
       }
     );
   }
@@ -196,34 +205,31 @@ export class TicketType {
     this._estado = 'ACTIVO';
   }
 
- /**
- * Incrementa la capacidad del ticket de forma segura.
- * Ahora recibe un primitivo, protegiendo la frontera del dominio.
- */
-public incrementarCapacidad(nuevaCapacidadRaw: number): void {
-  // El dominio se encarga de instanciar y validar su propio Value Object
-  const nuevaCapacidad = new Capacity(nuevaCapacidadRaw);
+  public incrementarCapacidad(nuevaCapacidadRaw: number): void {
+    const nuevaCapacidad = new Capacity(nuevaCapacidadRaw);
 
-  if (nuevaCapacidad.value <= this.capacidadMaxima.value) {
-    throw new ValidationError('La nueva capacidad debe ser estrictamente mayor a la actual');
+    if (nuevaCapacidad.value <= this.capacidadMaxima.value) {
+      throw new ValidationError('La nueva capacidad debe ser estrictamente mayor a la actual');
+    }
+
+    (this as any).capacidadMaxima = nuevaCapacidad;
+
+    if (this._estado === 'AGOTADO' && this.cuposDisponibles > 0) {
+      this._estado = 'ACTIVO';
+    }
+
+    this.recordEvent(DomainEventNames.TICKET_TYPE.UPDATED, {
+      ticketTypeId: this.id,
+      eventId: this.eventId,
+      nombre: this.nombre,
+      precio: this.precio,
+      capacidadMaxima: this.capacidadMaxima.value,
+      reservasPendientes: this._reservasPendientes,
+      reservasConfirmadas: this._reservasConfirmadas,
+      estado: this._estado
+    });
   }
 
-  (this as any).capacidadMaxima = nuevaCapacidad;
-
-  if (this._estado === 'AGOTADO' && this.cuposDisponibles > 0) {
-    this._estado = 'ACTIVO';
-  }
-
-  this.recordEvent(DomainEventNames.TICKET_TYPE.UPDATED, {
-    ticketTypeId: this.id,
-    eventId: this.eventId,
-    nuevaCapacidad: this.capacidadMaxima.value
-  });
-}
-
-  /**
-   * NUEVO: Permite modificar nombre y precio cuidando que no rompa las validaciones base.
-   */
   public actualizarDatosComerciales(nombre?: string, precio?: number): void {
     if (precio !== undefined) {
       (this as any).precio = precio;
@@ -238,9 +244,16 @@ public incrementarCapacidad(nuevaCapacidadRaw: number): void {
   private marcarComoAgotado(): void {
     if (this._estado === 'AGOTADO') return;
     this._estado = 'AGOTADO';
+
     this.recordEvent(DomainEventNames.TICKET_TYPE.SOLD_OUT, {
       ticketTypeId: this.id,
-      eventId: this.eventId
+      eventId: this.eventId,
+      nombre: this.nombre,
+      precio: this.precio,
+      capacidadMaxima: this.capacidadMaxima.value,
+      reservasPendientes: this._reservasPendientes,
+      reservasConfirmadas: this._reservasConfirmadas,
+      estado: this._estado
     });
   }
 }

@@ -5,9 +5,10 @@ import { IUnitOfWork } from '@shared/domain/IUnitOfWork';
 import { IEventRepository } from '../../domain/repositories/IEventRepository';
 import { ITicketTypeRepository } from '../../domain/repositories/ITicketTypeRepository';
 import { TicketType } from '../../domain/entities/TicketType';
-import { Capacity } from '../../domain/value-objects/Capacity';
 import { EventNotFoundError } from '../../domain/errors';
 import { ForbiddenError } from '@shared/domain/errors';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { TicketTypeCreatedPayload } from '@shared/domain/DomainEventPayloads';
 
 export class CreateTicketTypeHandler {
   constructor(
@@ -22,7 +23,6 @@ export class CreateTicketTypeHandler {
     try {
       const tx = this.uow.getTransactionContext();
 
-      // 1. Bloqueo del evento para evaluar invariantes de estado de la matriz
       const event = await this.eventRepository.findByIdForUpdate(command.eventId, tx);
       if (!event) throw new EventNotFoundError(command.eventId);
 
@@ -34,13 +34,11 @@ export class CreateTicketTypeHandler {
         throw new Error('No se pueden añadir tickets a un evento cancelado');
       }
 
-      // 2. Evaluar aforo acumulado con los tickets preexistentes
       const ticketsExistentes = await this.ticketTypeRepository.findByEventId(event.id, tx);
       const aforosActuales = ticketsExistentes.map(t => t.capacidadMaxima.value);
       
       event.validarAforoTotal(aforosActuales, command.capacidad);
 
-      // 3. Crear el nuevo TicketType usando el Factory del dominio
       const nuevoTicketType = TicketType.create(
         command.ticketTypeId,
         event.id,
@@ -49,10 +47,18 @@ export class CreateTicketTypeHandler {
         command.capacidad
       );
 
-      // 4. Guardar y recolectar eventos
       await this.ticketTypeRepository.save(nuevoTicketType, tx);
 
-      this.uow.collectEvents(nuevoTicketType.pullDomainEvents());
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const rawEvents = nuevoTicketType.pullDomainEvents();
+      const typedEvents = rawEvents.map(e => {
+        if (e.eventName === DomainEventNames.TICKET_TYPE.CREATED) {
+          return { ...e, data: e.data as TicketTypeCreatedPayload };
+        }
+        return e;
+      });
+
+      this.uow.collectEvents(typedEvents);
       await this.uow.commit();
 
       return { ticketTypeId: nuevoTicketType.id };

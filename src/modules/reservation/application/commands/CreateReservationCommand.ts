@@ -1,7 +1,6 @@
-// src/modules/reservation/application/commands/CreateReservationCommand.ts
 export class CreateReservationCommand {
   readonly eventoId: string;
-  readonly ticketTypeId: string; 
+  readonly ticketTypeId: string;
   readonly cantidadTickets: number;
   readonly usuarioId: string;
 

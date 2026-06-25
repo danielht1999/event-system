@@ -1,14 +1,14 @@
-import { v4 as uuidv4 } from 'uuid';
+// tests/integration/event/postgresEventRepository.integration.test.ts
 
+import { v4 as uuidv4 } from 'uuid';
 import { PostgresEventRepository } from '../../../src/modules/event/infrastructure/repositories/PostgresEventRepository';
 import { Event } from '../../../src/modules/event/domain/entities/Event';
-import { EventDate } from '../../../src/modules/event/domain/value-objects/EventDate';
-
 import { RegisterUserHandler } from '../../../src/modules/auth/application/commands/RegisterUserHandler';
 import { RegisterUserCommand } from '../../../src/modules/auth/application/commands/RegisterUserCommand';
 import { PostgresUserRepository } from '../../../src/modules/auth/infrastructure/repositories/PostgresUserRepository';
 import { BcryptPasswordHasher } from '../../../src/modules/auth/infrastructure/services/BcryptPasswordHasher';
 import { JwtService } from '../../../src/modules/auth/infrastructure/services/JwtService';
+import pool from '../../../src/shared/infrastructure/database/connection';
 
 describe('PostgresEventRepository (Integration Test)', () => {
   let repository: PostgresEventRepository;
@@ -39,15 +39,21 @@ describe('PostgresEventRepository (Integration Test)', () => {
     organizerId = user.user.id;
   });
 
+  afterEach(async () => {
+    // Limpiar eventos creados por el organizador
+    await pool.query('DELETE FROM eventos WHERE organizador_id = $1', [organizerId]);
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [organizerId]);
+  });
+
+  // ✅ CORREGIDO: Event.create con 7 argumentos (incluye capacidadTotal)
   function buildEvent(): Event {
-    // CORRECCIÓN: Usamos el factory method 'create' del dominio
-    // conforme a: Event.create(id, titulo, descripcion, fechaRaw, lugar, organizadorId)
     return Event.create(
       uuidv4(),
       'Evento Test',
       'Descripcion Test',
       new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
       'CDMX',
+      100, // capacidadTotal
       organizerId
     );
   }
@@ -61,6 +67,8 @@ describe('PostgresEventRepository (Integration Test)', () => {
       expect(saved.id).toBe(event.id);
       expect(saved.titulo).toBe('Evento Test');
       expect(saved.estado).toBe('BORRADOR');
+      expect(saved.capacidadTotal).toBe(100);
+      expect(saved.organizadorId).toBe(organizerId);
     });
 
     test('debe actualizar un evento existente', async () => {
@@ -71,6 +79,23 @@ describe('PostgresEventRepository (Integration Test)', () => {
 
       const updated = await repository.save(event);
       expect(updated.estado).toBe('PUBLICADA');
+    });
+
+    test('debe actualizar detalles del evento usando cambiarDetalles()', async () => {
+      const event = buildEvent();
+      await repository.save(event);
+
+      event.cambiarDetalles({
+        titulo: 'Nuevo Titulo',
+        descripcion: 'Nueva Descripcion',
+        lugar: 'Guadalajara'
+      });
+
+      const updated = await repository.save(event);
+
+      expect(updated.titulo).toBe('Nuevo Titulo');
+      expect(updated.descripcion).toBe('Nueva Descripcion');
+      expect(updated.lugar).toBe('Guadalajara');
     });
   });
 
@@ -84,6 +109,7 @@ describe('PostgresEventRepository (Integration Test)', () => {
       expect(found).not.toBeNull();
       expect(found?.id).toBe(event.id);
       expect(found?.titulo).toBe(event.titulo);
+      expect(found?.capacidadTotal).toBe(100);
     });
 
     test('debe retornar null si no existe', async () => {
@@ -92,160 +118,50 @@ describe('PostgresEventRepository (Integration Test)', () => {
     });
   });
 
-  describe('findAll()', () => {
-    test('debe retornar todos los eventos', async () => {
-      await repository.save(buildEvent());
-      await repository.save(buildEvent());
-
-      const events = await repository.findAll();
-
-      expect(events.length).toBe(2);
-    });
-
-    test('debe retornar arreglo vacio cuando no existen eventos', async () => {
-      const events = await repository.findAll();
-
-      expect(events).toEqual([]);
-    });
-  });
-
-  describe('findByOrganizerId()', () => {
-    test('debe retornar solo eventos del organizador indicado', async () => {
-      await repository.save(buildEvent());
-      await repository.save(buildEvent());
-
-      const events = await repository.findByOrganizerId(
-        organizerId
-      );
-
-      expect(events.length).toBe(2);
-
-      events.forEach(event => {
-        expect(event.organizadorId).toBe(organizerId);
-      });
-    });
-
-    test('debe retornar arreglo vacio si el organizador no tiene eventos', async () => {
-      const events = await repository.findByOrganizerId(
-        uuidv4()
-      );
-
-      expect(events).toEqual([]);
-    });
-  });
-
-  describe('updateData()', () => {
-    test('debe actualizar titulo', async () => {
+  describe('findByIdForUpdate()', () => {
+    test('debe encontrar un evento con bloqueo pesimista', async () => {
       const event = buildEvent();
-
       await repository.save(event);
 
-      const updated = await repository.updateData(
-        event.id,
-        {
-          titulo: 'Nuevo titulo'
-        }
-      );
-
-      expect(updated).not.toBeNull();
-      expect(updated?.titulo).toBe('Nuevo titulo');
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const found = await repository.findByIdForUpdate(event.id, client);
+        expect(found).not.toBeNull();
+        expect(found?.id).toBe(event.id);
+        await client.query('COMMIT');
+      } finally {
+        client.release();
+      }
     });
 
-    test('debe actualizar descripcion', async () => {
-      const event = buildEvent();
-
-      await repository.save(event);
-
-      const updated = await repository.updateData(
-        event.id,
-        {
-          descripcion: 'Nueva descripcion'
-        }
-      );
-
-      expect(updated?.descripcion).toBe(
-        'Nueva descripcion'
-      );
-    });
-
-    test('debe actualizar lugar', async () => {
-      const event = buildEvent();
-
-      await repository.save(event);
-
-      const updated = await repository.updateData(
-        event.id,
-        {
-          lugar: 'Guadalajara'
-        }
-      );
-
-      expect(updated?.lugar).toBe('Guadalajara');
-    });
-
-    test('debe actualizar multiples campos', async () => {
-      const event = buildEvent();
-
-      await repository.save(event);
-
-      const updated = await repository.updateData(
-        event.id,
-        {
-          titulo: 'Titulo actualizado',
-          descripcion: 'Descripcion actualizada',
-          lugar: 'Monterrey'
-        }
-      );
-
-      expect(updated?.titulo).toBe(
-        'Titulo actualizado'
-      );
-
-      expect(updated?.descripcion).toBe(
-        'Descripcion actualizada'
-      );
-
-      expect(updated?.lugar).toBe(
-        'Monterrey'
-      );
-    });
-
-    test('debe retornar null si el evento no existe', async () => {
-      const updated = await repository.updateData(
-        uuidv4(),
-        {
-          titulo: 'No existe'
-        }
-      );
-
-      expect(updated).toBeNull();
+    test('debe retornar null si no existe', async () => {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const found = await repository.findByIdForUpdate(uuidv4(), client);
+        expect(found).toBeNull();
+        await client.query('COMMIT');
+      } finally {
+        client.release();
+      }
     });
   });
 
   describe('delete()', () => {
     test('debe eliminar un evento', async () => {
       const event = buildEvent();
-
       await repository.save(event);
 
-      const deleted = await repository.delete(
-        event.id
-      );
-
+      const deleted = await repository.delete(event.id);
       expect(deleted).toBe(true);
 
-      const found = await repository.findById(
-        event.id
-      );
-
+      const found = await repository.findById(event.id);
       expect(found).toBeNull();
     });
 
     test('debe retornar false si no existe', async () => {
-      const deleted = await repository.delete(
-        uuidv4()
-      );
-
+      const deleted = await repository.delete(uuidv4());
       expect(deleted).toBe(false);
     });
   });
@@ -253,22 +169,35 @@ describe('PostgresEventRepository (Integration Test)', () => {
   describe('exists()', () => {
     test('debe retornar true cuando existe', async () => {
       const event = buildEvent();
-
       await repository.save(event);
 
-      const exists = await repository.exists(
-        event.id
-      );
-
+      const exists = await repository.exists(event.id);
       expect(exists).toBe(true);
     });
 
     test('debe retornar false cuando no existe', async () => {
-      const exists = await repository.exists(
-        uuidv4()
+      const exists = await repository.exists(uuidv4());
+      expect(exists).toBe(false);
+    });
+  });
+
+  // ✅ Test específico para capacidadTotal
+  describe('capacidadTotal', () => {
+    test('debe guardar y recuperar capacidadTotal correctamente', async () => {
+      const event = Event.create(
+        uuidv4(),
+        'Evento con Capacidad',
+        'Descripcion',
+        new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+        'CDMX',
+        250, // capacidadTotal
+        organizerId
       );
 
-      expect(exists).toBe(false);
+      await repository.save(event);
+
+      const found = await repository.findById(event.id);
+      expect(found?.capacidadTotal).toBe(250);
     });
   });
 });

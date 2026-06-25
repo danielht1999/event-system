@@ -1,0 +1,277 @@
+/* ============================================ */
+/* PERFIL DE USUARIO                            */
+/* ============================================ */
+/*
+MANEJO: Perfil de usuario y formulario de eventos
+
+CONTENIDO:
+- Profile rows con padding y border-bottom
+- Labels en mayúsculas con letter-spacing
+- Valores en color main
+- Botón edit: color naranja (#ff9f43)
+- Edit mode: inputs con borde success
+- Botones save/cancel con gradientes
+- Error inline con borde izquierdo
+- Event form container: max-width 600px
+- Form rows en grid 1fr 1fr
+- Botones submit/cancelar con estilos
+
+MODIFICAR AQUÍ: Colores del perfil, padding, botón edit, formulario de eventos
+*/
+.profile-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-row:last-of-type {
+    border-bottom: none;
+    padding-bottom: 10px;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 0 1 auto;
+}
+
+.profile-info .pill-led {
+    display: inline-flex;
+    width: auto;
+    align-self: flex-start;
+}
+
+.info-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.btn-edit-profile {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ff9f43;
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.btn-edit-profile:hover {
+    background: rgba(255, 159, 67, 0.1);
+    border-color: #ff9f43;
+    box-shadow: 0 0 10px rgba(255, 159, 67, 0.2);
+    transform: translateY(-1px);
+}
+
+.edit-mode {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.edit-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--success-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+.btn-save {
+    background: var(--success-gradient);
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-save:hover:not(:disabled) {
+    background: rgba(0, 229, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-cancel {
+    background: var(--error-gradient);
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: rgba(255, 23, 68, 0.2);
+    transform: translateY(-1px);
+}
+
+.error-inline {
+    color: var(--error-color);
+    font-size: 0.8rem;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 23, 68, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid var(--error-color);
+}
+
+/* Event Form */
+.event-form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glow);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.event-form-container h2 {
+    margin-bottom: 1.5rem;
+    color: var(--text-main);
+}
+
+.event-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.event-form .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.event-form .form-group input,
+.event-form .form-group textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.event-form .form-group input:focus,
+.event-form .form-group textarea:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+.event-form .form-group input:disabled,
+.event-form .form-group textarea:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.event-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.event-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.event-form .btn-submit {
+    flex: 1;
+    padding: 0.7rem 1.5rem;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--success-color);
+    color: var(--text-main);
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.event-form .btn-submit:hover:not(:disabled) {
+    background: var(--success-gradient);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.event-form .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.event-form .btn-cancelar {
+    padding: 0.7rem 1.5rem;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.event-form .btn-cancelar:hover:not(:disabled) {
+    background: var(--error-gradient);
+    box-shadow: 0 0 15px rgba(255, 23, 68, 0.2);
+}
+
+.event-form .btn-cancelar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error-message {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: rgba(255, 23, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+    border-radius: 4px;
+}
+
+.success-message {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+    border-radius: 4px;
+}

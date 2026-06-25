@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS ticket_types (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     evento_id UUID NOT NULL
         REFERENCES eventos(id)
         ON DELETE CASCADE,
     nombre VARCHAR(100) NOT NULL,
     precio NUMERIC(10,2) NOT NULL
         CHECK (precio >= 0),
-    capacidad_maxima INT NOT NULL
-        CHECK (capacidad_maxima > 0),
+    capacidad INT NOT NULL
+        CHECK (capacidad > 0),
     reservas_pendientes INT NOT NULL DEFAULT 0
         CHECK (reservas_pendientes >= 0),
     reservas_confirmadas INT NOT NULL DEFAULT 0

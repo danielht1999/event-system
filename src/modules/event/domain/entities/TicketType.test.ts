@@ -1,4 +1,5 @@
 // src/modules/event/domain/entities/TicketType.test.ts
+
 import { TicketType } from './TicketType';
 import { Capacity } from '../value-objects/Capacity';
 import { ValidationError } from '@shared/domain/errors';
@@ -44,7 +45,7 @@ describe('TicketType', () => {
         'Test',
         50,
         capacidad,
-        -1, // reservas pendientes negativas
+        -1,
         0,
         'ACTIVO',
         new Date()
@@ -62,7 +63,7 @@ describe('TicketType', () => {
         50,
         capacidad,
         0,
-        -1, // reservas confirmadas negativas
+        -1,
         'ACTIVO',
         new Date()
       );
@@ -78,8 +79,8 @@ describe('TicketType', () => {
         'Test',
         50,
         capacidad,
-        6, // reservas pendientes
-        5, // reservas confirmadas (6 + 5 = 11 > 10)
+        6,
+        5,
         'ACTIVO',
         new Date()
       );
@@ -122,7 +123,6 @@ describe('TicketType', () => {
   });
 
   test('no debería permitir reservar si la cantidad supera los cupos disponibles', () => {
-    // Dejamos solo 2 cupos disponibles
     const capacidad = new Capacity(10);
     const ticketAjustado = TicketType.reconstruct(
       '1',
@@ -227,20 +227,30 @@ describe('TicketType', () => {
       5
     );
     
+    // Limpiar eventos de creación
+    ticketPequeño.pullDomainEvents();
+    
     ticketPequeño.reservar(5);
     
     expect(ticketPequeño.estado).toBe('AGOTADO');
     expect(ticketPequeño.estaLleno()).toBe(true);
 
     const eventos = ticketPequeño.pullDomainEvents();
-    // Debería tener el evento de creación y el de sold out
-    expect(eventos.length).toBeGreaterThanOrEqual(1);
+    expect(eventos.length).toBe(1); // Solo SOLD_OUT
     
     const soldOutEvent = eventos.find(e => e.eventName === DomainEventNames.TICKET_TYPE.SOLD_OUT);
     expect(soldOutEvent).toBeDefined();
+    
+    // ✅ CORREGIDO: Payload completo del evento SOLD_OUT
     expect(soldOutEvent?.data).toEqual({
       ticketTypeId: 'ticket-123',
-      eventId: 'event-456'
+      eventId: 'event-456',
+      nombre: 'VIP',
+      precio: 50,
+      capacidadMaxima: 5,
+      reservasPendientes: 5,
+      reservasConfirmadas: 0,
+      estado: 'AGOTADO'
     });
   });
 

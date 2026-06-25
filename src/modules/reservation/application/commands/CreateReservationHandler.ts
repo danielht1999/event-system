@@ -1,4 +1,5 @@
 // src/modules/reservation/application/commands/CreateReservationHandler.ts
+
 import { v4 as uuidv4 } from 'uuid';
 import { CreateReservationCommand } from './CreateReservationCommand';
 import { Reservation } from '../../domain/entities/Reservation';
@@ -7,10 +8,16 @@ import { IUnitOfWork } from '@shared/domain/IUnitOfWork';
 import { IReservationRepository } from '../../domain/repositories/IReservationRepository';
 import { ITicketTypeRepository } from '../../../event/domain/repositories/ITicketTypeRepository';
 import { IPaymentRepository } from '../../../payment/domain/repositories/IPaymentRepository';
-import { IEventRepository } from '../../../event/domain/repositories/IEventRepository'; // Importado
-import { TicketTypeNotFoundError, EventNotFoundError } from '../../../event/domain/errors'; // Importado
+import { TicketTypeNotFoundError } from '../../../event/domain/errors';
 import { reservasCreadas } from '@shared/infrastructure/monitoring/metrics';
 import { logger } from '@shared/infrastructure/logging/winston';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import {
+  ReservationCreatedPayload,
+  TicketTypeReservationConfirmedPayload,
+  PaymentApprovedPayload,
+  PaymentRefundedPayload
+} from '@shared/domain/DomainEventPayloads';
 
 export interface ReservationResult {
   id: string;
@@ -24,17 +31,11 @@ export class CreateReservationHandler {
   constructor(
     private readonly uow: IUnitOfWork,
     private readonly reservationRepository: IReservationRepository,
-    private readonly eventRepository: IEventRepository, // Inyectado
     private readonly ticketTypeRepository: ITicketTypeRepository,
     private readonly paymentRepository: IPaymentRepository
   ) {}
 
   async execute(command: CreateReservationCommand): Promise<ReservationResult> {
-    // 1. VALIDACIÓN PREVIA (Jerarquía de Dominio)
-    // Esto asegura que el evento exista antes de iniciar cualquier transacción
-    const event = await this.eventRepository.findById(command.eventoId);
-    if (!event) throw new EventNotFoundError(command.eventoId);
-
     const id = uuidv4();
     const codigoTicket = `TICKET-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     let reservation: Reservation;
@@ -44,16 +45,24 @@ export class CreateReservationHandler {
       const tx = this.uow.getTransactionContext();
 
       const startLock = performance.now();
-      const ticketType = await this.ticketTypeRepository.findByIdForUpdate(command.ticketTypeId, tx);
+      const ticketType = await this.ticketTypeRepository.findByIdForUpdate(
+        command.ticketTypeId, 
+        tx
+      );
       const lockDurationMs = performance.now() - startLock;
 
       if (lockDurationMs > 1000) {
-        logger.error('LOCK CRÍTICO TICKET_TYPE (CREACIÓN)', { ticketTypeId: command.ticketTypeId, durationMs: lockDurationMs.toFixed(2) });
+        logger.error('LOCK CRÍTICO TICKET_TYPE (CREACIÓN)', { 
+          ticketTypeId: command.ticketTypeId, 
+          durationMs: lockDurationMs.toFixed(2) 
+        });
       } else if (lockDurationMs > 100) {
-        logger.warn('LOCK LENTO TICKET_TYPE (CREACIÓN)', { ticketTypeId: command.ticketTypeId, durationMs: lockDurationMs.toFixed(2) });
+        logger.warn('LOCK LENTO TICKET_TYPE (CREACIÓN)', { 
+          ticketTypeId: command.ticketTypeId, 
+          durationMs: lockDurationMs.toFixed(2) 
+        });
       }
 
-      // Validación de integridad: el ticket debe existir y pertenecer al evento del comando
       if (!ticketType || ticketType.eventId !== command.eventoId) {
         throw new TicketTypeNotFoundError(command.ticketTypeId);
       }
@@ -82,14 +91,32 @@ export class CreateReservationHandler {
       });
       await this.paymentRepository.save(payment, tx);
 
-      const events = [
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const rawEvents = [
         ...reservation.pullDomainEvents(),
         ...ticketType.pullDomainEvents(),
         ...payment.pullDomainEvents()
       ];
-      this.uow.collectEvents(events);
 
+      const typedEvents = rawEvents.map(e => {
+        if (e.eventName === DomainEventNames.RESERVATION.CREATED) {
+          return { ...e, data: e.data as ReservationCreatedPayload };
+        }
+        if (e.eventName === DomainEventNames.TICKET_TYPE.RESERVATION_CONFIRMED) {
+          return { ...e, data: e.data as TicketTypeReservationConfirmedPayload };
+        }
+        if (e.eventName === DomainEventNames.PAYMENT.APPROVED) {
+          return { ...e, data: e.data as PaymentApprovedPayload };
+        }
+        if (e.eventName === DomainEventNames.PAYMENT.REFUNDED) {
+          return { ...e, data: e.data as PaymentRefundedPayload };
+        }
+        return e;
+      });
+
+      this.uow.collectEvents(typedEvents);
       await this.uow.commit();
+
     } catch (error) {
       await this.uow.rollback();
       throw error;

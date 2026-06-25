@@ -5,7 +5,7 @@
 import { AuthController } from '@modules/auth/infrastructure/controllers/AuthController';
 import { RegisterUserHandler } from '@modules/auth/application/commands/RegisterUserHandler';
 import { LoginHandler } from '@modules/auth/application/commands/LoginHandler';
-import { UpdateProfilehandler } from '@modules/auth/application/commands/UpdateProfileHandler';
+import { UpdateProfileHandler } from '@modules/auth/application/commands/UpdateProfileHandler';
 import { GetProfileHandler } from '@modules/auth/application/queries/GetProfileHandler';
 import { PostgresUserRepository } from '@modules/auth/infrastructure/repositories/PostgresUserRepository';
 import { BcryptPasswordHasher } from '@modules/auth/infrastructure/services/BcryptPasswordHasher';
@@ -100,7 +100,7 @@ const reservationQueryService = new PostgresReservationQueryService();
 const registerHandler = new RegisterUserHandler(userRepository, passwordHasher, jwtService);
 const loginHandler = new LoginHandler(userRepository, passwordHasher, jwtService);
 const getProfileHandler = new GetProfileHandler(userRepository);
-const updateProfileHandler = new UpdateProfilehandler(userRepository);
+const updateProfileHandler = new UpdateProfileHandler(userRepository);
 
 // =========================================================================
 // 5. EVENT HANDLERS
@@ -137,7 +137,7 @@ const getTicketTypeByIdHandler = new GetTicketTypeByIdHandler(ticketTypeReposito
 // 7. RESERVATION HANDLERS
 // =========================================================================
 
-const createReservationHandler = new CreateReservationHandler(uow, reservationRepository,eventRepository, ticketTypeRepository, paymentRepository);
+const createReservationHandler = new CreateReservationHandler(uow, reservationRepository, ticketTypeRepository, paymentRepository);
 const confirmPaymentHandler = new ConfirmPaymentHandler(uow, reservationRepository, ticketTypeRepository);
 const cancelReservationHandler = new CancelReservationHandler(uow, reservationRepository, ticketTypeRepository);
 export const expireReservationHandler = new ExpireReservationsHandler(reservationRepository);

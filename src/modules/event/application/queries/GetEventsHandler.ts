@@ -15,7 +15,6 @@ export class GetEventsHandler {
   async execute(
     query: GetEventsQuery
   ): Promise<PaginatedResult<EventDTO>> {
-    // Llamamos al método unificado 'find' en lugar de 'findAll'
     return this.eventQueryService.find(query);
   }
 }

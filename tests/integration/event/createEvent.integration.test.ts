@@ -1,3 +1,5 @@
+// tests/integration/event/createEvent.integration.test.ts
+
 import pool from '../../../src/shared/infrastructure/database/connection';
 import { RegisterUserHandler } from '../../../src/modules/auth/application/commands/RegisterUserHandler';
 import { RegisterUserCommand } from '../../../src/modules/auth/application/commands/RegisterUserCommand';
@@ -48,31 +50,36 @@ describe('CreateEventHandler (Integration Test)', () => {
       })
     );
 
-    // Ajuste a la nueva estructura del comando que requiere 'tickets'
+    // ✅ CORREGIDO: usar 'capacidad' en lugar de 'capacidadTotal'
+    // ✅ CORREGIDO: agregar 'capacidadTotal' en el evento
     const result = await createEventHandler.execute(
       new CreateEventCommand({
         titulo: 'Conferencia DDD',
         descripcion: 'Evento de prueba',
         fecha: new Date(Date.now() + 86400000).toISOString(),
         lugar: 'Oaxaca',
+        capacidadTotal: 150, // ✅ Agregado
         organizadorId: user.user.id,
         tickets: [
           {
             nombre: 'General',
             precio: 500,
-            capacidadTotal: 100
+            capacidad: 100 // ✅ 'capacidad', no 'capacidadTotal'
           }
         ]
       })
     );
 
-    expect(result.id).toBeDefined();
-    expect(result.titulo).toBe('Conferencia DDD');
+    // ✅ CORREGIDO: usar 'eventId' en lugar de 'id'
+    expect(result.eventId).toBeDefined();
+
+    // ✅ CORREGIDO: 'estado' en lugar de 'titulo'
+    expect(result.estado).toBe('BORRADOR');
 
     // Verificación de persistencia en eventos
     const eventDb = await pool.query(
       'SELECT * FROM eventos WHERE id = $1',
-      [result.id]
+      [result.eventId] // ✅ CORREGIDO: usar 'eventId'
     );
     expect(eventDb.rows).toHaveLength(1);
     expect(eventDb.rows[0].titulo).toBe('Conferencia DDD');
@@ -80,7 +87,7 @@ describe('CreateEventHandler (Integration Test)', () => {
     // Verificación de persistencia en ticket_types
     const ticketsDb = await pool.query(
       'SELECT * FROM ticket_types WHERE evento_id = $1',
-      [result.id]
+      [result.eventId] // ✅ CORREGIDO: usar 'eventId'
     );
     expect(ticketsDb.rows).toHaveLength(1);
     expect(ticketsDb.rows[0].nombre).toBe('General');

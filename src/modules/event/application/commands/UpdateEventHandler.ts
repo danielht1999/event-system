@@ -5,7 +5,9 @@ import { IUnitOfWork } from '@shared/domain/IUnitOfWork';
 import { IEventRepository } from '../../domain/repositories/IEventRepository';
 import { EventNotFoundError } from '../../domain/errors';
 import { ForbiddenError } from '@shared/domain/errors';
-import { logger } from '@shared/infrastructure/logging/winston'; 
+import { logger } from '@shared/infrastructure/logging/winston';
+import { DomainEventNames } from '@shared/domain/DomainEventNames';
+import { EventUpdatedPayload } from '@shared/domain/DomainEventPayloads';
 
 export interface EventResult {
   eventId: string;
@@ -24,39 +26,50 @@ export class UpdateEventHandler {
     try {
       const tx = this.uow.getTransactionContext();
 
-      // 1. Obtener y bloquear con telemetría de rendimiento
       const startLock = performance.now();
       const event = await this.eventRepository.findByIdForUpdate(command.eventId, tx);
       const lockDurationMs = performance.now() - startLock;
 
       if (lockDurationMs > 1000) {
-        logger.error('LOCK CRÍTICO EVENT (UPDATE)', { eventId: command.eventId, durationMs: lockDurationMs.toFixed(2) });
+        logger.error('LOCK CRÍTICO EVENT (UPDATE)', { 
+          eventId: command.eventId, 
+          durationMs: lockDurationMs.toFixed(2) 
+        });
       } else if (lockDurationMs > 100) {
-        logger.warn('LOCK LENTO EVENT (UPDATE)', { eventId: command.eventId, durationMs: lockDurationMs.toFixed(2) });
+        logger.warn('LOCK LENTO EVENT (UPDATE)', { 
+          eventId: command.eventId, 
+          durationMs: lockDurationMs.toFixed(2) 
+        });
       }
 
-      if (!event) throw new EventNotFoundError(command.eventId);
+      if (!event) {
+        throw new EventNotFoundError(command.eventId);
+      }
 
-      // 2. Validar propiedad
       if (event.organizadorId !== command.organizadorId) {
         throw new ForbiddenError('No tienes permisos para modificar este evento');
       }
 
-      // 3. Modificación explícita a través de la regla del dominio (Pasando solo tipos nativos)
       event.cambiarDetalles({
         titulo: command.titulo,
         descripcion: command.descripcion,
         lugar: command.lugar,
-        fecha: command.fecha ? new Date(command.fecha) : undefined 
+        fecha: command.fecha ? new Date(command.fecha) : undefined,
+        capacidadTotal: command.capacidadTotal 
       });
 
-      // 4. Persistir cambios
       await this.eventRepository.save(event, tx);
 
-      // 5. Recolección pasiva explícita de eventos
-      const events = [...event.pullDomainEvents()];
-      this.uow.collectEvents(events);
+      // ✅ RECOLECTAR Y TIPAR EVENTOS
+      const rawEvents = [...event.pullDomainEvents()];
+      const typedEvents = rawEvents.map(e => {
+        if (e.eventName === DomainEventNames.EVENT.UPDATED) {
+          return { ...e, data: e.data as EventUpdatedPayload };
+        }
+        return e;
+      });
 
+      this.uow.collectEvents(typedEvents);
       await this.uow.commit();
 
       return {

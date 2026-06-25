@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS reservas (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     -- Añadimos la columna para denormalización estratégica del dominio
     evento_id UUID NOT NULL 
         REFERENCES eventos(id) 

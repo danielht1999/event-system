@@ -1,0 +1,208 @@
+/* ============================================ */
+/* UTILIDADES: SPINNER, PILLS, PAGINATION, ETC */
+/* ============================================ */
+/*
+MANEJO: Componentes utilitarios reutilizables
+
+CONTENIDO:
+- LED Pulse: animación de 2s infinite
+- Pills: estados success/error/warning con LED
+- Spinner: animación de carga circular
+- Empty state: texto centrado
+- Pagination: botones con border glow
+- Loading container: centrado
+- Error container: con botón de reintento
+- Event filters: background y selects
+
+MODIFICAR AQUÍ: Animaciones, colores de pills, tamaño de spinner, pagination
+*/
+/* LED Pulse Animation */
+@keyframes led-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 4px currentColor;
+    }
+    50% {
+        opacity: 0.75;
+        transform: scale(1.1);
+        box-shadow: 0 0 10px currentColor;
+    }
+}
+
+/* Pills LED para estados */
+.pill-led {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.pill-led .led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: led-pulse 2s infinite ease-in-out;
+}
+
+.pill-led.success {
+    background: var(--success-gradient);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.pill-led.success .led {
+    background: var(--success-led);
+}
+
+.pill-led.error {
+    background: var(--error-gradient);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+}
+
+.pill-led.error .led {
+    background: var(--error-led);
+}
+
+.pill-led.warning {
+    background: var(--warning-gradient);
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+}
+
+.pill-led.warning .led {
+    background: var(--warning-led);
+}
+
+/* Spinner */
+.spinner-container {
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--success-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+    margin-top: 20px;
+    border-top: 1px solid var(--border-glow);
+}
+
+.pagination button {
+    padding: 6px 14px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: var(--success-gradient);
+    border-color: var(--success-color);
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination span {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Loading Container */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+}
+
+/* Error Container */
+.error-container {
+    text-align: center;
+    padding: 3rem;
+}
+
+.error-container h2 {
+    color: var(--error-color);
+    margin-bottom: 1rem;
+}
+
+.error-container button {
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--success-color);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.error-container button:hover {
+    background: var(--success-gradient);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+/* Event Filters */
+.event-filters {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border-glow);
+}
+
+.event-filters select {
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-glow);
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.event-filters select:focus {
+    outline: none;
+    border-color: var(--text-accent);
+}

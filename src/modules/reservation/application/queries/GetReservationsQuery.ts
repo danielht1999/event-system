@@ -1,18 +1,9 @@
-import { PaginationOptions }
-from '@shared/application/query/PaginationOptions';
+// src/modules/reservation/application/queries/GetReservationsQuery.ts
 
-import { SortOptions }
-from '@shared/application/query/SortOptions';
-
-import { ReservationSortField }
-from './ReservationSortField';
-
-export interface GetReservationsQuery
-  extends PaginationOptions,
-          SortOptions<ReservationSortField> {
-
+import { PaginationOptions } from '@shared/application/query/PaginationOptions';
+export interface GetReservationsQuery extends PaginationOptions {
   owner?: string;
-
   status?: string;
-
+  sortBy?: 'createdAt' | 'eventDate' | 'status';
+  sortOrder?: 'asc' | 'desc';
 }

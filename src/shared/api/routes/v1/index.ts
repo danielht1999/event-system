@@ -7,8 +7,8 @@ import authRoutes from './auth.routes';
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/eventos', eventsRoutes);
-router.use('/reservas', reservationsRoutes);
+router.use('/events', eventsRoutes);    
+router.use('/reservations', reservationsRoutes); 
 
 router.get('/', (req, res) => {
   res.json({
@@ -16,8 +16,8 @@ router.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/v1/auth (register, login, profile)',
-      eventos: '/api/v1/eventos',
-      reservas: '/api/v1/reservas'
+      eventos: '/api/v1/events',    
+      reservas: '/api/v1/reservations' 
     }
   });
 });

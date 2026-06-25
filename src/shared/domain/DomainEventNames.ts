@@ -3,7 +3,7 @@ export const DomainEventNames = {
   // Módulo de Autenticación / Usuarios
   // =========================================================================
   AUTH: {
-    USER_REGISTERED: 'auth.user_registered',
+    USER_CREATED: 'AUTH.USER_CREATED',
     USER_ROLE_CHANGED: 'auth.user_role_changed',
     USER_PROFILE_UPDATED: 'auth.user_profile_updated',
   },
@@ -26,7 +26,8 @@ export const DomainEventNames = {
     CREATED: 'event.created',
     STATUS_UPDATED: 'event.status_updated',
     CANCELLED: 'event.cancelled',
-    UPDATED: 'event.updated'
+    UPDATED: 'event.updated',
+    FINISHED: 'event.finished'
   },
 
   // =========================================================================  
