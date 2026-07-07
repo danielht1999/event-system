@@ -1,7 +1,9 @@
+// src/modules/event/application/queries/GetEventsHandler.unit.test.ts
+
 import { GetEventsHandler } from './GetEventsHandler';
-import { IEventQueryService, EventDTO } from '../services/IEventQueryService';
+import { IEventQueryService, EventoListDTO } from '../services/IEventQueryService';
 import { PaginatedResult } from '@shared/application/query/PaginatedResult';
-import { GetEventsQuery } from './GetEventsQuery'; 
+import { GetEventsQuery } from './GetEventsQuery';
 
 describe('GetEventsHandler', () => {
   let eventQueryService: jest.Mocked<IEventQueryService>;
@@ -10,15 +12,27 @@ describe('GetEventsHandler', () => {
   beforeEach(() => {
     // Ajustamos el mock a la nueva interfaz que solo tiene 'find'
     eventQueryService = {
-      find: jest.fn() 
-    } as unknown as jest.Mocked<IEventQueryService>;
+      find: jest.fn(),
+      findById: jest.fn(),      // Añadido para cumplir con la interfaz
+      findManagement: jest.fn() // Añadido para cumplir con la interfaz
+    } as jest.Mocked<IEventQueryService>;
     
     handler = new GetEventsHandler(eventQueryService);
   });
 
   test('debe retornar el resultado paginado del QueryService', async () => {
-    const paginatedResult: PaginatedResult<EventDTO> = {
-      items: [{ id: 'event-1', titulo: 'Evento 1' } as EventDTO],
+    const mockEvent: EventoListDTO = {
+      id: 'event-1',
+      titulo: 'Evento 1',
+      lugar: 'Lugar 1',
+      fecha: '2024-01-01T00:00:00.000Z',
+      estado: 'PUBLICADO',
+      precioMinimo: 100,
+      cuposDisponibles: 50
+    };
+
+    const paginatedResult: PaginatedResult<EventoListDTO> = {
+      items: [mockEvent],
       totalItems: 1,
       totalPages: 1,
       page: 1,
@@ -35,7 +49,7 @@ describe('GetEventsHandler', () => {
   });
 
   test('debe retornar estructura vacía cuando no existen eventos', async () => {
-    const emptyResult: PaginatedResult<EventDTO> = {
+    const emptyResult: PaginatedResult<EventoListDTO> = {
       items: [],
       totalItems: 0,
       totalPages: 0,
