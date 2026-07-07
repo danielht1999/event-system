@@ -1,0 +1,290 @@
+/* ============================================ */
+/* MODAL - Sistema de modales                   */
+/* ============================================ */
+/*
+MANEJO: Componente de modal para compra de tickets
+
+CONTENIDO:
+- .modal-overlay: Fondo oscuro con blur
+- .modal-content: Contenedor del modal
+- .modal-header: Cabecera con título y botón cerrar
+- .modal-body: Cuerpo del modal
+- .modal-footer: Pie con botones de acción
+- .modal-compra: Variante específica para compra
+- .modal-evento-info: Información del evento
+- .modal-evento-titulo: Título del evento
+- .modal-evento-meta: Metadatos del evento
+- .modal-evento-descripcion: Descripción del evento
+- .modal-divider: Línea divisoria
+- .modal-selector: Selector de tickets
+- .modal-selector-label: Etiqueta del selector
+- .modal-selector-row: Grid de selectores
+- .modal-selector-group: Grupo de selector
+- .modal-cupos-feedback: Feedback de cupos
+- .modal-cupos-error: Error de cupos
+- .modal-total: Total de la compra
+- .modal-total-label: Etiqueta del total
+- .modal-total-precio: Precio del total
+- .modal-tags: Tags del modal
+- .modal-tags-label: Etiqueta de tags
+
+MODIFICAR AQUÍ: Tamaño del modal, colores de overlay, animación, padding
+*/
+
+/* ============================================ */
+/* MODAL BASE                                   */
+/* ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 16px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================ */
+/* MODAL ELEMENTS                               */
+/* ============================================ */
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-glow);
+}
+
+.modal-header h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-glow);
+}
+
+/* ============================================ */
+/* PURCHASE MODAL - Variante específica         */
+/* ============================================ */
+
+.modal-compra {
+    max-width: 550px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-evento-info {
+    margin-bottom: 16px;
+}
+
+.modal-evento-titulo {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: var(--text-main);
+}
+
+.modal-evento-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.modal-evento-descripcion {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 10px 0 0 0;
+    line-height: 1.5;
+}
+
+.modal-divider {
+    border: none;
+    border-top: 1px solid var(--border-glow);
+    margin: 14px 0;
+}
+
+/* ============================================ */
+/* MODAL SELECTOR DE TICKETS                    */
+/* ============================================ */
+
+.modal-selector {
+    margin: 12px 0;
+}
+
+.modal-selector-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    color: var(--text-main);
+}
+
+.modal-selector-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.modal-selector-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+}
+
+.modal-selector-group select,
+.modal-selector-group input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.modal-selector-group select:focus,
+.modal-selector-group input:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+/* ============================================ */
+/* MODAL CUPOS FEEDBACK                         */
+/* ============================================ */
+
+.modal-cupos-feedback {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.modal-cupos-feedback.success {
+    background: var(--success-gradient);
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
+}
+
+.modal-cupos-feedback.error {
+    background: var(--error-gradient);
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+}
+
+.modal-cupos-error {
+    font-weight: 600;
+}
+
+/* ============================================ */
+/* MODAL TOTAL                                  */
+/* ============================================ */
+
+.modal-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-glow);
+}
+
+.modal-total-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.modal-total-precio {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--success-color);
+}
+
+/* ============================================ */
+/* MODAL TAGS                                   */
+/* ============================================ */
+
+.modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.modal-tags-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ============================================ */
+/* RESPONSIVE - Modal                           */
+/* ============================================ */
+
+@media (max-width: 576px) {
+    .modal-selector-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .modal-compra {
+        max-width: 95%;
+        margin: 10px;
+    }
+    
+    .modal-evento-titulo {
+        font-size: 1.1rem;
+    }
+    
+    .modal-total-precio {
+        font-size: 1.1rem;
+    }
+}

@@ -1,0 +1,631 @@
+/* ============================================ */
+/* EVENTS - Página de eventos                   */
+/* ============================================ */
+/*
+MANEJO: Estilos específicos de la página de eventos
+
+CONTENIDO:
+- .section-title: Título de sección
+- .eventos-grid: Grid de eventos
+- .evento-divider: Línea divisoria en tarjeta
+- .evento-resumen: Resumen del evento
+- .evento-precio: Precio del evento
+- .evento-cupos: Cupos disponibles
+- .evento-tags: Tags del evento
+- .evento-tags-label: Label de tags
+- .evento-actions-buttons: Botones de acción
+- .panel-layout: Grid del panel de gestión
+- .eventos-list: Lista de eventos gestionados
+- .event-actions: Acciones del evento
+- .ticket-section: Sección de tickets
+- .capacidad-total-group: Capacidad total
+- .capacidad-feedback: Feedback de capacidad
+- .tickets-list: Lista de tickets
+- .tickets-header: Cabecera de tickets
+- .ticket-item: Item de ticket
+- .ticket-item-body: Cuerpo de ticket
+- .ticket-capacidad-restante: Capacidad restante
+- .ticket-custom-name-input: Input de nombre personalizado
+- .ticket-error-message: Error de ticket
+- .event-detail-header: Cabecera de detalle
+- .event-detail-titulo: Título de detalle
+- .event-detail-meta: Metadatos de detalle
+- .event-detail-meta-item: Item de meta
+- .event-detail-descripcion: Descripción
+- .event-detail-tickets: Tickets en detalle
+- .event-detail-ticket-header: Cabecera de ticket en detalle
+- .event-detail-ticket-nombre: Nombre de ticket
+- .event-detail-ticket-body: Cuerpo de ticket
+- .event-detail-ticket-precio: Precio de ticket
+- .event-detail-ticket-cupos: Cupos de ticket
+- .data-grid: Grid de datos
+- .data-item: Item de datos
+- .data-item-header: Cabecera de item
+- .data-label: Label de dato
+- .data-value: Valor de dato
+- .event-form: Formulario de eventos
+- .event-form .form-row: Row del formulario
+- .event-form .form-actions: Acciones del formulario
+
+MODIFICAR AQUÍ: Tamaño de grid, padding, colores
+*/
+
+/* ============================================ */
+/* EVENTOS GRID                                 */
+/* ============================================ */
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    letter-spacing: -0.3px;
+}
+
+.eventos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+/* ============================================ */
+/* EVENTO CARD (contenido específico)           */
+/* ============================================ */
+
+.evento-divider {
+    border: none;
+    border-top: 1px solid var(--border-glow);
+    margin: 10px 0;
+}
+
+.evento-resumen {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+}
+
+.evento-resumen .evento-precio {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--success-color);
+    margin-top: 0;
+}
+
+.evento-resumen .evento-cupos {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.evento-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 10px 0;
+}
+
+.evento-tags-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.evento-actions-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+/* ============================================ */
+/* PANEL LAYOUT - Gestión de eventos            */
+/* ============================================ */
+
+.panel-layout {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.eventos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.event-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* ============================================ */
+/* DATA GRID                                    */
+/* ============================================ */
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+}
+
+.data-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+}
+
+.data-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.data-item .icon-wrapper {
+    position: static;
+    left: auto;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.data-label {
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    min-width: 80px;
+}
+
+.data-value {
+    color: var(--text-main);
+}
+
+/* ============================================ */
+/* TICKET SECTION                               */
+/* ============================================ */
+
+.ticket-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-glow);
+}
+
+.capacidad-total-group {
+    margin-bottom: 16px;
+}
+
+.capacidad-total-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.capacidad-total-group input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.capacidad-total-group input:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+.capacidad-total-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.capacidad-feedback {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.capacidad-feedback.success {
+    background: var(--success-gradient);
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
+}
+
+.capacidad-feedback.error {
+    background: var(--error-gradient);
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
+}
+
+.capacidad-feedback-text {
+    font-size: 0.9rem;
+}
+
+.capacidad-feedback-detalle {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.tickets-list {
+    margin-top: 16px;
+}
+
+.tickets-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tickets-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.tickets-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.ticket-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.ticket-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.ticket-number {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.ticket-item-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+.ticket-item-body .form-group {
+    margin-bottom: 0;
+}
+
+.ticket-item-body .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.ticket-item-body .form-group input,
+.ticket-item-body .form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.ticket-item-body .form-group input:focus,
+.ticket-item-body .form-group select:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+.ticket-item-body .form-group select {
+    appearance: auto;
+    cursor: pointer;
+}
+
+.ticket-item-body .form-group input:disabled,
+.ticket-item-body .form-group select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ticket-capacidad-restante {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.ticket-capacidad-restante.error {
+    color: var(--error-color);
+}
+
+.ticket-custom-name-input {
+    margin-top: 6px;
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--text-accent);
+    border-radius: 4px;
+    color: var(--text-main);
+    font-size: 0.85rem;
+}
+
+.ticket-custom-name-input:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+}
+
+.ticket-error-message {
+    color: var(--error-color);
+    font-size: 0.85rem;
+    margin-top: 8px;
+    text-align: center;
+}
+
+/* ============================================ */
+/* EVENT DETAIL                                 */
+/* ============================================ */
+
+.event-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.event-detail-titulo {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.event-detail-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-glow);
+    border-bottom: 1px solid var(--border-glow);
+}
+
+.event-detail-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.event-detail-meta-icon {
+    font-size: 1.1rem;
+}
+
+.event-detail-descripcion {
+    margin: 20px 0;
+}
+
+.event-detail-descripcion h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.event-detail-descripcion p {
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* ============================================ */
+/* EVENT DETAIL - Tipos de entrada              */
+/* ============================================ */
+
+.event-detail-tickets {
+    margin: 24px 0;
+}
+
+.event-detail-tickets h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.event-detail-tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.event-detail-ticket-card {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 24px 28px;  /* ← Más padding interno */
+    display: flex;
+    flex-direction: column;
+    gap: 14px;  /* ← Más espacio entre elementos */
+}
+
+.event-detail-ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.event-detail-ticket-nombre {
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.event-detail-ticket-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 6px;  /* ← Más espacio arriba */
+}
+
+.event-detail-ticket-precio {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--success-color);
+}
+
+.event-detail-ticket-cupos {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ============================================ */
+/* EVENT FORM                                   */
+/* ============================================ */
+
+.event-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.event-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.event-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* ============================================ */
+/* RESPONSIVE                                   */
+/* ============================================ */
+
+@media (max-width: 900px) {
+    .hero-banner {
+        grid-template-columns: 1fr;
+        padding: 30px;
+    }
+    
+    .panel-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .panel-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .ticket-item-body {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .capacidad-feedback {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .ticket-item {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .eventos-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .event-detail {
+        padding: 20px;
+    }
+    
+    .event-detail-titulo {
+        font-size: 1.5rem;
+    }
+    
+    .event-detail-meta {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-detail-tickets-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .event-detail-ticket-card {
+        padding: 16px 20px;
+    }
+    
+    .event-form .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .event-form .form-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .evento-actions-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

@@ -1,0 +1,183 @@
+/* ============================================ */
+/* BADGES Y PILLS - Sistema de etiquetas        */
+/* ============================================ */
+/*
+MANEJO: Badges, pills y etiquetas de estado
+
+CONTENIDO:
+- .badge: Badge base
+- .badge-success: Estado éxito (verde)
+- .badge-error: Estado error (rojo)
+- .badge-warning: Estado warning (amarillo)
+- .badge-info: Estado info (azul)
+- .badge-pulse: Badge con animación de pulso
+- .badge-tag: Badge tipo tag (clickeable)
+- .badge-tag.active: Tag activo
+- .pill-led: LED con efecto de brillo
+- .pill-led .led: Punto LED
+- .pill-led.success: LED éxito
+- .pill-led.error: LED error
+- .pill-led.warning: LED warning
+- .pill-led.info: LED info
+
+MODIFICAR AQUÍ: Colores, padding, tamaños de fuente, animaciones
+*/
+
+/* ============================================ */
+/* BADGE BASE                                   */
+/* ============================================ */
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.badge-success {
+    background: var(--success-gradient);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.badge-error {
+    background: var(--error-gradient);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+}
+
+.badge-warning {
+    background: var(--warning-gradient);
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+}
+
+.badge-info {
+    background: rgba(143, 148, 251, 0.15);
+    color: var(--text-accent);
+    border: 1px solid var(--text-accent);
+}
+
+/* ============================================ */
+/* BADGE PULSE (para estados en vivo)           */
+/* ============================================ */
+
+.badge-pulse {
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* ============================================ */
+/* BADGE TAG (clickeable)                       */
+/* ============================================ */
+
+.badge-tag {
+    font-size: 0.75rem;
+    padding: 3px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.badge-tag:hover {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+}
+
+.badge-tag.active {
+    border-color: var(--success-color);
+    color: var(--success-color);
+    background: var(--success-gradient);
+}
+
+/* ============================================ */
+/* PILL LED - Luz de estado                     */
+/* ============================================ */
+
+.pill-led {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px 6px 10px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(4px);
+    width: fit-content;
+}
+
+.pill-led .led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    animation: pulse-led 2s infinite;
+}
+
+@keyframes pulse-led {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pill-led.success {
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.pill-led.success .led {
+    background: var(--success-led);
+    box-shadow: 0 0 12px var(--success-color);
+}
+
+.pill-led.error {
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+.pill-led.error .led {
+    background: var(--error-led);
+    box-shadow: 0 0 12px var(--error-color);
+}
+
+.pill-led.warning {
+    border-color: var(--warning-color);
+    color: var(--warning-color);
+}
+
+.pill-led.warning .led {
+    background: var(--warning-led);
+    box-shadow: 0 0 12px var(--warning-color);
+}
+
+.pill-led.info {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+}
+
+.pill-led.info .led {
+    background: radial-gradient(circle at 35% 35%, #ffffff, var(--text-accent));
+    box-shadow: 0 0 12px var(--text-accent);
+}

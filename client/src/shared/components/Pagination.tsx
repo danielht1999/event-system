@@ -1,3 +1,5 @@
+// client/src/shared/components/Pagination.tsx
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -9,25 +11,38 @@ export function Pagination({
   totalPages,
   onPageChange,
 }: PaginationProps) {
+  // Si no hay páginas o solo una, no mostrar paginación
+  if (totalPages <= 1) {
+    return null;
+  }
+
   return (
-    <footer className="pagination">
+    <div className="pagination">
       <button
+        className="pagination-arrow"
         disabled={currentPage <= 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        Anterior
+        ←
       </button>
 
-      <span>
-        Página {currentPage} de {totalPages}
-      </span>
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        <button
+          key={page}
+          className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
+          onClick={() => onPageChange(page)}
+        >
+          {page}
+        </button>
+      ))}
 
       <button
+        className="pagination-arrow"
         disabled={currentPage >= totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        Siguiente
+        →
       </button>
-    </footer>
+    </div>
   );
 }

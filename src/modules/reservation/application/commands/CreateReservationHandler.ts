@@ -91,7 +91,6 @@ export class CreateReservationHandler {
       });
       await this.paymentRepository.save(payment, tx);
 
-      // ✅ RECOLECTAR Y TIPAR EVENTOS
       const rawEvents = [
         ...reservation.pullDomainEvents(),
         ...ticketType.pullDomainEvents(),

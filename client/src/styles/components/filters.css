@@ -1,0 +1,275 @@
+/* ============================================ */
+/* FILTROS - Sistema de filtros                 */
+/* ============================================ */
+/*
+MANEJO: Componentes de filtros reutilizables
+
+CONTENIDO:
+- .filters: Contenedor base de filtros
+- .filters-header: Cabecera con título y acciones
+- .filters-title: Título del filtro
+- .filters-actions: Acciones del filtro
+- .filters-grid: Grid de grupos de filtro
+- .filter-group: Grupo de filtro (label + select)
+- .filter-group label: Etiqueta del filtro
+- .filter-icon: Icono decorativo
+- .filter-group select: Selector del filtro
+- .filter-actions: Contenedor de botones de acción
+- .filter-actions-buttons: Botones de acción
+
+VARIANTES ESPECÍFICAS:
+- .reservation-filters: Filtros de reservas (layout horizontal)
+
+MODIFICAR AQUÍ: Colores, padding, tamaños de fuente
+*/
+
+/* ============================================ */
+/* FILTERS BASE                                 */
+/* ============================================ */
+
+.filters {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.filters:hover {
+    border-color: rgba(143, 148, 251, 0.3);
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-glow);
+}
+
+.filters-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: 0.3px;
+}
+
+.filters-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+/* ============================================ */
+/* FILTER GROUP                                 */
+/* ============================================ */
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-icon {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.filter-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.filter-group select:hover {
+    border-color: rgba(143, 148, 251, 0.4);
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.15);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.filter-group select.filter-active {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1);
+}
+
+.filter-group select option {
+    background: var(--bg-card-solid);
+    color: var(--text-main);
+    padding: 8px;
+}
+
+/* ============================================ */
+/* FILTER ACTIONS                               */
+/* ============================================ */
+
+.filter-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filter-actions label {
+    visibility: hidden;
+}
+
+.filter-actions-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+/* ============================================ */
+/* RESERVATION FILTERS                          */
+/* ============================================ */
+
+.reservation-filters {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border-glow);
+}
+
+.reservation-filters .filter-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.reservation-filters .filter-group select {
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-glow);
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.reservation-filters .filter-group select:focus {
+    outline: none;
+    border-color: var(--text-accent);
+}
+
+/* ============================================ */
+/* RESPONSIVE - Filters                         */
+/* ============================================ */
+
+@media (max-width: 992px) {
+    .filters-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .filter-actions {
+        grid-column: 1 / -1;
+    }
+
+    .filter-actions label {
+        display: none;
+    }
+
+    .filter-actions-buttons {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .filters {
+        padding: 16px 18px;
+    }
+
+    .filters-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .filter-actions {
+        grid-column: 1;
+    }
+
+    .filter-actions-buttons {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .filters-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .reservation-filters {
+        flex-direction: column;
+    }
+    
+    .reservation-filters .filter-group select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .filters {
+        padding: 12px 14px;
+        border-radius: 10px;
+    }
+
+    .filter-group select {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+        padding-right: 32px;
+    }
+
+    .filter-group label {
+        font-size: 0.7rem;
+    }
+
+    .filters-title {
+        font-size: 0.8rem;
+    }
+}

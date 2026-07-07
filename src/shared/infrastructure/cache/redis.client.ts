@@ -1,8 +1,5 @@
 //conexion a redis en docker
 import { createClient } from 'redis';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 // Configuración básica
 const redisConfig = {

@@ -79,7 +79,7 @@ export class PostgresPaymentRepository implements IPaymentRepository {
   }
 
   // =========================================================================
-  // MAPEADOR INTERNO (Fiel a las columnas de tu DDL)
+  // MAPEADOR INTERNO 
   // =========================================================================
   private mapToEntity(row: any): Payment {
     return new Payment(

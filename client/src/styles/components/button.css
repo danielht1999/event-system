@@ -1,0 +1,270 @@
+/* ============================================ */
+/* BUTTONS - Sistema de botones                 */
+/* ============================================ */
+/*
+MANEJO: Botones reutilizables
+
+CONTENIDO:
+- .btn: Base para todos los botones
+- .btn-primary: Botón principal (success)
+- .btn-danger: Botón peligro (error)
+- .btn-secondary: Botón secundario (muted)
+- .btn-sm: Botón pequeño
+- .btn-lg: Botón grande
+- .btn-detalle: Botón de ver detalles (borde glow)
+- .btn-filter-action: Botón de acción en filtros
+- .btn-filter-reset: Botón de reset en filtros
+- .btn-add-ticket: Botón con borde dashed
+- .btn-back: Botón de volver (sin estilo de botón)
+- .btn-edit-profile: Botón de editar perfil (icono)
+- .form-toggle button: Toggle login/register
+- .modal-close: Cerrar modal
+- .ticket-remove-btn: Eliminar ticket
+
+MODIFICAR AQUÍ: Colores, padding, tamaños de fuente
+*/
+
+/* ============================================ */
+/* BASE                                         */
+/* ============================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    font-family: inherit;
+    width: 100%;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================ */
+/* VARIANTES                                    */
+/* ============================================ */
+
+.btn-primary {
+    border-color: var(--success-color);
+    color: var(--text-main);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--success-gradient);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.btn-danger {
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: var(--error-gradient);
+    box-shadow: 0 0 15px rgba(255, 23, 68, 0.2);
+}
+
+.btn-secondary {
+    border-color: var(--text-muted);
+    color: var(--text-muted);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.1);
+}
+
+/* ============================================ */
+/* TAMAÑOS                                      */
+/* ============================================ */
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    width: auto;
+}
+
+.btn-lg {
+    padding: 14px 32px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+}
+
+/* ============================================ */
+/* BOTONES ESPECÍFICOS                          */
+/* ============================================ */
+
+.btn-detalle {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    color: var(--text-muted);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.btn-detalle:hover {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.05);
+    transform: translateY(-1px);
+}
+
+.btn-filter-action {
+    padding: 10px 16px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-filter-action:hover {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.05);
+    transform: translateY(-1px);
+}
+
+.btn-filter-reset:hover {
+    border-color: var(--error-color);
+    color: var(--error-color);
+    background: rgba(255, 23, 68, 0.05);
+}
+
+.btn-add-ticket {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 2px dashed var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-ticket:hover:not(:disabled) {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.05);
+}
+
+.btn-add-ticket:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.2s;
+}
+
+.btn-back:hover {
+    color: var(--text-accent);
+}
+
+.btn-edit-profile {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ff9f43;
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.btn-edit-profile:hover {
+    background: rgba(255, 159, 67, 0.1);
+    border-color: #ff9f43;
+    box-shadow: 0 0 10px rgba(255, 159, 67, 0.2);
+    transform: translateY(-1px);
+}
+
+/* ============================================ */
+/* BOTONES ESPECIALES (sin estilo de botón)     */
+/* ============================================ */
+
+.form-toggle button {
+    background: none;
+    border: none;
+    color: var(--success-color);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.form-toggle button:hover {
+    text-decoration: underline;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--error-color);
+}
+
+.ticket-remove-btn {
+    background: none;
+    border: none;
+    color: var(--error-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.ticket-remove-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}

@@ -35,6 +35,7 @@ import { PostgresTicketTypeRepository } from '@modules/event/infrastructure/repo
 import { PostgresEventQueryService } from '@modules/event/infrastructure/queries/PostgresEventQueryService';
 import { CachedEventQueryService } from '@modules/event/infrastructure/queries/CachedEventQueryService';
 import { EventCacheSubscriber } from '@modules/event/infrastructure/services/EventCacheSubscriber';
+import { GetManagementEventsHandler } from '@modules/event/application/queries/GetManagementEventsHandler';
 
 // =========================================================================
 // RESERVATION MODULE
@@ -115,8 +116,9 @@ const cancelEventHandler = new CancelEventHandler(uow, eventRepository);
 // Queries
 
 const getEventsHandler = new GetEventsHandler(cachedEventQueryService);
-const getEventByIdHandler = new GetEventByIdHandler(eventRepository);
+const getEventByIdHandler = new GetEventByIdHandler(cachedEventQueryService);
 const getEventAvailabilityHandler = new GetEventAvailabilityHandler(ticketTypeRepository);
+const getManagementEventsHandler = new GetManagementEventsHandler(cachedEventQueryService);
 
 // =========================================================================
 // 6. TICKET TYPE HANDLERS
@@ -148,7 +150,7 @@ const getReservationsHandler = new GetReservationsHandler(reservationQueryServic
 // =========================================================================
 
 export const authController = new AuthController(registerHandler, loginHandler, getProfileHandler, updateProfileHandler);
-export const eventController = new EventController(createEventHandler, updateEventHandler, getEventsHandler, getEventByIdHandler, getEventAvailabilityHandler, publishEventHandler, cancelEventHandler);
+export const eventController = new EventController(createEventHandler, updateEventHandler, getEventsHandler, getEventByIdHandler, getEventAvailabilityHandler, publishEventHandler, cancelEventHandler,getManagementEventsHandler);
 export const ticketTypeController = new TicketTypeController(createTicketTypeHandler, updateTicketTypeHandler, increaseTicketCapacityHandler, deactivateTicketTypeHandler, getTicketTypesByEventHandler, getTicketTypeByIdHandler);
 export const reservationController = new ReservationController(createReservationHandler, confirmPaymentHandler, cancelReservationHandler, getReservationsHandler);
 

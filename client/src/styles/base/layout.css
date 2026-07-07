@@ -1,0 +1,50 @@
+/* ============================================ */
+/* LAYOUT - Estructura base de la aplicación    */
+/* ============================================ */
+/*
+MANEJO: Estructura fundamental de la aplicación
+
+CONTENIDO:
+- body: Fondo y altura mínima
+- .app-wrapper: Contenedor flex para navbar + main + footer
+- .main-content: Área principal (flex: 1)
+- .container: Contenedor general con max-width
+
+MODIFICAR AQUÍ: Padding del container, max-width global
+*/
+
+/* ============================================ */
+/* BODY                                         */
+/* ============================================ */
+
+body {
+    background: var(--gradient-body);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* ============================================ */
+/* APP WRAPPER                                  */
+/* ============================================ */
+
+.app-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px 0;
+}
+
+/* ============================================ */
+/* CONTAINER                                    */
+/* ============================================ */
+
+.container {
+    max-width: 1240px;
+    width: 100%;
+    margin: 40px auto;
+    padding: 0 20px;
+}

@@ -1,0 +1,126 @@
+/* ============================================ */
+/* PAGINACIÓN - Sistema de paginación           */
+/* ============================================ */
+/*
+MANEJO: Componente de paginación
+
+CONTENIDO:
+- .pagination: Contenedor flex
+- .pagination-btn: Botón de página
+- .pagination-btn.active: Página activa
+- .pagination-arrow: Flechas siguiente/anterior
+- .pagination-info: Información de página
+
+MODIFICAR AQUÍ: Colores, padding, tamaños de fuente
+*/
+
+/* ============================================ */
+/* PAGINATION BASE                              */
+/* ============================================ */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+/* ============================================ */
+/* PAGINATION BUTTONS                           */
+/* ============================================ */
+
+.pagination-btn {
+    padding: 8px 14px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.05);
+    transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pagination-btn.active {
+    background: var(--success-gradient);
+    border-color: var(--success-color);
+    color: var(--success-color);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+}
+
+/* ============================================ */
+/* PAGINATION ARROWS                            */
+/* ============================================ */
+
+.pagination-arrow {
+    padding: 8px 12px;
+    background: var(--bg-card-solid);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination-arrow:hover:not(:disabled) {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.05);
+}
+
+.pagination-arrow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ============================================ */
+/* PAGINATION INFO                              */
+/* ============================================ */
+
+.pagination-info {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 8px 16px;
+}
+
+/* ============================================ */
+/* RESPONSIVE - Paginación                      */
+/* ============================================ */
+
+@media (max-width: 600px) {
+    .pagination {
+        gap: 4px;
+    }
+    
+    .pagination-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .pagination-arrow {
+        padding: 6px 10px;
+        font-size: 1rem;
+    }
+    
+    .pagination-info {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        width: 100%;
+        text-align: center;
+    }
+}

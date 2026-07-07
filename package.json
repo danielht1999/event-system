@@ -11,9 +11,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
 
-    "test": "jest --runInBand",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --runInBand",
+    "test": "cross-env NODE_ENV=test jest --runInBand --verbose",
+    "test:watch": "cross-env NODE_ENV=test jest --watch --verbose",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage --runInBand --verbose",
 
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
@@ -24,11 +24,14 @@
     "db:migrate": "ts-node src/shared/infrastructure/database/migrate.ts",
     "db:reset": "ts-node src/shared/infrastructure/database/reset-and-migrate.ts",
     "db:seed": "ts-node src/shared/infrastructure/database/seed.ts",
+    "db:migrate:test": "cross-env NODE_ENV=test ts-node src/shared/infrastructure/database/migrate.ts",
+    "db:reset:test": "cross-env NODE_ENV=test ts-node src/shared/infrastructure/database/reset-and-migrate.ts",
+    "db:seed:test": "cross-env NODE_ENV=test ts-node src/shared/infrastructure/database/seed.ts",
 
     "load:events": "k6 run tests/load/events.load.js",
     "load:reservations": "k6 run tests/load/reservations.load.js",
     "load:mix": "k6 run tests/load/mix.load.js"
-  },
+},
   "dependencies": {
     "amqplib": "^0.10.3",
     "bcrypt": "^5.1.1",
@@ -65,6 +68,7 @@
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^5.60.0",
     "@typescript-eslint/parser": "^5.60.0",
+    "cross-env": "^10.1.0",
     "eslint": "^8.43.0",
     "jest": "^29.7.0",
     "nodemon": "^2.0.22",

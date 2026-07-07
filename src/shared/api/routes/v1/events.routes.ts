@@ -1,7 +1,7 @@
 // src/shared/api/routes/v1/events.routes.ts
 
 import { Router } from 'express';
-import { authenticate, organizadorMiddleware } from '../../middlewares/auth';
+import { authenticate, organizadorMiddleware,optionalAuthenticate } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validation';
 import { 
   createEventSchema,
@@ -10,14 +10,15 @@ import {
   getEventByIdSchema,
   getEventAvailabilitySchema,
   publishEventSchema,
-  cancelEventSchema
+  cancelEventSchema,
+  listManagementEventsSchema
 } from '../../middlewares/event.validator';
 import { eventController } from '@shared/infrastructure/di/container';
 
 const router = Router();
 
 // ============================================
-// RUTAS PÚBLICAS (con validaciones)
+// RUTAS PÚBLICAS Y DE PANEL (Respetando orden de evaluación)
 // ============================================
 
 /**
@@ -26,9 +27,22 @@ const router = Router();
  */
 router.get(
   '/', 
-  authenticate, // Necesario para owner=me
-  validate({ query: listEventsSchema }), // 
+  optionalAuthenticate, // ✅ Cambiado
+  validate({ query: listEventsSchema }), 
   eventController.list
+);
+
+/**
+ * GET /events/management
+ * Panel del organizador: Lista eventos propios con tickets detallados.
+ * Se coloca ANTES de /:id para evitar colisiones en Express.
+ */
+router.get(
+  '/management',
+  authenticate,
+  organizadorMiddleware,
+  validate({ query: listManagementEventsSchema }), // ← Cambiado al nuevo esquema propio
+  eventController.listManagement
 );
 
 /**

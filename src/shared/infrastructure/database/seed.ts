@@ -8,177 +8,246 @@ function generateTicketCode(): string {
   return `TCK-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
+function generateId(): string {
+  return crypto.randomUUID();
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomDate(daysFromNow: number, daysRange: number = 30): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + randomInt(daysFromNow, daysFromNow + daysRange));
+  return date;
+}
+
+function randomItem<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+// ============================================
+// CONFIGURACIÓN DE DATOS
+// ============================================
+
+const EVENT_TITLES = [
+  'Conferencia de Software', 'Workshop de React', 'Hackathon 2026',
+  'Festival de Música', 'Torneo de Esports', 'Cumbre de IA',
+  'Meetup de Startups', 'Curso de Docker', 'Seminario de Finanzas',
+  'Concierto de Rock', 'Exposición de Arte', 'Congreso de Medicina',
+  'Feria de Empleo', 'Maratón de Código', 'Taller de Diseño'
+];
+
+const EVENT_DESCRIPTIONS = [
+  'Evento de tecnología con charlas y talleres',
+  'Aprende las últimas tendencias en desarrollo',
+  'Competencia de programación por equipos',
+  'Noche de música en vivo con bandas locales',
+  'Torneo profesional de videojuegos',
+  'Conferencia sobre inteligencia artificial',
+  'Networking para emprendedores e inversores',
+  'Capacitación intensiva en contenedores',
+  'Estrategias de inversión para el futuro',
+  'Banda tributo a Queen en concierto',
+  'Obras de artistas contemporáneos',
+  'Avances en investigación médica',
+  'Encuentro con las mejores empresas',
+  'Competencia de desarrollo de software',
+  'Creatividad y pensamiento visual'
+];
+
+const LOCATIONS = [
+  'Auditorio A', 'Laboratorio B', 'Nexus Center', 'Sala Principal',
+  'Teatro Municipal', 'Centro de Convenciones', 'Espacio Coworking',
+  'Universidad Tecnológica', 'Estadio de la Ciudad', 'Museo de Arte',
+  'Hospital General', 'Parque Empresarial', 'Centro Cultural',
+  'Biblioteca Pública', 'Campus Universitario'
+];
+
+const TICKET_NAMES = ['General', 'VIP', 'Preferente', 'Estudiante', 'Early Bird', 'Premium'];
+
 async function seed() {
-  console.log('[SEED] Iniciando inserción de datos de prueba...');
+  console.log('[SEED] 🌱 Iniciando inserción de datos de prueba...');
+  console.log('[SEED] ⏳ Este proceso puede tomar unos segundos...');
 
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    // Verificar tablas
-    await client.query('SELECT 1 FROM usuarios LIMIT 1');
-    await client.query('SELECT 1 FROM eventos LIMIT 1');
-    await client.query('SELECT 1 FROM ticket_types LIMIT 1');
-    await client.query('SELECT 1 FROM reservas LIMIT 1');
-
+    // ============================================
+    // 1. USUARIOS (10)
+    // ============================================
     const passwordHash = await bcrypt.hash('123456', 10);
 
-    // ============================================
-    // 1. USUARIOS
-    // ============================================
-    const users = {
-      organizador1: '11111111-1111-1111-1111-111111111111',
-      organizador2: '22222222-2222-2222-2222-222222222222',
-      asistente1: '33333333-3333-3333-3333-333333333333',
-      asistente2: '44444444-4444-4444-4444-444444444444'
-    };
+    const users = [
+      { id: generateId(), email: 'organizador1@test.com', nombre: 'Carlos Mendoza', rol: 'ORGANIZADOR' },
+      { id: generateId(), email: 'organizador2@test.com', nombre: 'Laura Fernández', rol: 'ORGANIZADOR' },
+      { id: generateId(), email: 'organizador3@test.com', nombre: 'Roberto Sánchez', rol: 'ORGANIZADOR' },
+      { id: generateId(), email: 'asistente1@test.com', nombre: 'Ana García', rol: 'ASISTENTE' },
+      { id: generateId(), email: 'asistente2@test.com', nombre: 'Miguel Torres', rol: 'ASISTENTE' },
+      { id: generateId(), email: 'asistente3@test.com', nombre: 'Elena Ramírez', rol: 'ASISTENTE' },
+      { id: generateId(), email: 'asistente4@test.com', nombre: 'Diego Castro', rol: 'ASISTENTE' },
+      { id: generateId(), email: 'asistente5@test.com', nombre: 'Valentina León', rol: 'ASISTENTE' },
+      { id: generateId(), email: 'asistente6@test.com', nombre: 'Andrés Mora', rol: 'ASISTENTE' },
+      { id: generateId(), email: 'asistente7@test.com', nombre: 'Sofía Ríos', rol: 'ASISTENTE' },
+    ];
 
-    await client.query(
-      `INSERT INTO usuarios (id, email, nombre, password_hash, rol)
-       VALUES ($1, 'organizador@test.com', 'Organizador Principal', $2, 'ORGANIZADOR')
-       ON CONFLICT (id) DO NOTHING;`,
-      [users.organizador1, passwordHash]
-    );
+    for (const user of users) {
+      await client.query(
+        `INSERT INTO usuarios (id, email, nombre, password_hash, rol)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (id) DO NOTHING;`,
+        [user.id, user.email, user.nombre, passwordHash, user.rol]
+      );
+    }
 
-    await client.query(
-      `INSERT INTO usuarios (id, email, nombre, password_hash, rol)
-       VALUES ($1, 'organizador2@test.com', 'Organizador Secundario', $2, 'ORGANIZADOR')
-       ON CONFLICT (id) DO NOTHING;`,
-      [users.organizador2, passwordHash]
-    );
-
-    await client.query(
-      `INSERT INTO usuarios (id, email, nombre, password_hash, rol)
-       VALUES ($1, 'asistente1@test.com', 'Asistente Uno', $2, 'ASISTENTE')
-       ON CONFLICT (id) DO NOTHING;`,
-      [users.asistente1, passwordHash]
-    );
-
-    await client.query(
-      `INSERT INTO usuarios (id, email, nombre, password_hash, rol)
-       VALUES ($1, 'asistente2@test.com', 'Asistente Dos', $2, 'ASISTENTE')
-       ON CONFLICT (id) DO NOTHING;`,
-      [users.asistente2, passwordHash]
-    );
-
-    console.log('[SEED] ✅ Usuarios insertados');
+    console.log('[SEED] ✅ Usuarios insertados:', users.length);
 
     // ============================================
-    // 2. EVENTOS
+    // 2. EVENTOS (15)
     // ============================================
-    const events = {
-      event1: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      event2: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-      event3: 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-    };
+    const eventos = [];
+    const organizadorIds = users.filter(u => u.rol === 'ORGANIZADOR').map(u => u.id);
 
-    await client.query(
-      `INSERT INTO eventos (id, organizador_id, titulo, descripcion, lugar, fecha, capacidad_total, estado)
-       VALUES ($1, $2, 'Conferencia de Software', 'Sistemas distribuidos', 'Auditorio A', NOW() + INTERVAL '10 days', 500, 'PUBLICADA')
-       ON CONFLICT (id) DO NOTHING;`,
-      [events.event1, users.organizador1]
-    );
+    for (let i = 0; i < 15; i++) {
+      const id = generateId();
+      const titulo = EVENT_TITLES[i % EVENT_TITLES.length];
+      const descripcion = EVENT_DESCRIPTIONS[i % EVENT_DESCRIPTIONS.length];
+      const lugar = LOCATIONS[i % LOCATIONS.length];
+      const fecha = randomDate(i + 1, 20);
+      const capacidadTotal = randomInt(50, 500);
+      const estado = i < 10 ? 'PUBLICADA' : (i < 13 ? 'BORRADOR' : 'CANCELADA');
+      const organizadorId = randomItem(organizadorIds);
 
-    await client.query(
-      `INSERT INTO eventos (id, organizador_id, titulo, descripcion, lugar, fecha, capacidad_total, estado)
-       VALUES ($1, $2, 'Workshop de k6', 'Pruebas de carga', 'Laboratorio B', NOW() + INTERVAL '15 days', 200, 'PUBLICADA')
-       ON CONFLICT (id) DO NOTHING;`,
-      [events.event2, users.organizador1]
-    );
+      await client.query(
+        `INSERT INTO eventos (id, organizador_id, titulo, descripcion, lugar, fecha, capacidad_total, estado)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (id) DO NOTHING;`,
+        [id, organizadorId, titulo, descripcion, lugar, fecha, capacidadTotal, estado]
+      );
 
-    await client.query(
-      `INSERT INTO eventos (id, organizador_id, titulo, descripcion, lugar, fecha, capacidad_total, estado)
-       VALUES ($1, $2, 'Hackathon', 'Coding 48h', 'Nexus Center', NOW() + INTERVAL '30 days', 300, 'BORRADOR')
-       ON CONFLICT (id) DO NOTHING;`,
-      [events.event3, users.organizador2]
-    );
+      eventos.push({ id, organizadorId, titulo, capacidadTotal });
+    }
 
-    console.log('[SEED] ✅ Eventos insertados');
+    console.log('[SEED] ✅ Eventos insertados:', eventos.length);
 
     // ============================================
-    // 3. TIPOS DE TICKETS
+    // 3. TIPOS DE TICKETS (2-4 por evento)
     // ============================================
-    const ticketTypes = {
-      tckType1: '11111111-1111-1111-1111-111111111111',
-      tckType2: '22222222-2222-2222-2222-222222222222',
-      tckType3: '33333333-3333-3333-3333-333333333333'
-    };
+    const ticketTypes = [];
 
-    await client.query(
-      `INSERT INTO ticket_types (id, evento_id, nombre, precio, capacidad, reservas_pendientes, estado)
-       VALUES ($1, $2, 'General', 150.00, 150, 0, 'ACTIVO')
-       ON CONFLICT (id) DO NOTHING;`,
-      [ticketTypes.tckType1, events.event1]
-    );
+    for (const evento of eventos) {
+      const numTickets = randomInt(2, 4);
+      const usedNames = new Set<string>();
 
-    await client.query(
-      `INSERT INTO ticket_types (id, evento_id, nombre, precio, capacidad, reservas_pendientes, estado)
-       VALUES ($1, $2, 'Estudiante', 0.00, 60, 0, 'ACTIVO')
-       ON CONFLICT (id) DO NOTHING;`,
-      [ticketTypes.tckType2, events.event2]
-    );
+      for (let i = 0; i < numTickets; i++) {
+        let nombre = randomItem(TICKET_NAMES);
+        while (usedNames.has(nombre)) {
+          nombre = randomItem(TICKET_NAMES);
+        }
+        usedNames.add(nombre);
 
-    await client.query(
-      `INSERT INTO ticket_types (id, evento_id, nombre, precio, capacidad, reservas_pendientes, estado)
-       VALUES ($1, $2, 'Early Bird', 50.00, 200, 0, 'ACTIVO')
-       ON CONFLICT (id) DO NOTHING;`,
-      [ticketTypes.tckType3, events.event3]
-    );
+        const id = generateId();
+        const precio = nombre === 'Estudiante' ? 0 : randomInt(50, 500);
+        const capacidad = Math.floor(evento.capacidadTotal / numTickets) + randomInt(-20, 20);
+        const finalCapacidad = Math.max(10, capacidad);
 
-    console.log('[SEED] ✅ Tipos de ticket insertados');
+        await client.query(
+          `INSERT INTO ticket_types (id, evento_id, nombre, precio, capacidad, reservas_pendientes, estado)
+           VALUES ($1, $2, $3, $4, $5, 0, 'ACTIVO')
+           ON CONFLICT (id) DO NOTHING;`,
+          [id, evento.id, nombre, precio, finalCapacidad]
+        );
 
-    // ============================================
-    // 4. RESERVAS
-    // ============================================
+        ticketTypes.push({ id, eventoId: evento.id, nombre, precio, capacidad: finalCapacidad });
+      }
+    }
 
-    // Reserva 1: CONFIRMADA
-    const codigo1 = generateTicketCode();
-    const reserva1Id = '11111111-1111-1111-1111-111111111111';
-    await client.query(
-      `INSERT INTO reservas (id, evento_id, ticket_type_id, usuario_id, cantidad_tickets, estado, codigo_ticket)
-       VALUES ($1, $2, $3, $4, 1, 'CONFIRMADA', $5)
-       ON CONFLICT (id) DO NOTHING;`,
-      [reserva1Id, events.event1, ticketTypes.tckType1, users.asistente1, codigo1]
-    );
-
-    console.log('[SEED] ✅ Reserva 1 (CONFIRMADA) insertada');
-
-    // Reserva 2: PENDIENTE_PAGO
-    const codigo2 = generateTicketCode();
-    const reserva2Id = '22222222-2222-2222-2222-222222222222';
-    await client.query(
-      `INSERT INTO reservas (id, evento_id, ticket_type_id, usuario_id, cantidad_tickets, estado, codigo_ticket)
-       VALUES ($1, $2, $3, $4, 2, 'PENDIENTE_PAGO', $5)
-       ON CONFLICT (id) DO NOTHING;`,
-      [reserva2Id, events.event2, ticketTypes.tckType2, users.asistente2, codigo2]
-    );
-
-    console.log('[SEED] ✅ Reserva 2 (PENDIENTE_PAGO) insertada');
-
-    // Actualizar reservas_pendientes
-    await client.query(
-      `UPDATE ticket_types
-       SET reservas_pendientes = reservas_pendientes + 2
-       WHERE id = $1`,
-      [ticketTypes.tckType2]
-    );
-
-    console.log('[SEED] ✅ reservas_pendientes actualizado (+2)');
+    console.log('[SEED] ✅ Tipos de ticket insertados:', ticketTypes.length);
 
     // ============================================
-    // 5. PAYMENTS
+    // 4. RESERVAS (50+)
     // ============================================
-    // ✅ Pago para la reserva confirmada (UUID válido)
-    const paymentId = '55555555-5555-5555-5555-555555555555';
-    await client.query(
-      `INSERT INTO payments (id, reservation_id, usuario_id, monto, moneda, estado)
-       VALUES ($1, $2, $3, 150.00, 'MXN', 'APROBADO')
-       ON CONFLICT (id) DO NOTHING;`,
-      [paymentId, reserva1Id, users.asistente1]
-    );
+    const reservas = [];
+    const asistenteIds = users.filter(u => u.rol === 'ASISTENTE').map(u => u.id);
+    const estados = ['CONFIRMADA', 'PENDIENTE_PAGO', 'CANCELADA', 'EXPIRADA'];
+    const estadosPesos = [0.4, 0.3, 0.15, 0.15]; // 40% confirmadas, 30% pendientes, etc.
 
-    console.log('[SEED] ✅ Payment insertado');
+    // Seleccionar eventos publicados para reservas
+    const eventosPublicados = eventos.filter((_, i) => i < 10);
+
+    for (const evento of eventosPublicados) {
+      const ticketsDelEvento = ticketTypes.filter(t => t.eventoId === evento.id);
+      const numReservas = randomInt(2, 6);
+
+      for (let i = 0; i < numReservas; i++) {
+        const ticket = randomItem(ticketsDelEvento);
+        const cantidad = randomInt(1, 3);
+        const usuarioId = randomItem(asistenteIds);
+        
+        // Seleccionar estado con peso
+        let estado = estados[0];
+        let rand = Math.random();
+        let acumulado = 0;
+        for (let j = 0; j < estados.length; j++) {
+          acumulado += estadosPesos[j];
+          if (rand < acumulado) {
+            estado = estados[j];
+            break;
+          }
+        }
+
+        const id = generateId();
+        const codigo = generateTicketCode();
+
+        await client.query(
+          `INSERT INTO reservas (id, evento_id, ticket_type_id, usuario_id, cantidad_tickets, estado, codigo_ticket)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id) DO NOTHING;`,
+          [id, evento.id, ticket.id, usuarioId, cantidad, estado, codigo]
+        );
+
+        reservas.push({ id, eventoId: evento.id, ticketId: ticket.id, usuarioId, estado, cantidad });
+
+        // Actualizar reservas_pendientes en ticket_types
+        if (estado === 'PENDIENTE_PAGO') {
+          await client.query(
+            `UPDATE ticket_types
+             SET reservas_pendientes = reservas_pendientes + $1
+             WHERE id = $2`,
+            [cantidad, ticket.id]
+          );
+        }
+      }
+    }
+
+    console.log('[SEED] ✅ Reservas insertadas:', reservas.length);
+
+    // ============================================
+    // 5. PAYMENTS (para reservas confirmadas)
+    // ============================================
+    const reservasConfirmadas = reservas.filter(r => r.estado === 'CONFIRMADA');
+    let paymentsCount = 0;
+
+    for (const reserva of reservasConfirmadas) {
+      const ticket = ticketTypes.find(t => t.id === reserva.ticketId);
+      if (!ticket) continue;
+
+      const monto = ticket.precio * reserva.cantidad;
+      const paymentId = generateId();
+
+      await client.query(
+        `INSERT INTO payments (id, reservation_id, usuario_id, monto, moneda, estado)
+         VALUES ($1, $2, $3, $4, 'MXN', 'APROBADO')
+         ON CONFLICT (id) DO NOTHING;`,
+        [paymentId, reserva.id, reserva.usuarioId, monto]
+      );
+
+      paymentsCount++;
+    }
+
+    console.log('[SEED] ✅ Payments insertados:', paymentsCount);
 
     // ============================================
     // 6. Verificación final
@@ -186,42 +255,24 @@ async function seed() {
     const verifyResult = await client.query(
       `
       SELECT 
-        tt.id,
-        tt.nombre,
-        tt.capacidad,
-        tt.reservas_pendientes,
-        tt.reservas_confirmadas,
-        (
-          SELECT COALESCE(SUM(r.cantidad_tickets), 0)
-          FROM reservas r
-          WHERE r.ticket_type_id = tt.id
-          AND r.estado = 'PENDIENTE_PAGO'
-        ) as total_pendiente_real
-      FROM ticket_types tt
-      WHERE tt.id IN ($1, $2)
-      `,
-      [ticketTypes.tckType1, ticketTypes.tckType2]
+        COUNT(*) as total,
+        (SELECT COUNT(*) FROM usuarios WHERE rol = 'ORGANIZADOR') as organizadores,
+        (SELECT COUNT(*) FROM usuarios WHERE rol = 'ASISTENTE') as asistentes
+      FROM usuarios
+      `
     );
 
-    console.log('[SEED] 📊 Verificación de ticket_types:');
-    verifyResult.rows.forEach((row) => {
-      console.log(
-        `  ${row.nombre}: capacidad=${row.capacidad}, ` +
-        `reservas_pendientes=${row.reservas_pendientes}, ` +
-        `reservas_confirmadas=${row.reservas_confirmadas}, ` +
-        `total_pendiente_real=${row.total_pendiente_real}`
-      );
-    });
+    const totalReservas = await client.query('SELECT COUNT(*) FROM reservas');
+    const totalPayments = await client.query('SELECT COUNT(*) FROM payments');
 
-    // ============================================
-    // 7. Resumen final
-    // ============================================
-    console.log('[SEED] 📊 Resumen:');
-    console.log(`  👤 Usuarios: 4`);
-    console.log(`  📅 Eventos: 3`);
-    console.log(`  🎫 Ticket Types: 3`);
-    console.log(`  📋 Reservas: 2`);
-    console.log(`  💳 Payments: 1`);
+    console.log('[SEED] 📊 Resumen final:');
+    console.log(`  👤 Usuarios: ${verifyResult.rows[0].total}`);
+    console.log(`    🧑‍💼 Organizadores: ${verifyResult.rows[0].organizadores}`);
+    console.log(`    👥 Asistentes: ${verifyResult.rows[0].asistentes}`);
+    console.log(`  📅 Eventos: ${eventos.length}`);
+    console.log(`  🎫 Ticket Types: ${ticketTypes.length}`);
+    console.log(`  📋 Reservas: ${totalReservas.rows[0].count}`);
+    console.log(`  💳 Payments: ${totalPayments.rows[0].count}`);
 
     await client.query('COMMIT');
     console.log('[SEED] ✅ Datos insertados correctamente.');

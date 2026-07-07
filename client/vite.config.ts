@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: true, //Expone la app en tu red local e IP fija (resuelve el problema del IDE)
     port: 5173, //Asegura que siempre use el mismo puerto
+    allowedHosts: true,//para que corra en web
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

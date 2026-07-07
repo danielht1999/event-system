@@ -16,7 +16,6 @@ export const useEvents = (params: EventsQueryParams = {}) => {
   const cargarEventos = useCallback(async () => {
     setCargando(true);
 
-    // ✅ Construir query string con los parámetros
     const queryParams = new URLSearchParams();
     queryParams.set('page', String(page));
     queryParams.set('limit', String(limit));
@@ -29,6 +28,9 @@ export const useEvents = (params: EventsQueryParams = {}) => {
     const queryString = queryParams.toString();
     const response = await eventApi.getEventos(queryString);
 
+    console.log('📦 Respuesta de eventos:', response);
+
+    // ✅ Usar response.data (ya que eventApi.getEventos devuelve ApiResponse con data)
     if (response.success && response.data) {
       setEventos(response.data);
       setTotal(response.meta?.total || 0);
@@ -60,7 +62,6 @@ export const useMisEventos = (params: EventsQueryParams = {}) => {
   const cargarMisEventos = useCallback(async () => {
     setCargando(true);
 
-    // ✅ Siempre incluir owner=me para obtener los eventos del organizador
     const queryParams = new URLSearchParams();
     queryParams.set('page', String(page));
     queryParams.set('limit', String(limit));
@@ -71,8 +72,11 @@ export const useMisEventos = (params: EventsQueryParams = {}) => {
     if (params.sortOrder) queryParams.set('sortOrder', params.sortOrder);
 
     const queryString = queryParams.toString();
-    const response = await eventApi.getEventos(queryString);
+    const response = await eventApi.getMisEventos(queryString);
 
+    console.log('📦 Respuesta de mis eventos:', response);
+
+    // ✅ Usar response.data
     if (response.success && response.data) {
       setEventos(response.data);
       setTotal(response.meta?.total || 0);

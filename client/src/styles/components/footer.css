@@ -1,0 +1,208 @@
+/* ============================================ */
+/* FOOTER - Pie de página                       */
+/* ============================================ */
+/*
+MANEJO: Pie de página principal
+
+CONTENIDO:
+- .footer: Contenedor principal
+- .footer-container: Contenedor interno (grid)
+- .footer-brand: Logo y descripción
+- .footer-links: Enlaces del footer
+- .footer-link: Enlace individual
+- .footer-social: Redes sociales
+- .footer-social-link: Icono de red social
+- .footer-bottom: Barra inferior
+- .footer-copy: Copyright
+- .footer-legal: Enlaces legales
+
+MODIFICAR AQUÍ: Colores, padding, tamaños de fuente
+*/
+
+/* ============================================ */
+/* FOOTER BASE                                  */
+/* ============================================ */
+
+.footer {
+    background: var(--bg-card-solid);
+    border-top: 1px solid var(--border-glow);
+    padding: 40px 30px 20px;
+    margin-top: auto;
+}
+
+.footer-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--border-glow);
+}
+
+/* ============================================ */
+/* BRAND                                        */
+/* ============================================ */
+
+.footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.footer-brand h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.footer-brand p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 0;
+}
+
+/* ============================================ */
+/* LINKS                                        */
+/* ============================================ */
+
+.footer-links h4 {
+    color: var(--text-main);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+}
+
+.footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.footer-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.footer-link:hover {
+    color: var(--text-accent);
+}
+
+/* ============================================ */
+/* SOCIAL                                       */
+/* ============================================ */
+
+.footer-social {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.footer-social-link {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.footer-social-link:hover {
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+    background: rgba(143, 148, 251, 0.05);
+    transform: translateY(-2px);
+}
+
+/* ============================================ */
+/* BOTTOM                                       */
+/* ============================================ */
+
+.footer-bottom {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.footer-copy {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.footer-legal {
+    display: flex;
+    gap: 20px;
+}
+
+.footer-legal a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+}
+
+.footer-legal a:hover {
+    color: var(--text-accent);
+}
+
+/* ============================================ */
+/* RESPONSIVE - Footer                          */
+/* ============================================ */
+
+@media (max-width: 900px) {
+    .footer-container {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+}
+
+@media (max-width: 600px) {
+    .footer {
+        padding: 30px 20px 16px;
+    }
+    
+    .footer-container {
+        grid-template-columns: 1fr;
+        gap: 25px;
+        text-align: center;
+    }
+    
+    .footer-brand p {
+        max-width: 100%;
+    }
+    
+    .footer-social {
+        justify-content: center;
+    }
+    
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+    
+    .footer-legal {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}

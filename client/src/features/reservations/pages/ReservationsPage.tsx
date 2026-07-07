@@ -28,6 +28,10 @@ export const ReservationsPage = () => {
     setParams({ ...filters, page: 1 });
   };
 
+  const handleResetFilters = () => {
+    setParams({ page: 1, limit: 10 });
+  };
+
   const handleConfirmarPago = async (reservaId: string) => {
     if (window.confirm('¿Confirmar el pago de esta reserva?')) {
       const response = await pagarReserva(reservaId);
@@ -85,72 +89,45 @@ export const ReservationsPage = () => {
     });
   };
 
-  // ✅ Siempre mostrar el header y los filtros
   return (
-    <div className="main-panel">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <h1 className="panel-title" style={{ marginBottom: 0 }}>
-          Mis Reservas
-        </h1>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={recargar}
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-          >
-            🔄 Actualizar
-          </button>
-          <button
-            onClick={() => setParams({ page: 1, limit: 10 })}
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-          >
-            Resetear filtros
-          </button>
-        </div>
-      </div>
+    <div className="card">
+      {/* Título de la página */}
+      <h1 className="card-title">Mis Reservas</h1>
 
-      {/* ✅ Filtros SIEMPRE visibles */}
+      {/* Filtros con acciones integradas */}
       <ReservationFilters
         onFilterChange={handleFilterChange}
+        onRefresh={recargar}
+        onReset={handleResetFilters}
         currentStatus={params.status}
         currentSortBy={params.sortBy}
         currentSortOrder={params.sortOrder}
       />
 
-      {/* ✅ Estado de carga */}
+      {/* Estado de carga */}
       {cargando ? (
         <div className="spinner-container">
           <div className="spinner"></div>
-          <p>Cargando reservas...</p>
+          <p className="loading-text">Cargando reservas...</p>
         </div>
       ) : reservas.length === 0 ? (
-        // ✅ Mensaje vacío dentro del grid, no como return temprano
-        <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+        <div className="empty-state">
           <p className="empty">No hay reservas con los filtros seleccionados.</p>
-          <p style={{ color: '#888', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+          <p className="empty-subtitle">
             {params.status 
               ? `No hay reservas con estado "${params.status}". Intenta con otro filtro.`
               : 'Explora eventos y reserva tu entrada.'}
           </p>
           {params.status && (
             <button
+              className="btn btn-secondary btn-sm"
               onClick={() => setParams({ status: undefined, page: 1 })}
-              style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}
             >
               Limpiar filtro
             </button>
           )}
         </div>
       ) : (
-        // ✅ Grid de reservas
         <>
           <div className="reservas-grid">
             {reservas.map((reserva) => {
@@ -160,7 +137,7 @@ export const ReservationsPage = () => {
               return (
                 <div
                   key={reserva.id}
-                  className="reserva-card"
+                  className="card-solid"
                   style={{
                     borderTop: `3px solid var(--${getEstadoPill(estado)}-color, #6c757d)`,
                   }}
@@ -197,7 +174,7 @@ export const ReservationsPage = () => {
                       <div className="meta-block-title">Código</div>
                       <div className="meta-block-value">
                         <span className="icon-wrapper">🎫</span>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                        <span className="ticket-code-text">
                           {reserva.codigoTicket || 'N/A'}
                         </span>
                       </div>
@@ -222,14 +199,14 @@ export const ReservationsPage = () => {
                   {esPendiente && (
                     <div className="reserva-actions">
                       <button
-                        className="btn-pagar"
+                        className="btn btn-primary btn-sm"
                         onClick={() => handleConfirmarPago(reserva.id)}
                         disabled={pagando}
                       >
                         {pagando ? 'Procesando...' : '✅ Pagar'}
                       </button>
                       <button
-                        className="btn-cancelar"
+                        className="btn btn-danger btn-sm"
                         onClick={() => handleCancelar(reserva.id)}
                         disabled={cancelando}
                       >

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '..//hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../services/authApi';
 
 export const RegisterPage = () => {
@@ -44,7 +44,6 @@ export const RegisterPage = () => {
 
   return (
     <div className="auth-page">
-      {/* ✅ Hero banner */}
       <div className="hero-banner">
         <div className="hero-text">
           <h2>Encuentra tus próximos eventos favoritos</h2>
@@ -54,15 +53,18 @@ export const RegisterPage = () => {
           </p>
         </div>
 
-        <div className="hero-auth-box">
-          <h2>Registrarse</h2>
+        <div className="card-solid">
+          <h2 className="card-title-sm" style={{ textAlign: 'center' }}>
+            Registrarse
+          </h2>
           {error && <p className="error">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <div className="input-container">
+              <div className="form-control-icon">
                 <span className="icon-wrapper">👤</span>
                 <input
                   type="text"
+                  className="form-control"
                   placeholder="Nombre completo"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
@@ -71,10 +73,11 @@ export const RegisterPage = () => {
               </div>
             </div>
             <div className="form-group">
-              <div className="input-container">
+              <div className="form-control-icon">
                 <span className="icon-wrapper">📧</span>
                 <input
                   type="email"
+                  className="form-control"
                   placeholder="Correo electrónico"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -83,10 +86,11 @@ export const RegisterPage = () => {
               </div>
             </div>
             <div className="form-group">
-              <div className="input-container">
+              <div className="form-control-icon">
                 <span className="icon-wrapper">🔒</span>
                 <input
                   type="password"
+                  className="form-control"
                   placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -96,6 +100,7 @@ export const RegisterPage = () => {
             </div>
             <div className="form-group">
               <select
+                className="form-control"
                 value={rol}
                 onChange={(e) => setRol(e.target.value)}
                 required
@@ -105,7 +110,7 @@ export const RegisterPage = () => {
                 <option value="ORGANIZADOR">Organizador</option>
               </select>
             </div>
-            <button type="submit" className="btn-primary" disabled={cargando}>
+            <button type="submit" className="btn btn-primary" disabled={cargando}>
               {cargando ? 'Cargando...' : 'Registrarse'}
             </button>
           </form>

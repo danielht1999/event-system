@@ -1,6 +1,7 @@
 // src/modules/event/application/queries/GetEventsHandler.ts
+
 import { PaginatedResult } from '@shared/application/query/PaginatedResult';
-import { EventDTO, IEventQueryService } from '../services/IEventQueryService';
+import { EventoListDTO, IEventQueryService } from '../services/IEventQueryService';
 import { GetEventsQuery } from './GetEventsQuery';
 
 export class GetEventsHandler {
@@ -9,12 +10,12 @@ export class GetEventsHandler {
   ) {}
 
   /**
-   * Ahora recibe el query completo, permitiendo filtrar, ordenar y paginar
-   * en una sola llamada al servicio.
+   * Ejecuta la consulta de eventos para el listado.
+   * Devuelve datos optimizados (sin tickets anidados).
    */
   async execute(
     query: GetEventsQuery
-  ): Promise<PaginatedResult<EventDTO>> {
+  ): Promise<PaginatedResult<EventoListDTO>> {
     return this.eventQueryService.find(query);
   }
 }

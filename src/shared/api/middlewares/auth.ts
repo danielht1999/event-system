@@ -1,4 +1,5 @@
 // src/shared/api/middlewares/auth.ts
+
 import { Request, Response, NextFunction } from 'express';
 import { JwtService } from '@modules/auth/infrastructure/services/JwtService';
 
@@ -11,6 +12,10 @@ export interface AuthRequest extends Request {
     rol: string;  // 'ORGANIZADOR' | 'ASISTENTE'
   };
 }
+
+// ============================================
+// AUTHENTICATE (obligatorio)
+// ============================================
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -46,6 +51,50 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   req.user = decoded;
   next();
 };
+
+// ============================================
+// OPTIONAL AUTHENTICATE (para rutas públicas)
+// ============================================
+
+export const optionalAuthenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  // ✅ Si no hay token, continuar como anónimo
+  if (!authHeader) {
+    req.user = undefined;
+    return next();
+  }
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    // ❌ Formato inválido → 401
+    res.status(401).json({
+      success: false,
+      message: 'Formato de token inválido. Use: Bearer <token>'
+    });
+    return;
+  }
+
+  const token = parts[1];
+  const decoded = jwtService.verify(token);
+
+  if (!decoded) {
+    // ❌ Token inválido o expirado → 401
+    res.status(401).json({
+      success: false,
+      message: 'Token inválido o expirado'
+    });
+    return;
+  }
+
+  // ✅ Token válido → llenar req.user
+  req.user = decoded;
+  next();
+};
+
+// ============================================
+// MIDDLEWARES DE ROL
+// ============================================
 
 export const organizadorMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (req.user?.rol !== 'ORGANIZADOR') {

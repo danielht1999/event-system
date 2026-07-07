@@ -15,7 +15,7 @@ export const ProtectedRoute = ({ requiredRole }: ProtectedRouteProps) => {
     return (
       <div className="spinner-container">
         <div className="spinner"></div>
-        <p style={{ color: '#8b949e' }}>Verificando autenticación...</p>
+        <p className="loading-text">Verificando autenticación...</p>
       </div>
     );
   }
