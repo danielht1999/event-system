@@ -1,3 +1,2 @@
 // tests/load-env.ts
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.test' });
+import '../src/shared/infrastructure/config/env.loader';

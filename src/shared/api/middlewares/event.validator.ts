@@ -269,5 +269,42 @@ export const cancelEventSchema = Joi.object({
   })
 });
 
+/**
+ * MANAGEMENT - GET /events/management
+ * Panel de administración: Paginación + filtros específicos de gestión sin el parámetro owner
+ */
+export const listManagementEventsSchema = paginationSchema.keys({
+  search: Joi.string()
+    .max(100)
+    .optional()
+    .messages({
+      'string.max': 'search no puede tener más de 100 caracteres'
+    }),
+  
+  status: Joi.string()
+    .valid('BORRADOR', 'PUBLICADA', 'CANCELADA', 'FINALIZADA')
+    .optional()
+    .messages({
+      'string.base': 'status debe ser un string',
+      'any.only': 'status debe ser BORRADOR, PUBLICADA, CANCELADA o FINALIZADA'
+    }),
+  
+  sortBy: Joi.string()
+    .valid('date', 'title', 'price', 'createdAt')
+    .default('date')
+    .messages({
+      'string.base': 'sortBy debe ser un string',
+      'any.only': 'sortBy debe ser date, title, price o createdAt'
+    }),
+  
+  sortOrder: Joi.string()
+    .valid('asc', 'desc')
+    .default('asc')
+    .messages({
+      'string.base': 'sortOrder debe ser un string',
+      'any.only': 'sortOrder debe ser asc o desc'
+    })
+});
+
 // Re-exportar uuidParamSchema para consistencia
 export { uuidParamSchema } from './common.validator';

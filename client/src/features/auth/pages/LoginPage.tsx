@@ -14,27 +14,26 @@ export const LoginPage = () => {
   const [cargando, setCargando] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setCargando(true);
-  setError(null);
+    e.preventDefault();
+    setCargando(true);
+    setError(null);
 
-  try {
-    console.log('[LoginPage] 🔐 Intentando login con:', { email, password });
-    await login(email, password);
-    console.log('[LoginPage] ✅ Login exitoso');
-    console.log('[LoginPage] 📦 Token en localStorage:', localStorage.getItem('token'));
-    navigate('/');
-  } catch (err) {
-    console.error('[LoginPage] ❌ Error:', err);
-    setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
-  } finally {
-    setCargando(false);
-  }
-};
+    try {
+      console.log('[LoginPage] 🔐 Intentando login con:', { email, password });
+      await login(email, password);
+      console.log('[LoginPage] ✅ Login exitoso');
+      console.log('[LoginPage] 📦 Token en localStorage:', localStorage.getItem('token'));
+      navigate('/');
+    } catch (err) {
+      console.error('[LoginPage] ❌ Error:', err);
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+    } finally {
+      setCargando(false);
+    }
+  };
 
   return (
     <div className="auth-page">
-      {/* ✅ Hero banner */}
       <div className="hero-banner">
         <div className="hero-text">
           <h2>Encuentra tus próximos eventos favoritos</h2>
@@ -44,15 +43,18 @@ export const LoginPage = () => {
           </p>
         </div>
 
-        <div className="hero-auth-box">
-          <h2>Iniciar sesión</h2>
+        <div className="card-solid">
+          <h2 className="card-title-sm" style={{ textAlign: 'center' }}>
+            Iniciar sesión
+          </h2>
           {error && <p className="error">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <div className="input-container">
+              <div className="form-control-icon">
                 <span className="icon-wrapper">📧</span>
                 <input
                   type="email"
+                  className="form-control"
                   placeholder="Correo electrónico"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -61,10 +63,11 @@ export const LoginPage = () => {
               </div>
             </div>
             <div className="form-group">
-              <div className="input-container">
+              <div className="form-control-icon">
                 <span className="icon-wrapper">🔒</span>
                 <input
                   type="password"
+                  className="form-control"
                   placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -72,7 +75,7 @@ export const LoginPage = () => {
                 />
               </div>
             </div>
-            <button type="submit" className="btn-primary" disabled={cargando}>
+            <button type="submit" className="btn btn-primary" disabled={cargando}>
               {cargando ? 'Cargando...' : 'Iniciar sesión'}
             </button>
           </form>

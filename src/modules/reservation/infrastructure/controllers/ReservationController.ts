@@ -9,7 +9,6 @@ import { GetReservationsQuery } from '../../application/queries/GetReservationsQ
 import { ReservationSortField } from '../../application/queries/ReservationSortField';
 import { RESERVATION_QUERY_CAPABILITIES } from '../../application/queries/ReservationQueryCapabilities';
 
-// Asumiendo que usas un Bus o manteniendo tus Handlers aislados pero desacoplados de strings
 import { CreateReservationHandler } from '../../application/commands/CreateReservationHandler';
 import { ConfirmPaymentHandler } from '../../application/commands/ConfirmPaymentHandler';
 import { CancelReservationHandler } from '../../application/commands/CancelReservationHandler';

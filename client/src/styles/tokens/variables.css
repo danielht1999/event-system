@@ -17,10 +17,10 @@ MODIFICAR AQUÍ: Colores principales, acentos, gradientes, sistema de estados
 :root {
     --gradient-body: linear-gradient(135deg, #4e54c8 0%, #764ba2 100%);
     
-    /* Contenedores Base */
-    --bg-card: rgba(13, 17, 23, 0.75);
+    /* Contenedores Base - Efecto glass extremo */
+    --bg-card: rgba(13, 17, 23, 0.35);  /* ← Más transparente para más glass */
     --bg-card-solid: #0d1117;
-    --border-glow: rgba(110, 142, 251, 0.2);
+    --border-glow: rgba(110, 142, 251, 0.35);  /* ← Borde más brillante */
     --text-accent: #8f94fb;
     
     /* Textos */

@@ -1,0 +1,37 @@
+/* ============================================ */
+/* EVENTIFY - SISTEMA DE ESTILOS MODULAR        */
+/* ============================================ */
+
+/* ============================================ */
+/* TOKENS                                       */
+/* ============================================ */
+@import './tokens/variables.css';
+
+/* ============================================ */
+/* BASE                                         */
+/* ============================================ */
+@import './base/reset.css';
+@import './base/typography.css';
+@import './base/layout.css';
+
+/* ============================================ */
+/* COMPONENTS                                   */
+/* ============================================ */
+@import './components/button.css';
+@import './components/form.css';
+@import './components/card.css';
+@import './components/modal.css';
+@import './components/navbar.css';
+@import './components/footer.css';
+@import './components/badge.css';
+@import './components/filters.css';
+@import './components/spinner.css';
+@import './components/pagination.css';
+
+/* ============================================ */
+/* PAGES                                        */
+/* ============================================ */
+@import './pages/auth.css';
+@import './pages/events.css';
+@import './pages/profile.css';
+@import './pages/reservations.css';

@@ -47,11 +47,15 @@ export const ProfilePage = () => {
 
   if (cargando) {
     return (
-      <div className="main-panel">
-        <h1 className="panel-title">Mi Perfil</h1>
-        <div className="spinner-container">
-          <div className="spinner"></div>
-          <p>Cargando perfil...</p>
+      <div className="container">
+        <div className="card">
+          <div className="card-solid">
+            <h1 className="card-title">Mi Perfil</h1>
+            <div className="spinner-container">
+              <div className="spinner"></div>
+              <p className="loading-text">Cargando perfil...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -59,27 +63,41 @@ export const ProfilePage = () => {
 
   if (error) {
     return (
-      <div className="main-panel">
-        <h1 className="panel-title">Mi Perfil</h1>
-        <p className="error">{error}</p>
-        <button onClick={() => window.location.reload()}>Reintentar</button>
+      <div className="container">
+        <div className="card">
+          <div className="card-solid">
+            <h1 className="card-title">Mi Perfil</h1>
+            <p className="error">{error}</p>
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+              Reintentar
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="main-panel">
-        <h1 className="panel-title">Mi Perfil</h1>
-        <p className="empty">No se pudo cargar el perfil</p>
+      <div className="container">
+        <div className="card">
+          <div className="card-solid">
+            <h1 className="card-title">Mi Perfil</h1>
+            <p className="empty">No se pudo cargar el perfil</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="main-panel">
-      <h1 className="panel-title">Mi Perfil</h1>
-      <ProfileForm profile={profile} onUpdate={handleUpdate} />
+    <div className="container">
+      <div className="card">
+        <div className="card-solid">
+          <h1 className="card-title">Mi Perfil</h1>
+          <ProfileForm profile={profile} onUpdate={handleUpdate} />
+        </div>
+      </div>
     </div>
   );
 };

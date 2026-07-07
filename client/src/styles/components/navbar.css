@@ -1,0 +1,302 @@
+/* ============================================ */
+/* NAVBAR - Barra de navegación                 */
+/* ============================================ */
+/*
+MANEJO: Barra de navegación principal
+
+CONTENIDO:
+- .navbar: Contenedor principal
+- .navbar-container: Contenedor interno
+- .navbar-brand: Logo y nombre
+- .nav-menu: Menú de navegación
+- .nav-links: Enlaces de navegación
+- .nav-link: Enlace individual
+- .nav-actions: Acciones (login, perfil)
+- .navbar-user: Usuario logueado
+- .navbar-avatar: Avatar de usuario
+- .navbar-logout: Botón de logout
+- .navbar-mobile-toggle: Menú hamburguesa
+- .navbar-mobile-menu: Menú móvil
+
+MODIFICAR AQUÍ: Colores, padding, tamaños de fuente, animaciones
+*/
+
+/* ============================================ */
+/* NAVBAR BASE                                  */
+/* ============================================ */
+
+.navbar {
+    background: var(--bg-card-solid);
+    border-bottom: 1px solid var(--border-glow);
+    padding: 0 30px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    flex-wrap: nowrap; /* ← Evita que los elementos se envuelvan */
+}
+
+/* ============================================ */
+/* BRAND                                        */
+/* ============================================ */
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: -0.5px;
+    flex-shrink: 0; /* ← Evita que el logo se encoja */
+}
+
+.navbar-brand:hover {
+    color: var(--text-accent);
+}
+
+.navbar-brand-icon {
+    font-size: 1.5rem;
+}
+
+/* ============================================ */
+/* MENU                                         */
+/* ============================================ */
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-left: 40px;
+    flex: 1; /* ← Ocupa el espacio disponible */
+    min-width: 0; /* ← Permite que se encoja si es necesario */
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: nowrap; /* ← Evita que los enlaces se envuelvan */
+}
+
+.nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    padding: 8px 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap; /* ← Evita que el texto se divida en varias líneas */
+}
+
+.nav-link:hover {
+    color: var(--text-main);
+    border-bottom-color: var(--text-accent);
+}
+
+.nav-link.active {
+    color: var(--text-main);
+    border-bottom-color: var(--text-accent);
+}
+
+/* ============================================ */
+/* ACTIONS                                      */
+/* ============================================ */
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+    flex-shrink: 0; /* ← Evita que las acciones se encojan */
+    flex-wrap: nowrap; /* ← Evita que las acciones se envuelvan */
+}
+
+.navbar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    flex-wrap: nowrap; /* ← Evita que el usuario se envuelva */
+}
+
+.navbar-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gradient-body);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-main);
+    border: 2px solid var(--border-glow);
+    flex-shrink: 0; /* ← Evita que el avatar se encoja */
+}
+
+.navbar-username {
+    font-weight: 500;
+    white-space: nowrap; /* ← Evita que el nombre se divida */
+}
+
+.navbar-logout {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    white-space: nowrap; /* ← Evita que el texto se divida */
+}
+
+.navbar-logout:hover {
+    color: var(--error-color);
+    background: rgba(255, 23, 68, 0.1);
+}
+
+/* ============================================ */
+/* MOBILE TOGGLE                                */
+/* ============================================ */
+
+.navbar-mobile-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    flex-shrink: 0; /* ← Evita que el toggle se encoja */
+}
+
+.navbar-mobile-toggle span {
+    display: block;
+    width: 25px;
+    height: 2px;
+    background: var(--text-main);
+    transition: all 0.3s ease;
+}
+
+.navbar-mobile-toggle.open span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.navbar-mobile-toggle.open span:nth-child(2) {
+    opacity: 0;
+}
+
+.navbar-mobile-toggle.open span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* ============================================ */
+/* MOBILE MENU                                  */
+/* ============================================ */
+
+.navbar-mobile-menu {
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: var(--bg-card-solid);
+    border-bottom: 1px solid var(--border-glow);
+    padding: 20px 30px;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.navbar-mobile-menu.open {
+    display: flex;
+}
+
+.navbar-mobile-menu .nav-link {
+    font-size: 1.1rem;
+    padding: 12px 0;
+    border-bottom: none;
+    white-space: normal; /* ← En móvil sí puede dividirse */
+}
+
+.navbar-mobile-menu .nav-actions {
+    flex-direction: column;
+    margin-left: 0;
+    gap: 12px;
+}
+
+.navbar-mobile-menu .navbar-user {
+    flex-wrap: wrap;
+}
+
+/* ============================================ */
+/* RESPONSIVE - Navbar                          */
+/* ============================================ */
+
+@media (max-width: 900px) {
+    .navbar {
+        padding: 0 20px;
+    }
+    
+    .nav-menu {
+        margin-left: 20px;
+    }
+    
+    .nav-links {
+        gap: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+    }
+    
+    .navbar-mobile-toggle {
+        display: flex;
+    }
+    
+    .nav-actions {
+        margin-left: 0;
+    }
+    
+    .navbar-user .navbar-username {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .navbar {
+        padding: 0 16px;
+        height: 60px;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .navbar-brand-icon {
+        font-size: 1.2rem;
+    }
+}

@@ -84,35 +84,33 @@ export const ProfileForm = ({ profile, onUpdate }: ProfileFormProps) => {
         <div className="profile-info">
           <span className="info-label">Nombre</span>
           {editando === 'nombre' ? (
-            <div className="edit-container">
-              <div className="edit-mode">
-                <input
-                  type="text"
-                  className="edit-input"
-                  value={valorEditado}
-                  onChange={(e) => setValorEditado(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') guardarCambios();
-                    if (e.key === 'Escape') cancelarEdicion();
-                  }}
-                  autoFocus
-                  disabled={cargando}
-                />
-                <button
-                  className="btn-save"
-                  onClick={guardarCambios}
-                  disabled={cargando}
-                >
-                  {cargando ? 'Guardando...' : 'Guardar'}
-                </button>
-                <button
-                  className="btn-cancel"
-                  onClick={cancelarEdicion}
-                  disabled={cargando}
-                >
-                  Cancelar
-                </button>
-              </div>
+            <div className="edit-mode">
+              <input
+                type="text"
+                className="form-control"
+                value={valorEditado}
+                onChange={(e) => setValorEditado(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') guardarCambios();
+                  if (e.key === 'Escape') cancelarEdicion();
+                }}
+                autoFocus
+                disabled={cargando}
+              />
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={guardarCambios}
+                disabled={cargando}
+              >
+                {cargando ? 'Guardando...' : 'Guardar'}
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={cancelarEdicion}
+                disabled={cargando}
+              >
+                Cancelar
+              </button>
               {error && <div className="error-inline">{error}</div>}
             </div>
           ) : (
@@ -140,35 +138,33 @@ export const ProfileForm = ({ profile, onUpdate }: ProfileFormProps) => {
         <div className="profile-info">
           <span className="info-label">Correo electrónico</span>
           {editando === 'email' ? (
-            <div className="edit-container">
-              <div className="edit-mode">
-                <input
-                  type="email"
-                  className="edit-input"
-                  value={valorEditado}
-                  onChange={(e) => setValorEditado(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') guardarCambios();
-                    if (e.key === 'Escape') cancelarEdicion();
-                  }}
-                  autoFocus
-                  disabled={cargando}
-                />
-                <button
-                  className="btn-save"
-                  onClick={guardarCambios}
-                  disabled={cargando}
-                >
-                  {cargando ? 'Guardando...' : 'Guardar'}
-                </button>
-                <button
-                  className="btn-cancel"
-                  onClick={cancelarEdicion}
-                  disabled={cargando}
-                >
-                  Cancelar
-                </button>
-              </div>
+            <div className="edit-mode">
+              <input
+                type="email"
+                className="form-control"
+                value={valorEditado}
+                onChange={(e) => setValorEditado(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') guardarCambios();
+                  if (e.key === 'Escape') cancelarEdicion();
+                }}
+                autoFocus
+                disabled={cargando}
+              />
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={guardarCambios}
+                disabled={cargando}
+              >
+                {cargando ? 'Guardando...' : 'Guardar'}
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={cancelarEdicion}
+                disabled={cargando}
+              >
+                Cancelar
+              </button>
               {error && <div className="error-inline">{error}</div>}
             </div>
           ) : (

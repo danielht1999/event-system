@@ -1,9 +1,4 @@
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
-// 1. Cargar las variables de entorno antes de importar el servicio
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
+import '../src/shared/infrastructure/config/env.loader';
 import { NodemailerEmailService } from '../../src/shared/infrastructure/email/NodemailerEmailService';
 import { SendTicketData } from '../../src/shared/domain/services/IEmailService';
 

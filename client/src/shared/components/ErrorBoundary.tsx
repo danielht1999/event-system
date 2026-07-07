@@ -1,6 +1,6 @@
 // client/src/shared/components/ErrorBoundary.tsx
 
-import { Component} from 'react';
+import { Component } from 'react';
 import type { ReactNode } from 'react';
 
 interface Props {
@@ -31,10 +31,13 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="error-boundary">
+          <div className="error-container">
             <h2>Algo salió mal</h2>
             <p>{this.state.error?.message || 'Error inesperado'}</p>
-            <button onClick={() => window.location.reload()}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => window.location.reload()}
+            >
               Recargar página
             </button>
           </div>

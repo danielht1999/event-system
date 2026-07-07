@@ -1,22 +1,17 @@
 // src/modules/event/application/queries/GetEventByIdHandler.ts
-import { IEventRepository } from '../../domain/repositories/IEventRepository';
+
+import { EventoDetalleDTO, IEventQueryService } from '../services/IEventQueryService';
 import { EventNotFoundError } from '../../domain/errors';
 
 export class GetEventByIdHandler {
-  constructor(private readonly eventRepository: IEventRepository) {}
+  constructor(
+    private readonly eventQueryService: IEventQueryService  // ← Cambio: usar QueryService
+  ) {}
 
-  async execute(eventId: string) {
-    const event = await this.eventRepository.findById(eventId);
-    if (!event) throw new EventNotFoundError(eventId);
+  async execute(eventId: string): Promise<EventoDetalleDTO> {  // ← Cambio: devolver DTO
+    const evento = await this.eventQueryService.findById(eventId);
+    if (!evento) throw new EventNotFoundError(eventId);
 
-    return {
-      id: event.id,
-      titulo: event.titulo,
-      descripcion: event.descripcion,
-      fecha: event.fecha.value.toISOString(),
-      lugar: event.lugar,
-      organizadorId: event.organizadorId,
-      estado: event.estado
-    };
+    return evento;  // ← El QueryService ya devuelve el DTO completo con tickets
   }
 }

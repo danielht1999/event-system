@@ -1,0 +1,104 @@
+/* ============================================ */
+/* PERFIL DE USUARIO                            */
+/* ============================================ */
+/*
+MANEJO: Perfil de usuario
+
+CONTENIDO:
+- .profile-row: Fila del perfil
+- .profile-info: Contenedor de información
+- .info-label: Etiqueta del campo
+- .info-value: Valor del campo
+- .edit-mode: Modo edición
+
+MODIFICAR AQUÍ: Colores del perfil, padding
+*/
+
+/* ============================================ */
+/* PROFILE ROW                                  */
+/* ============================================ */
+
+.profile-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-row:last-of-type {
+    border-bottom: none;
+    padding-bottom: 10px;
+}
+
+/* ============================================ */
+/* PROFILE INFO                                 */
+/* ============================================ */
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 0 1 auto;
+}
+
+.profile-info .pill-led {
+    display: inline-flex;
+    width: auto;
+    align-self: flex-start;
+}
+
+/* ============================================ */
+/* INFO LABEL & VALUE                           */
+/* ============================================ */
+
+.info-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+/* ============================================ */
+/* EDIT MODE                                    */
+/* ============================================ */
+
+.edit-mode {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+/* ============================================ */
+/* RESPONSIVE - Perfil                          */
+/* ============================================ */
+
+@media (max-width: 600px) {
+    .profile-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .btn-edit-profile {
+        align-self: flex-end;
+    }
+    
+    .edit-mode {
+        flex-direction: column;
+    }
+    
+    .edit-mode .btn-save,
+    .edit-mode .btn-cancel {
+        width: 100%;
+    }
+}

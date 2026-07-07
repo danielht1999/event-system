@@ -3,10 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authApi } from '../../features/auth/services/authApi';
-
-// ============================================================
-// TIPOS SEGÚN CONTRATO
-// ============================================================
+import { reservationApi } from '../../features/reservations/services/reservationApi';
+import type { Reservation } from '../../features/reservations/types/Reservation';
 
 interface User {
   id: string;
@@ -20,14 +18,13 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isOrganizador: boolean;
+  reservations: Reservation[];
+  reservationsCount: number;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  refreshReservations: () => Promise<void>;
 }
-
-// ============================================================
-// CONTEXTO
-// ============================================================
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -35,109 +32,112 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  // ============================================================
-  // RESTAURAR SESIÓN DESDE LOCALSTORAGE
-  // ============================================================
+  // Cargar reservas cuando el usuario está autenticado
+  const loadReservations = async () => {
+    if (!token || !user) {
+      setReservations([]);
+      return;
+    }
 
+    try {
+      const response = await reservationApi.getMisReservas('page=1&limit=100');
+      if (response.success && response.data) {
+        setReservations(response.data);
+      }
+    } catch (error) {
+      console.error('[AuthContext] Error al cargar reservas:', error);
+    }
+  };
+
+  // Restaurar sesión
   useEffect(() => {
-    console.log('[AuthContext] 🔄 Iniciando restauración de sesión...');
     try {
       const tokenGuardado = localStorage.getItem('token');
       const userGuardado = localStorage.getItem('user');
-      
-      console.log('[AuthContext] 📦 tokenGuardado:', tokenGuardado ? '✅ Presente' : '❌ No presente');
-      console.log('[AuthContext] 📦 userGuardado:', userGuardado ? '✅ Presente' : '❌ No presente');
 
       if (tokenGuardado && userGuardado && userGuardado !== 'undefined' && userGuardado !== 'null') {
         const parsedUser = JSON.parse(userGuardado);
-        console.log('[AuthContext] 👤 Usuario restaurado:', parsedUser);
         setToken(tokenGuardado);
         setUser(parsedUser);
-      } else {
-        console.log('[AuthContext] ⚠️ No hay sesión guardada en localStorage');
+        console.log('[AuthContext] ✅ Sesión restaurada');
       }
     } catch (error) {
-      console.warn('[AuthContext] ❌ Error al restaurar sesión:', error);
+      console.warn('[AuthContext] ⚠️ Error al restaurar sesión');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     } finally {
       setLoading(false);
-      console.log('[AuthContext] 🔓 loading = false');
-      console.log('[AuthContext] 📊 Estado final - token:', !!token, 'user:', !!user);
-      console.log('[AuthContext] 📊 isAuthenticated:', !!token && !!user);
     }
   }, []);
 
-  // ============================================================
-  // LOGIN SEGÚN CONTRATO: (email, password) => Promise<void>
-  // ============================================================
+  // Cargar reservas cuando la autenticación cambie
+  useEffect(() => {
+    if (token && user) {
+      loadReservations();
+    } else {
+      setReservations([]);
+    }
+  }, [token, user]);
 
+  // Login
   const login = async (email: string, password: string): Promise<void> => {
-  console.log('[AuthContext] 🔐 Intentando login...');
-  const response = await authApi.login({ email, password });
-  
-  console.log('[AuthContext] 📦 Respuesta completa:', JSON.stringify(response, null, 2));
+    const response = await authApi.login({ email, password });
 
-  if (!response.success || !response.data) {
-    console.log('[AuthContext] ❌ Login falló:', response.message);
-    throw new Error(response.message || 'Error al iniciar sesión');
-  }
+    if (!response.success || !response.data) {
+      throw new Error(response.message || 'Error al iniciar sesión');
+    }
 
-  const { token: nuevoToken, user: nuevoUser } = response.data;
-  
-  console.log('[AuthContext] 🎫 Token recibido:', nuevoToken);
-  console.log('[AuthContext] 👤 Usuario recibido:', nuevoUser);
+    const { token: nuevoToken, user: nuevoUser } = response.data;
 
-  setToken(nuevoToken);
-  setUser(nuevoUser);
-  localStorage.setItem('token', nuevoToken);
-  localStorage.setItem('user', JSON.stringify(nuevoUser));
-  
-  console.log('[AuthContext] ✅ Token guardado en localStorage');
-  console.log('[AuthContext] 🔍 Verificar localStorage:', localStorage.getItem('token'));
-};
+    setToken(nuevoToken);
+    setUser(nuevoUser);
+    localStorage.setItem('token', nuevoToken);
+    localStorage.setItem('user', JSON.stringify(nuevoUser));
 
-  // ============================================================
-  // LOGOUT
-  // ============================================================
-
-  const logout = (): void => {
-    console.log('[AuthContext] 🚪 Cerrando sesión...');
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    console.log('[AuthContext] ✅ Login exitoso');
   };
 
-  // ============================================================
-  // VALOR DEL CONTEXTO
-  // ============================================================
+  // Logout
+  const logout = (): void => {
+    setToken(null);
+    setUser(null);
+    setReservations([]);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    console.log('[AuthContext] 🚪 Sesión cerrada');
+  };
+
+  // Refresh reservas
+  const refreshReservations = async (): Promise<void> => {
+    await loadReservations();
+  };
 
   const isAuthenticated = !!token && !!user;
   const isOrganizador = user?.rol === 'ORGANIZADOR';
+  const reservationsCount = reservations.length;
 
   const value: AuthContextType = {
     user,
     token,
     isAuthenticated,
     isOrganizador,
+    reservations,
+    reservationsCount,
     login,
     logout,
     loading,
+    refreshReservations,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// ============================================================
-// HOOK useAuth
-// ============================================================
-
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-
   if (context === undefined) {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
-
   return context;
 };

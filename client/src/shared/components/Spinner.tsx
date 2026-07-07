@@ -7,21 +7,25 @@ interface SpinnerProps {
 
 export const Spinner = ({ size = 'medium', message }: SpinnerProps) => {
   const sizeMap = {
-    small: '24px',
-    medium: '40px',
-    large: '60px',
+    small: 'spinner-sm',
+    medium: 'spinner',
+    large: 'spinner-lg',
+  };
+
+  // Si queremos tamaños personalizados con estilo inline
+  const sizeStyle = {
+    small: { width: '24px', height: '24px' },
+    medium: { width: '40px', height: '40px' },
+    large: { width: '60px', height: '60px' },
   };
 
   return (
     <div className="spinner-container">
       <div
-        className="spinner"
-        style={{
-          width: sizeMap[size],
-          height: sizeMap[size],
-        }}
+        className={sizeMap[size]}
+        style={sizeStyle[size]}
       />
-      {message && <p style={{ marginTop: '1rem', color: '#8b949e' }}>{message}</p>}
+      {message && <p className="loading-text">{message}</p>}
     </div>
   );
 };

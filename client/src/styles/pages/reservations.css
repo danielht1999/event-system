@@ -1,0 +1,195 @@
+/* ============================================ */
+/* RESERVAS Y TICKETS                           */
+/* ============================================ */
+/*
+MANEJO: Listado y gestión de reservas
+
+CONTENIDO:
+- .reservas-grid: Grid de reservas (2 columnas)
+- .reserva-header: Cabecera de la reserva
+- .reserva-title: Título de la reserva
+- .reserva-meta-row: Grid de metadatos (2 columnas)
+- .meta-block-title: Título del bloque de meta
+- .meta-block-value: Valor del bloque de meta
+- .ticket-code-box: Caja del código de ticket
+- .ticket-code-value: Código del ticket
+- .ticket-code-value.ticket-cancelado: Ticket cancelado
+- .reserva-actions: Acciones de la reserva
+- .reservations-header: Cabecera de la página de reservas
+- .reservations-actions: Acciones de la cabecera
+- .empty-state: Estado vacío
+- .empty-subtitle: Subtítulo del estado vacío
+- .ticket-code-text: Texto del código de ticket
+
+MODIFICAR AQUÍ: Grid de reservas, colores de tickets
+*/
+
+/* ============================================ */
+/* RESERVAS GRID                                */
+/* ============================================ */
+
+.reservas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+}
+
+/* ============================================ */
+/* RESERVA CARD (contenido específico)          */
+/* ============================================ */
+
+.reserva-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reserva-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.reserva-meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.meta-block-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.meta-block-value {
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.meta-block-value .icon-wrapper {
+    position: static;
+    left: auto;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+/* ============================================ */
+/* TICKET CODE                                  */
+/* ============================================ */
+
+.ticket-code-box {
+    margin-top: 5px;
+}
+
+.ticket-code-value {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-glow);
+    padding: 12px;
+    border-radius: 6px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-accent);
+    text-align: center;
+    letter-spacing: 1px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.ticket-code-value.ticket-cancelado {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--error-color);
+    color: var(--error-color);
+    opacity: 0.7;
+    filter: grayscale(0.3);
+}
+
+/* ============================================ */
+/* RESERVA ACTIONS                              */
+/* ============================================ */
+
+.reserva-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* ============================================ */
+/* RESERVATIONS PAGE - Estilos específicos      */
+/* ============================================ */
+
+.reservations-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.reservations-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.empty-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.ticket-code-text {
+    font-family: monospace;
+    font-size: 0.8rem;
+}
+
+/* ============================================ */
+/* RESPONSIVE - Reservas                        */
+/* ============================================ */
+
+@media (max-width: 900px) {
+    .reservas-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .reserva-meta-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .reserva-actions {
+        flex-direction: column;
+    }
+    
+    .reservations-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .reservations-actions {
+        width: 100%;
+    }
+    
+    .reservations-actions .btn {
+        flex: 1;
+    }
+}

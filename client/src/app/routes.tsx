@@ -16,7 +16,6 @@ import { RegisterPage } from '../features/auth/pages/RegisterPage';
 // Events
 import { EventsPage } from '../features/events/pages/EventsPage';
 import { EventDetailPage } from '../features/events/pages/EventDetailPage';
-import { EventsApiPlayground } from '../features/events/pages/EventsApiPlayground';
 import { EventForm } from '../features/events/components/EventForm';
 
 // Reservations
@@ -43,12 +42,6 @@ export const AppRoutes = () => {
           <Route path="/login" element={<LoginPage />} />
 
           <Route path="/register" element={<RegisterPage />} />
-
-          {/* ========================================= */}
-          {/* HERRAMIENTAS DE DESARROLLO / PLAYGROUND */}
-          {/* ========================================= */}
-
-          <Route path="/debug/events" element={<EventsApiPlayground />} />
 
           {/* ========================================= */}
           {/* RUTAS PROTEGIDAS (requieren autenticación) */}

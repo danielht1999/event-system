@@ -8,6 +8,8 @@ import { Pagination } from '../../../shared/components/Pagination';
 import { PurchaseModal } from '../../reservations/components/PurchaseModal';
 import { useCrearReserva } from '../../reservations/hooks/useReservations';
 import { useQueryParams } from '../../../shared/hooks/useQueryParams';
+import { eventApi } from '../services/eventApi';
+import type { Evento } from '../types/Event';
 
 export const EventsPage = () => {
   const { getEventsParams, setParams } = useQueryParams();
@@ -16,11 +18,8 @@ export const EventsPage = () => {
   const { eventos, cargando, total, recargar } = useEvents(params);
   const { crearReserva, cargando: comprando } = useCrearReserva();
 
-  const [eventoSeleccionado, setEventoSeleccionado] = useState<{
-    eventoId: string;
-    ticketTypeId: string;
-    titulo: string;
-  } | null>(null);
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<Evento | null>(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(total / (params.limit || 10)));
 
@@ -36,28 +35,47 @@ export const EventsPage = () => {
     setParams({ ...filters, page: 1 });
   };
 
-  const handleComprar = (
-    eventoId: string,
-    ticketTypeId: string,
-    eventoTitulo: string
-  ) => {
-    setEventoSeleccionado({
-      eventoId: eventoId,
-      ticketTypeId: ticketTypeId,
-      titulo: eventoTitulo,
-    });
+  const handleComprar = async (evento: Evento) => {
+    // Si el evento ya tiene tickets, usarlo directamente
+    if (evento.tickets && evento.tickets.length > 0) {
+      setEventoSeleccionado(evento);
+      return;
+    }
+
+    // Si no tiene tickets (viene del listado), cargarlos
+    setCargandoDetalle(true);
+    try {
+      const response = await eventApi.getEvento(evento.id);
+      if (response.success && response.data) {
+        setEventoSeleccionado(response.data);
+      } else {
+        console.error('Error al cargar detalles del evento');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setCargandoDetalle(false);
+    }
   };
 
   const handleCerrarModal = () => {
     setEventoSeleccionado(null);
   };
 
-  const handleConfirmarCompra = async (cantidadTickets: number) => {
+  const handleConfirmarCompra = async (ticketTypeId: string, cantidadTickets: number) => {
     if (!eventoSeleccionado) return;
 
+    const payload = {
+      eventoId: eventoSeleccionado.id,
+      ticketTypeId,
+      cantidadTickets,
+    };
+
+    console.log('📦 Enviando reserva:', payload);
+
     const response = await crearReserva({
-      eventoId: eventoSeleccionado.eventoId,
-      ticketTypeId: eventoSeleccionado.ticketTypeId,
+      eventoId: eventoSeleccionado.id,
+      ticketTypeId,
       cantidadTickets,
     });
 
@@ -69,51 +87,47 @@ export const EventsPage = () => {
     recargar();
   };
 
+  const handleResetFilters = () => {
+    setParams({ page: 1, limit: 10 });
+  };
+
   if (cargando && eventos.length === 0) {
-    return <div className="loading">Cargando eventos...</div>;
+    return (
+      <div className="spinner-container">
+        <div className="spinner"></div>
+        <p className="loading-text">Cargando eventos...</p>
+      </div>
+    );
   }
-
-  const selectedTicket = eventoSeleccionado
-    ? eventos
-        .flatMap((e) => e.tickets || [])
-        .find((t) => t.id === eventoSeleccionado.ticketTypeId)
-    : null;
-
-  const selectedEvent = eventoSeleccionado
-    ? eventos.find((e) => e.tickets?.some((t) => t.id === eventoSeleccionado.ticketTypeId))
-    : null;
 
   return (
     <>
-      <div className="page-container">
-        <header className="page-header">
-          <h1 className="page-title">Proximos Eventos</h1>
-          <div className="page-actions">
-            <button className="btn-action" onClick={recargar}>
-              Actualizar lista
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={() => setParams({ page: 1, limit: 10 })}
-            >
-              Resetear filtros
-            </button>
+      <div className="card">
+        {/* Header */}
+        <div className="filters-header" style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h1 className="card-title" style={{ marginBottom: 0 }}>
+              Próximos Eventos
+            </h1>
+            <span className="badge badge-info">{total} eventos</span>
           </div>
-        </header>
+        </div>
 
         <EventFilters
           onFilterChange={handleFilterChange}
+          onRefresh={recargar}
+          onReset={handleResetFilters}
           currentStatus={params.status}
           currentSortBy={params.sortBy}
           currentSortOrder={params.sortOrder}
         />
 
         {eventos.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty">
             <p>No hay eventos disponibles.</p>
           </div>
         ) : (
-          <section className="events-grid">
+          <section className="eventos-grid">
             {eventos.map((evento) => (
               <EventCard
                 key={evento.id}
@@ -131,12 +145,10 @@ export const EventsPage = () => {
         />
       </div>
 
-      {eventoSeleccionado && selectedTicket && selectedEvent && (
+      {eventoSeleccionado && (
         <PurchaseModal
-          eventoTitulo={selectedEvent.titulo}
-          ticketTypeNombre={selectedTicket.nombre}
-          ticketTypePrecio={selectedTicket.precio}
-          cargando={comprando}
+          evento={eventoSeleccionado}
+          cargando={comprando || cargandoDetalle}
           onConfirmar={handleConfirmarCompra}
           onCerrar={handleCerrarModal}
         />

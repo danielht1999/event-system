@@ -1,9 +1,11 @@
-import type  { Reservation } from '../types/Reservation';
+// client/src/features/reservations/components/ReservationCard.tsx
+
+import type { Reservation } from '../types/Reservation';
 
 interface ReservationCardProps {
   reservacion: Reservation;
   onConfirmarPago?: (id: string) => void;
-  onCancelSuccess?: () => void; // Al cancelar, le avisa a la página que haga "recargar"
+  onCancelSuccess?: () => void;
 }
 
 // Helpers puros de mapeo movidos fuera del ciclo de renderizado para mayor claridad
@@ -25,20 +27,23 @@ const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('es-ES');
 };
 
-export const ReservationCard = ({ reservacion, onConfirmarPago, onCancelSuccess }: ReservationCardProps) => {
+export const ReservationCard = ({ 
+  reservacion, 
+  onConfirmarPago, 
+  onCancelSuccess 
+}: ReservationCardProps) => {
   const { id, eventoTitulo, eventoFecha, cantidadTickets, estado, codigoTicket } = reservacion;
   const statusClass = getEstadoPill(estado);
 
   const handleCancelar = async () => {
     if (window.confirm('¿Estás seguro de que deseas cancelar esta reservación?')) {
-      // Aquí puedes invocar directamente a tu servicio/hook o delegar al padre
       if (onCancelSuccess) onCancelSuccess();
     }
   };
 
   return (
     <div 
-      className="reserva-card"
+      className="card-solid"
       style={{ borderTop: `3px solid var(--${statusClass}-color)` }}
     >
       <div className="reserva-header">
@@ -77,14 +82,14 @@ export const ReservationCard = ({ reservacion, onConfirmarPago, onCancelSuccess 
         <div className="reserva-actions">
           {onConfirmarPago && (
             <button 
-              className="btn-pagar" 
+              className="btn btn-primary btn-sm" 
               onClick={() => onConfirmarPago(id)}
             >
               ✅ Pagar
             </button>
           )}
           <button 
-            className="btn-cancelar" 
+            className="btn btn-danger btn-sm" 
             onClick={handleCancelar}
           >
             ❌ Cancelar

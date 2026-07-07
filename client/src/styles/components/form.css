@@ -1,0 +1,172 @@
+/* ============================================ */
+/* FORMULARIOS - Sistema de formularios         */
+/* ============================================ */
+/*
+MANEJO: Controles de formulario reutilizables
+
+CONTENIDO:
+- .form-group: Contenedor de campo
+- .form-label: Etiqueta del campo
+- .form-control: Input, select, textarea
+- .form-control-icon: Contenedor con icono
+- .form-control-icon .icon-wrapper: Icono dentro del input
+- .form-toggle: Toggle entre login/register
+- .error: Mensaje de error general
+- .error-message: Mensaje de error con borde
+- .success-message: Mensaje de éxito
+- .error-inline: Error en línea
+
+MODIFICAR AQUÍ: Padding, tamaños de fuente, colores
+*/
+
+/* ============================================ */
+/* FORM GROUP                                   */
+/* ============================================ */
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* ============================================ */
+/* FORM CONTROL                                 */
+/* ============================================ */
+
+.form-control {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-glow);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 14px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 3px rgba(143, 148, 251, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.form-control:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.form-control-sm {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+.form-control-lg {
+    padding: 14px 18px;
+    font-size: 1.1rem;
+}
+
+.form-control-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-control-icon .form-control {
+    padding-left: 40px;
+}
+
+.form-control-icon .icon-wrapper {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* ============================================ */
+/* TEXTAREA                                     */
+/* ============================================ */
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ============================================ */
+/* SELECT                                       */
+/* ============================================ */
+
+select.form-control {
+    appearance: auto;
+    cursor: pointer;
+}
+
+/* ============================================ */
+/* DATETIME LOCAL                               */
+/* ============================================ */
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+/* ============================================ */
+/* MENSAJES                                     */
+/* ============================================ */
+
+.error {
+    color: var(--error-color);
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.error-message {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: rgba(255, 23, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+    border-radius: 4px;
+}
+
+.success-message {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+    border-radius: 4px;
+}
+
+.error-inline {
+    color: var(--error-color);
+    font-size: 0.8rem;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 23, 68, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid var(--error-color);
+}
+
+/* ============================================ */
+/* FORM TOGGLE (Login/Register)                 */
+/* ============================================ */
+
+.form-toggle {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}

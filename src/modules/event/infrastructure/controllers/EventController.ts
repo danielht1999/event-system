@@ -14,6 +14,7 @@ import { PublishEventCommand } from '@modules/event/application/commands/Publish
 import { PublishEventHandler } from '@modules/event/application/commands/PublishEventHandler';
 import { CancelEventCommand } from '@modules/event/application/commands/CancelEventCommand';
 import { CancelEventHandler } from '@modules/event/application/commands/CancelEventHandler';
+import { GetManagementEventsHandler } from '@modules/event/application/queries/GetManagementEventsHandler';
 import { EVENT_QUERY_CAPABILITIES } from '@modules/event/application/queries/EventQueryCapabilities';
 import { 
   ValidationError,
@@ -31,7 +32,8 @@ export class EventController {
     private readonly getEventByIdHandler: GetEventByIdHandler,
     private readonly getEventAvailabilityHandler: GetEventAvailabilityHandler,
     private readonly publishEventHandler: PublishEventHandler,
-    private readonly cancelEventHandler: CancelEventHandler
+    private readonly cancelEventHandler: CancelEventHandler,
+    private readonly getManagementEventsHandler: GetManagementEventsHandler,
   ) {}
 
   // =========================================================================
@@ -160,6 +162,41 @@ list = async (req: Request, res: Response): Promise<void> => {
     }
   };
 
+  listManagement = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizerId = authReq.user?.id;
+
+      if (!organizerId) {
+        res.status(401).json({
+          success: false,
+          message: 'No autorizado - Se requiere autenticación de organizador'
+        });
+        return;
+      }
+
+      const { search, status, sortBy, sortOrder, page, limit } = req.query;
+
+      const query: GetEventsQuery = {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+        status: status as string,
+        search: search as string,
+        sortBy: (sortBy as 'date' | 'title' | 'price' | 'createdAt') || 'date',
+        sortOrder: (sortOrder as 'asc' | 'desc') || 'asc'
+      };
+
+      const result = await this.getManagementEventsHandler.execute(organizerId, query);
+
+      res.json({
+        success: true,
+        ...result
+      });
+
+    } catch (error: any) {
+      this.handleError(res, error, 'Error al listar eventos de gestión');
+    }
+  };
   // =========================================================================
   // MUTACIONES (COMMANDS)
   // =========================================================================

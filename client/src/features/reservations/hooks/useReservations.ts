@@ -7,7 +7,7 @@ import type { ReservationsQueryParams } from '../../../shared/hooks/useQueryPara
 import { useAuth } from '../../auth/hooks/useAuth';
 
 export const useReservations = (params: ReservationsQueryParams = {}) => {
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, loading, refreshReservations } = useAuth();
   const [reservas, setReservas] = useState<Reservation[]>([]);
   const [cargando, setCargando] = useState(true);
   const [total, setTotal] = useState(0);
@@ -16,7 +16,8 @@ export const useReservations = (params: ReservationsQueryParams = {}) => {
   const limit = params.limit || 20;
 
   const cargarReservas = useCallback(async () => {
-    // Si no está autenticado, no hacer la llamada
+    if (loading) return;
+
     if (!isAuthenticated || !token) {
       setReservas([]);
       setCargando(false);
@@ -25,7 +26,6 @@ export const useReservations = (params: ReservationsQueryParams = {}) => {
 
     setCargando(true);
 
-    // Construir query string con los parámetros
     const queryParams = new URLSearchParams();
     queryParams.set('page', String(page));
     queryParams.set('limit', String(limit));
@@ -36,26 +36,29 @@ export const useReservations = (params: ReservationsQueryParams = {}) => {
     if (params.sortBy) queryParams.set('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.set('sortOrder', params.sortOrder);
 
-    const queryString = queryParams.toString();
-    const response = await reservationApi.getMisReservas(queryString);
+    const response = await reservationApi.getMisReservas(queryParams.toString());
 
     if (response.success && response.data) {
       setReservas(response.data);
       setTotal(response.meta?.total || response.data.length);
     }
     setCargando(false);
-  }, [isAuthenticated, token, page, limit, params.status, params.eventId, params.userId, params.sortBy, params.sortOrder]);
+  }, [isAuthenticated, token, loading, page, limit, params.status, params.eventId, params.userId, params.sortBy, params.sortOrder]);
 
   useEffect(() => {
     cargarReservas();
   }, [cargarReservas]);
 
-  const recargar = () => {
-    cargarReservas();
+  // Función para recargar y actualizar el contador global
+  const recargar = async () => {
+    await cargarReservas();
+    await refreshReservations(); // Actualiza el contador global
   };
 
   return { reservas, cargando, total, recargar };
 };
+
+// ... resto de hooks
 
 export const useCrearReserva = () => {
   const [cargando, setCargando] = useState(false);

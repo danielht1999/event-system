@@ -1,11 +1,16 @@
 // client/src/features/events/components/EventFilters.tsx
 
+import { BaseFilter } from '../../../shared/components/BaseFilter';
+import type { FilterGroup } from '../../../shared/components/BaseFilter';
+
 interface EventFiltersProps {
   onFilterChange: (filters: {
     status?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   }) => void;
+  onRefresh: () => void;
+  onReset: () => void;
   currentStatus?: string;
   currentSortBy?: string;
   currentSortOrder?: 'asc' | 'desc';
@@ -13,17 +18,17 @@ interface EventFiltersProps {
 
 export const EventFilters = ({
   onFilterChange,
+  onRefresh,
+  onReset,
   currentStatus,
   currentSortBy,
   currentSortOrder,
 }: EventFiltersProps) => {
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
+  const handleStatusChange = (value: string) => {
     onFilterChange({ status: value || undefined });
   };
 
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
+  const handleSortChange = (value: string) => {
     if (!value) {
       onFilterChange({ sortBy: undefined, sortOrder: undefined });
       return;
@@ -35,38 +40,69 @@ export const EventFilters = ({
     });
   };
 
-  return (
-    <div className="event-filters">
-      <div className="filter-group">
-        <label htmlFor="status-filter">Estado</label>
-        <select
-          id="status-filter"
-          value={currentStatus || ''}
-          onChange={handleStatusChange}
-        >
-          <option value="">Todos los estados</option>
-          <option value="PUBLICADA">Publicados</option>
-          <option value="BORRADOR">Borradores</option>
-          <option value="CANCELADA">Cancelados</option>
-        </select>
-      </div>
+  // Contar filtros activos
+  const filtrosActivos = [currentStatus, currentSortBy].filter(Boolean).length;
 
+  // Construir grupos con los filtros + acciones como un grupo más
+  const groups: FilterGroup[] = [
+    {
+      id: 'status-filter',
+      label: 'Estado',
+      value: currentStatus,
+      options: [
+        { value: '', label: 'Todos los estados' },
+        { value: 'PUBLICADA', label: 'Publicados' },
+        { value: 'BORRADOR', label: 'Borradores' },
+        { value: 'CANCELADA', label: 'Cancelados' },
+      ],
+      onChange: handleStatusChange,
+    },
+    {
+      id: 'sort-filter',
+      label: 'Ordenar por',
+      value: currentSortBy ? `${currentSortBy}-${currentSortOrder || 'asc'}` : '',
+      options: [
+        { value: '', label: 'Sin ordenar' },
+        { value: 'fecha-asc', label: 'Fecha (más antiguo)' },
+        { value: 'fecha-desc', label: 'Fecha (más reciente)' },
+        { value: 'titulo-asc', label: 'Título (A-Z)' },
+        { value: 'titulo-desc', label: 'Título (Z-A)' },
+        { value: 'precio-asc', label: 'Precio (menor)' },
+        { value: 'precio-desc', label: 'Precio (mayor)' },
+      ],
+      onChange: handleSortChange,
+    },
+  ];
+
+  return (
+    <BaseFilter groups={groups} className="filters">
+      {/* Badge de filtros activos - inline con los filtros */}
+      {filtrosActivos > 0 && (
+        <span className="badge badge-pulse">
+          {filtrosActivos} filtro{filtrosActivos > 1 ? 's' : ''} activo
+        </span>
+      )}
+
+      {/* Botones de acción - como un filtro más */}
       <div className="filter-group">
-        <label htmlFor="sort-filter">Ordenar por</label>
-        <select
-          id="sort-filter"
-          value={currentSortBy ? `${currentSortBy}-${currentSortOrder || 'asc'}` : ''}
-          onChange={handleSortChange}
-        >
-          <option value="">Sin ordenar</option>
-          <option value="fecha-asc">Fecha (mas antiguo)</option>
-          <option value="fecha-desc">Fecha (mas reciente)</option>
-          <option value="titulo-asc">Titulo (A-Z)</option>
-          <option value="titulo-desc">Titulo (Z-A)</option>
-          <option value="precio-asc">Precio (menor)</option>
-          <option value="precio-desc">Precio (mayor)</option>
-        </select>
+        <label>&nbsp;</label>
+        <div className="filter-actions-buttons">
+          <button
+            className="btn-filter-action"
+            onClick={onRefresh}
+            title="Actualizar lista de eventos"
+          >
+            ↻ Actualizar
+          </button>
+          <button
+            className="btn-filter-action btn-filter-reset"
+            onClick={onReset}
+            title="Resetear todos los filtros"
+          >
+            ✕ Resetear
+          </button>
+        </div>
       </div>
-    </div>
+    </BaseFilter>
   );
 };
