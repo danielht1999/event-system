@@ -1,0 +1,30 @@
+version: '3.9'
+
+# Stack aislado de payment-service: su propio Postgres (nunca comparte
+# instancia con el monolito), reutilizando el Redis existente vía REDIS_URL
+# apuntando al de la infraestructura raíz si se integra en un compose único.
+
+services:
+  payment-service:
+    build: .
+    ports:
+      - '4000:4000'
+    env_file:
+      - .env
+    depends_on:
+      - payment-postgres
+    restart: unless-stopped
+
+  payment-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres      # Usuario estándar de PostgreSQL
+      POSTGRES_PASSWORD: postgres  # Contraseña estándar para desarrollo
+      POSTGRES_DB: payment_db      # Nombre genérico de base de datos
+    ports:
+      - '5433:5432'
+    volumes:
+      - payment_pgdata:/var/lib/postgresql/data
+
+volumes:
+  payment_pgdata:
