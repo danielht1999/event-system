@@ -1,0 +1,71 @@
+name: Payment Service CI
+
+on:
+  push:
+    branches: [ main, feat/* ]
+    paths:
+      - 'payment-service/**'
+      - '.github/workflows/payment-service-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'payment-service/**'
+      - '.github/workflows/payment-service-ci.yml'
+
+defaults:
+  run:
+    working-directory: payment-service
+
+jobs:
+  test:
+    name: Tests (unit + integración + BD real)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: payment_user
+          POSTGRES_PASSWORD: payment_pass
+          POSTGRES_DB: payment_service_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: payment-service/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -p tsconfig.json --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Correr toda la suite (unit + integración + BD real)
+        run: npm test
+        env:
+          DATABASE_URL: postgres://payment_user:payment_pass@localhost:5432/payment_service_test
+          REDIS_URL: redis://localhost:6379
