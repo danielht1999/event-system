@@ -1,8 +1,10 @@
 import express, { Request, Response, Express } from 'express';
 import { CreatePaymentHandler } from './application/commands/CreatePaymentHandler';
 import { IPaymentRepository } from './domain/repositories/IPaymentRepository';
+import { IReadinessChecker } from './domain/services/IReadinessChecker';
 import { StripeWebhookController } from './infrastructure/webhooks/StripeWebhookController';
 import { buildPaymentsRouter } from './api/routes/payments.routes';
+import { buildHealthRouter } from './api/routes/health.routes';
 import { errorHandler } from './api/middlewares/errorHandler';
 
 export interface AppDependencies {
@@ -10,6 +12,7 @@ export interface AppDependencies {
   paymentRepository: IPaymentRepository;
   hmacSecret: string;
   stripeWebhookController: StripeWebhookController;
+  readinessChecker: IReadinessChecker;
 }
 
 /**
@@ -21,7 +24,7 @@ export interface AppDependencies {
 export function buildApp(deps: AppDependencies): Express {
   const app = express();
 
-  // Regla de oro #9: /webhooks/stripe necesita el body crudo, no parseado
+  ///webhooks/stripe necesita el body crudo, no parseado
   // como JSON — este middleware va ANTES de cualquier express.json() global.
   app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), deps.stripeWebhookController.handle);
 
@@ -34,13 +37,10 @@ export function buildApp(deps: AppDependencies): Express {
   );
 
   app.use('/', buildPaymentsRouter(deps.createPaymentHandler, deps.paymentRepository, deps.hmacSecret));
+  app.use('/', buildHealthRouter(deps.readinessChecker));
 
   app.get('/metrics', (_req: Request, res: Response) => {
     res.status(200).type('text/plain').send('# payment-service metrics placeholder\n');
-  });
-
-  app.get('/health', (_req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', service: 'payment-service' });
   });
 
   app.use(errorHandler);

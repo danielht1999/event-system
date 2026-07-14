@@ -2,7 +2,7 @@ import request from 'supertest';
 import { buildApp } from '../../../src/app';
 import { CreatePaymentHandler } from '../../../src/application/commands/CreatePaymentHandler';
 import { InMemoryPaymentRepository } from '../../support/InMemoryPaymentRepository';
-import { FakeUnitOfWork, FakePaymentGateway } from '../../support/fakes';
+import { FakeUnitOfWork, FakePaymentGateway, FakeReadinessChecker } from '../../support/fakes';
 import { signRequest } from '../../support/signRequest';
 import { StripeWebhookController } from '../../../src/infrastructure/webhooks/StripeWebhookController';
 
@@ -22,6 +22,7 @@ function buildTestApp() {
     paymentRepository: repo,
     hmacSecret: HMAC_SECRET,
     stripeWebhookController: stripeWebhookControllerStub,
+    readinessChecker: new FakeReadinessChecker(true),
   });
 
   return { app, repo };

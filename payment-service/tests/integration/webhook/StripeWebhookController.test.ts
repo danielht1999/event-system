@@ -7,7 +7,7 @@ import { ConfirmPaymentHandler } from '../../../src/application/commands/Confirm
 import { FailPaymentHandler } from '../../../src/application/commands/FailPaymentHandler';
 import { CreatePaymentHandler } from '../../../src/application/commands/CreatePaymentHandler';
 import { InMemoryPaymentRepository } from '../../support/InMemoryPaymentRepository';
-import { FakeUnitOfWork, FakeOutboxStore, FakePaymentGateway, FakeProcessedStripeEventsRepository } from '../../support/fakes';
+import { FakeUnitOfWork, FakeOutboxStore, FakePaymentGateway, FakeProcessedStripeEventsRepository, FakeReadinessChecker } from '../../support/fakes';
 import { Payment } from '../../../src/domain/entities/Payment';
 import { Money } from '../../../src/domain/entities/Money';
 
@@ -34,11 +34,11 @@ function buildWebhookHarness() {
     paymentRepository: repo,
     hmacSecret: 'unused-in-this-suite',
     stripeWebhookController: controller,
+    readinessChecker: new FakeReadinessChecker(true),
   });
 
   return { app, repo, outbox };
 }
-
 /** Firma localmente un payload como lo haría Stripe, sin llamar a su API. */
 function signStripePayload(payload: object): { rawBody: string; signatureHeader: string } {
   const rawBody = JSON.stringify(payload);

@@ -60,3 +60,16 @@ export class FakeProcessedStripeEventsRepository implements IProcessedStripeEven
     this.processed.set(stripeEventId, paymentId);
   }
 }
+
+/** Fake de IReadinessChecker — controlable en los tests (readyValue). */
+export class FakeReadinessChecker {
+  constructor(private readyValue = true) {}
+
+  async check(): Promise<boolean> {
+    return this.readyValue;
+  }
+
+  setReady(value: boolean): void {
+    this.readyValue = value;
+  }
+}

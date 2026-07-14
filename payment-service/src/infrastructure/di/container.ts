@@ -1,6 +1,8 @@
 import { env } from '../../config/env.loader';
 
 import { PostgresUnitOfWork } from '../database/PostgresUnitOfWork';
+import { pool } from '../database/connection';
+import { PostgresReadinessChecker } from '../health/PostgresReadinessChecker';
 import { PostgresPaymentRepository } from '../repositories/PostgresPaymentRepository';
 import { PostgresProcessedStripeEventsRepository } from '../repositories/PostgresProcessedStripeEventsRepository';
 import { StripePaymentGateway } from '../gateways/StripePaymentGateway';
@@ -15,7 +17,7 @@ import { ConfirmPaymentHandler } from '../../application/commands/ConfirmPayment
 import { FailPaymentHandler } from '../../application/commands/FailPaymentHandler';
 
 /**
- * Único lugar que conoce implementaciones concretas (regla de oro #2/#3).
+ * Único lugar que conoce implementaciones concretas
  * Las variables de entorno ya vienen validadas por config/env.loader.ts —
  * este archivo no vuelve a validar nada, solo cablea dependencias.
  */
@@ -40,6 +42,7 @@ export function buildContainer() {
   );
 
   const outboxWorker = new OutboxWorker(eventPublisher);
+  const readinessChecker = new PostgresReadinessChecker(pool);
 
   return {
     hmacSecret: env.PAYMENT_SERVICE_HMAC_SECRET,
@@ -49,5 +52,6 @@ export function buildContainer() {
     failPaymentHandler,
     stripeWebhookController,
     outboxWorker,
+    readinessChecker,
   };
 }
